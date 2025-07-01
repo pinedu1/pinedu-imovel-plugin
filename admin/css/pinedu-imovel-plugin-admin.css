@@ -1,0 +1,107 @@
+/**
+ * All of the CSS for your admin-specific functionality should be
+ * included in this file.
+ */
+/**
+ * All of the CSS for your admin-specific functionality should be
+ * included in this file.
+ */
+div#pinedu-imovel-config form table.form-table tbody tr th {
+    padding: 1px;
+    margin: 0;
+    font-size: 1.1em;
+}
+
+div#pinedu-imovel-config form table.form-table tbody tr td {
+    padding: 1px;
+    margin: 0;
+    font-size: 1.1em;
+}
+
+div#pinedu-imovel-config table.form-table {
+    margin-left: 2em;
+}
+
+div#pinedu-imovel-config div.form-table {
+    margin: 0;
+    padding: 0;
+    display: inline-table;
+    width: 600px;
+}
+
+div#pinedu-imovel-config div.form-table ul {
+    display: table-row;
+}
+
+div#pinedu-imovel-config div.form-table ul li {
+    display: table-cell;
+}
+
+div#pinedu-imovel-config div.form-table ul li p {
+    margin: 0;
+    padding: 0;
+}
+
+div#pinedu-imovel-config input[type='text'], div#pinedu-imovel-config input[type='email'], div#pinedu-imovel-config input[type='password'] {
+    min-width: 30em;
+}
+
+div#pinedu-imovel-config select, div#pinedu-imovel-config input[type='number'] {
+    min-width: 10em;
+}
+div#status-importacao {
+    display: inline-table;
+}
+div#status-importacao ul {
+    display: table-row;
+}
+div#status-importacao ul li {
+    display: table-cell;
+    padding: 0.25em 0.25em;
+}
+div#status-importacao ul li div {
+    display: inline;
+}
+div#status-importacao ul li div p {
+    line-height: 1.1em;
+}
+/* Estilo base do container */
+#info {
+    padding: 15px;
+    margin: 20px 0;
+    border-radius: 5px;
+    font-family: Arial, sans-serif;
+    font-size: 14px;
+    box-shadow: 0 2px 5px rgb(0 0 0 / 10%);
+    display: none; /* Inicialmente oculto */
+    animation: fadeIn 0.5s ease-in-out;
+}
+
+/* Variante para sucesso */
+#info.success {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+    display: block;
+}
+
+#info.info {
+    background-color: #d4edda;
+    color: #023eb3;
+    border: 1px solid #c3e6cb;
+    display: block;
+}
+
+/* Variante para erro */
+#info.error {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+    display: block;
+}
+
+/* Animação de aparecimento */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
