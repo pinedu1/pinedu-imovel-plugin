@@ -112,6 +112,9 @@ class Pinedu_Imovel_Importa_Foto extends Pinedu_Foto_Util {
 			$this->salva_post_imagem( $imagem_destaque );
 		}
 	}
+	public function exclui_imagem_destaque( ) {
+		$this->delete_post_thumbnail( $this->post_id );
+	}
 	public function atualiza_imagem_destaque( ) {
 		$this->delete_post_thumbnail( $this->post_id );
 		$imagem_destaque = $this->resolve_imagem_destaque( );
@@ -191,6 +194,11 @@ class Pinedu_Imovel_Importa_Foto extends Pinedu_Foto_Util {
 			$pm = add_post_meta( $this->post_id, 'fotografias', $valor, false );
 			$x=$pm;
 		}
+		if ( !empty( $fotografias_post ) ) {
+			$this->apagar_fotografias( $fotografias_post );
+		}
+	}
+	public function excluir_fotografias( $fotografias_post ) {
 		if ( !empty( $fotografias_post ) ) {
 			$this->apagar_fotografias( $fotografias_post );
 		}

@@ -226,7 +226,7 @@ function formata_telefone( $telefone ) {
 }
 function get_tipo_dependencias_imovel( $post_id ) {
 	require_once plugin_dir_path( __FILE__ ) . 'admin/classes/class-pinedu-imovel-importa-tipo-dependencia.php';
-	$caracteristica_icons = [ 'DOR' => 'fa fa-bed', 'SUI' => 'fa fa-shower', 'BAN' => 'fa fa-bath', 'GAR' => 'fa fa-car', 'COZ' => 'fa-solid fa-kitchen-set', 'PIS' => 'fa-solid fa-person-swimming', 'PISPRV' => 'fa-solid fa-person-swimming', 'SAL' => 'fa-solid fa-couch', 'ARS' => 'fa fa-brush', 'INTERFON' => 'fa fa-bell', 'ARCOND' => 'fa fa-snowflake', 'ARUTIL' => 'fa-solid fa-circle-nodes', 'ARCONS' => 'fa-solid fa-draw-polygon' ];
+	$caracteristica_icons = [ 'DOR' => 'fa fa-bed', 'SUI' => 'fa fa-shower', 'BAN' => 'fa fa-bath', 'GAR' => 'fa fa-car', 'COZ' => 'fa-solid fa-kitchen-set', 'PIS' => 'fa-solid fa-person-swimming', 'PISPRV' => 'fa-solid fa-person-swimming', 'SAL' => 'fa-solid fa-couch', 'ARS' => 'fa fa-brush', 'INTERFON' => 'fa fa-bell', 'ARCOND' => 'fa fa-snowflake', 'ARUTIL' => 'fa-solid fa-ruler-combined', 'ARCONS' => 'fa-solid fa-draw-polygon', 'ARTOT' => 'fa-solid fa-circle-nodes' ];
 	$dependencias = [];
 	$tipo_dependencias = Pinedu_Imovel_Importa_Tipo_Dependencia::get_tipo_dependencias();
 	$meta = get_post_meta( $post_id, '', true );

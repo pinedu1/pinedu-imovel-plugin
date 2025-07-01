@@ -120,9 +120,12 @@ class Pinedu_Imovel_Importar {
 	}
 	private function testar_server() {
 		$options = get_option('pinedu_imovel_options', []);
-		$url = $options[ 'url_servidor' ];
+		$url = isset( $options[ 'url_servidor' ] )? $options[ 'url_servidor' ]: '';
+		if ( empty( $url ) ) return false;
 		$data = Pinedu_Imovel_Testar_Server::testar_server( $url, false );
-		if ( $data['success'] !== true ) return false;
-		return $data['success'];
+		if ( isset( $data['success'] ) ) {
+			return $data[ 'success' ];
+		}
+		return false;
 	}
 }

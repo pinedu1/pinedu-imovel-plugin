@@ -37,13 +37,15 @@
 					wp_send_json_error( ['message' => 'URL inválida.'] );
 				}
 				$fullUrl = trailingslashit( $url ) . ltrim( self::ENDPOINT, '/' );
+				$token = $options['token'] ?? '';
 				$response = wp_remote_post( $fullUrl, [
 					'timeout' => ( 60 * 5 )
 					, 'headers' => [
 						'Content-Type' => 'application/json'
-						, 'Authorization' => 'Bearer ' . sanitize_text_field( $options['token'] )
+						, 'Authorization' => 'Bearer ' . sanitize_text_field( $token )
 					]
 					, 'sslverify' => true
+					
 				] );
 				if ( is_wp_error( $response ) ) {
 					wp_send_json_error( ['message' => 'Erro de conexão com o servidor'] );

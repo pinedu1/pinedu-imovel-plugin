@@ -64,9 +64,6 @@ function importarImoveis( forcarImportarImoveis ) {
 			$('#token').val(dados.token);
 			info.removeClass('error info').addClass('success')
 				.text(dados.message).fadeIn();
-			console.log(dados.ultima_atualizacao);
-
-			// Formatação de datas
 			const dateString = dados.ultima_atualizacao.date.replace(' ', 'T') + 'Z';
 			const dateUTC = new Date(dateString);
 
@@ -93,8 +90,6 @@ function importarImoveis( forcarImportarImoveis ) {
 					hour12: false
 				}).format(new Date(dados.proxima_atualizacao * 1000)) :
 				null;
-
-			// Atualização do status
 			$("#status-importacao").empty().append(
 				$('<ul>').append(
 					$('<li>').append($('<div>', { id: 'ultima_atualizacao' }).append(

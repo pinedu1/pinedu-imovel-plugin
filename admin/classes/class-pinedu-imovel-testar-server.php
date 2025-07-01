@@ -18,11 +18,12 @@ class Pinedu_Imovel_Testar_Server {
 			return false;
 		}
 		$fullUrl = trailingslashit($url) . ltrim(self::ENDPOINT, '/');
+		$token = $options['token'] ?? '';
 		$response = wp_remote_post($fullUrl, [
 			'timeout' => 10
 			, 'headers' => [
 				'Content-Type' => 'application/json'
-				, 'Authorization' => 'Bearer ' . sanitize_text_field( $options['token'] )
+				, 'Authorization' => 'Bearer ' . sanitize_text_field( $token )
 			]
 			, 'sslverify' => true
 		]);

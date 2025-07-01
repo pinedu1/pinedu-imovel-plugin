@@ -11,6 +11,34 @@ class Pinedu_Imovel_Importa_Imovel {
 	public function setImoveisImportados( int $imoveis_importados ): void {
 		$this->imoveis_importados = $imoveis_importados;
 	}
+	public function trata_excluidos( $array_referencias ) {
+		$referencias = array();
+		foreach ( $array_referencias as $ref ) {
+			$referencias[] = $ref['referencia'];
+		}
+		$args = array(
+			'post_type'      => 'imovel',
+			'posts_per_page' => -1,
+			'fields'         => 'ids',
+			'meta_query'     => array(
+				array(
+					'key'     => 'referencia',
+					'value'   => $referencias,
+					'compare' => 'IN',
+				),
+			),
+		);
+
+		$query = new WP_Query($args);
+		$post_ids = $query->posts;
+		if (!empty($post_ids)) {
+			foreach ($post_ids as $post_id) {
+				$this.$this->excluir( $post_id );
+			}
+		}
+		wp_reset_postdata();
+
+	}
 	public function importa_imoveis( $imoveis ) {
 		if ( ! post_type_exists( 'imovel' ) ) {
 			wp_send_json_error( ['message' => 'Post Type Imóvel não existe!.'] );
@@ -65,6 +93,26 @@ class Pinedu_Imovel_Importa_Imovel {
 		$importa_fotos->salvar_fotografias();
 
 		return $post_id;
+	}
+	private function excluir( $post_id ) {
+		$post = get_post($post_id);
+		if (!is_null($post)) {
+			return false;
+		}
+
+		$fotografias_post = get_post_meta( $post_id, 'fotografias', false );
+
+		$importa_taxonomias = new Pinedu_Imovel_Importa_Taxonomias( $post_id, array() );
+		$importa_taxonomias->excluir();
+
+		$importa_metadados = new Pinedu_Imovel_Importa_Metadados( $post_id, array() );
+		$importa_metadados->excluir( );
+
+		$importa_fotos = new Pinedu_Imovel_Importa_Foto( $post_id, array() );
+		$importa_fotos->exclui_imagem_destaque( );
+		$importa_fotos->excluir_fotografias( $fotografias_post );
+
+		wp_delete_post($post_id, true);
 	}
 	private function atualizar( $post_id, $imovel ) {
 		$post_data = array( 
@@ -147,6 +195,9 @@ class Pinedu_Imovel_Importa_Metadados {
 	}
 	public function salvar( ) {
 		$this->salvar_metadados_imovel( );
+	}
+	public function excluir( ) {
+		$this->apagar_metadados_imovel( );
 	}
 	public function atualizar( ) {
 		$this->apagar_metadados_imovel( );
@@ -273,6 +324,9 @@ class Pinedu_Imovel_Importa_Taxonomias {
 	public function __construct( $post_id, $imovel ) {
 		$this->imovel = $imovel;
 		$this->post_id = $post_id;
+	}
+	public function excluir( ) {
+		$this->remove_post_taxonomias( );
 	}
 	public function salvar( ) {
 		//

@@ -1,7 +1,6 @@
 <?php
 class Pinedu_Imovel_Importar_Imoveis extends Pinedu_Importa_Libs {
 	const ENDPOINT = '/pndWordpress/api/imoveis';
-	const TOKEN = '';
 	const IMOVEIS_POR_BLOCO = 50;
 	private $imoveis_importados = 0;
 	private $ultima_atualizacao;
@@ -73,15 +72,20 @@ class Pinedu_Imovel_Importar_Imoveis extends Pinedu_Importa_Libs {
 				if (!$data) {
 					break;
 				}
+				if ( isset( $data[ 'token' ] ) ) {
+					$this->token = $data[ 'token' ];
+				}
 				$pagination = $data['pagination'];
 				$returned = (int)$pagination['returned'];
-				$total    = (int)$pagination['total'];
+				$total = (int)$pagination['total'];
 				$offset += $returned;
 				$this->imoveis_importados = ($this->imoveis_importados + $returned);
 				/* Invoca importacao */
 				$imoveis_importar->importa_imoveis( $data['imoveis'] );
-				if ( isset( $data[ 'token' ] ) ) {
-					$this->token = $data[ 'token' ];
+
+				$excluidos = $data['imoveis'];
+				if ( $excluidos && !empty( $excluidos ) ) {
+					$imoveis_importar->trata_excluidos( $excluidos );
 				}
 			} while ($offset < $total);
 			$this->ultima_atualizacao = new DateTime( 'now', new DateTimeZone( wp_timezone_string( ) ) );
@@ -100,13 +104,15 @@ class Pinedu_Imovel_Importar_Imoveis extends Pinedu_Importa_Libs {
 	}
 	private function call_remote_server( $url, $max = 0, $offset = 0, $clicados = array(), $ultima_atualizacao = null, $forcar = false ) {
 		$options = get_option('pinedu_imovel_options', []);
+		$token = $options['token'] ?? '';
 		$headers = [
 			'timeout' => ( 60 * 5 )
 			, 'headers' => [
 				'Content-Type' => 'application/json'
-				, 'Authorization' => 'Bearer ' . sanitize_text_field( $options['token'] )
+				, 'Authorization' => 'Bearer ' . sanitize_text_field( $token )
 			]
 			, 'sslverify' => true
+			//, 'blocking' => false
 		];
 		$args = [ 'max' => $max, 'offset' => $offset ];
 		$args['forcar'] = false;
