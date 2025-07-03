@@ -100,7 +100,7 @@ class Pinedu_Imovel_Importa_Empresa extends Pinedu_Foto_Util {
 		$obs = $empresa['marketing']?? $empresa['nome'];
 		$post_data = array(
 			'post_title' => sanitize_title( $empresa['p_codNome']?? $empresa['nome'] )
-			, 'post_content' => $obs
+			, 'post_content' => $obs??''
 			, 'post_status' => 'publish'
 			, 'post_type' => 'empresa'
 			, 'post_date' => current_time( 'mysql' )
@@ -117,9 +117,10 @@ class Pinedu_Imovel_Importa_Empresa extends Pinedu_Foto_Util {
 		$importa_fotos->salva_imagem_destaque();
 	}
 	public function atualizar( $post_id, $empresa ) {
+		$obs = $empresa['marketing']?? $empresa['nome'];
 		$post_data = array(
 			'post_title' => sanitize_title( $empresa['p_codNome'] )
-			, 'post_content' => $empresa['marketing']
+			, 'post_content' => $obs??''
 			, 'post_status' => 'publish'
 			, 'post_type' => 'empresa'
 			, 'ID' => $post_id

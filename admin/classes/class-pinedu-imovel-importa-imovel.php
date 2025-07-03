@@ -33,7 +33,7 @@ class Pinedu_Imovel_Importa_Imovel {
 		$post_ids = $query->posts;
 		if (!empty($post_ids)) {
 			foreach ($post_ids as $post_id) {
-				$this.$this->excluir( $post_id );
+				$this->excluir( $post_id );
 			}
 		}
 		wp_reset_postdata();
@@ -71,7 +71,7 @@ class Pinedu_Imovel_Importa_Imovel {
 	private function salvar( $imovel ) {
 		$post_data = array( 
 			'post_title' => $this->resolve_slug( $imovel )
-			, 'post_content' => $this->resolve_anuncio( $imovel )
+			, 'post_content' => $this->resolve_anuncio( $imovel )??''
 			, 'post_status' => 'publish'
 			, 'post_type' => 'imovel'
 			, 'post_date' => current_time( 'mysql' )
@@ -117,7 +117,7 @@ class Pinedu_Imovel_Importa_Imovel {
 	private function atualizar( $post_id, $imovel ) {
 		$post_data = array( 
 			'post_title'   => $this->resolve_slug( $imovel )
-			, 'post_content' => $this->resolve_anuncio( $imovel )
+			, 'post_content' => $this->resolve_anuncio( $imovel )??''
 			, 'post_status'  => 'publish'
 			, 'post_type'    => 'imovel'
 			, 'ID'           => $post_id
@@ -319,6 +319,7 @@ class Pinedu_Imovel_Importa_Metadados {
 	}
 }
 class Pinedu_Imovel_Importa_Taxonomias {
+	const TERMOS = ['contrato', 'cidade', 'regiao', 'bairro', 'tipo-imovel'];
 	private $imovel;
 	private $post_id;
 	public function __construct( $post_id, $imovel ) {

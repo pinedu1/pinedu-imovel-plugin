@@ -5,6 +5,7 @@ class Pinedu_Imovel_Importar_Imoveis extends Pinedu_Importa_Libs {
 	private $imoveis_importados = 0;
 	private $ultima_atualizacao;
 	private $token;
+	private $imoveis_excluidos = array();
 	public function __construct() {
 		require_once plugin_dir_path(__FILE__) . 'class-pinedu-imovel-importa-imovel.php';
 	}
@@ -75,6 +76,10 @@ class Pinedu_Imovel_Importar_Imoveis extends Pinedu_Importa_Libs {
 				if ( isset( $data[ 'token' ] ) ) {
 					$this->token = $data[ 'token' ];
 				}
+				if ( isset($data['excluidos']) && !empty( $data['excluidos'] ) ) {
+					$this->imoveis_excluidos = $data['excluidos'];
+				}
+
 				$pagination = $data['pagination'];
 				$returned = (int)$pagination['returned'];
 				$total = (int)$pagination['total'];
@@ -83,11 +88,11 @@ class Pinedu_Imovel_Importar_Imoveis extends Pinedu_Importa_Libs {
 				/* Invoca importacao */
 				$imoveis_importar->importa_imoveis( $data['imoveis'] );
 
-				$excluidos = $data['imoveis'];
-				if ( $excluidos && !empty( $excluidos ) ) {
-					$imoveis_importar->trata_excluidos( $excluidos );
-				}
 			} while ($offset < $total);
+			if ( isset( $this->imoveis_excluidos ) && !empty( $this->imoveis_excluidos ) ) {
+				$imoveis_importar->trata_excluidos( $this->imoveis_excluidos );
+			}
+
 			$this->ultima_atualizacao = new DateTime( 'now', new DateTimeZone( wp_timezone_string( ) ) );
 		} catch ( Exception $e ) {
 			error_log('Erro durante a importação de imóveis: ' . $e->getMessage());

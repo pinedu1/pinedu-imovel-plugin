@@ -97,7 +97,7 @@ class Pinedu_Imovel_Importa_Loja extends Pinedu_Foto_Util {
 		$obs = $loja['observacoes']??$loja['nome'];
 		$post_data = array(
 			'post_title' => sanitize_title( $loja['nome'] )
-			, 'post_content' => $obs
+			, 'post_content' => $obs??''
 			, 'post_status' => 'publish'
 			, 'post_type' => 'loja'
 			, 'post_date' => current_time( 'mysql' )
@@ -113,9 +113,10 @@ class Pinedu_Imovel_Importa_Loja extends Pinedu_Foto_Util {
 		$importa_fotos->salva_imagem_destaque();
 	}
 	public function atualizar( $post_id, $loja ) {
+		$obs = $loja['observacoes']??$loja['nome'];
 		$post_data = array(
 			'post_title' => sanitize_title( $loja['nome'] )
-			, 'post_content' => $loja['observacoes']
+			, 'post_content' => $obs??''
 			, 'post_status' => 'publish'
 			, 'post_type' => 'loja'
 			, 'ID' => $post_id
