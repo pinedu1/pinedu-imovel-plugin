@@ -7,16 +7,19 @@ class Pinedu_Imovel_Enviar_Cliente {
 	private $email;
 	private $cookie;
 	private $mensagem;
-
+	private $referencia;
 	public function setMensagem( $mensagem ): void {
 		$this->mensagem = $mensagem;
 	}
-	public function __construct( $nome, $telefone, $email, $mensagem, $cookie ) {
+	public function __construct( $nome, $telefone, $email, $mensagem, $cookie, $referencia = null ) {
 		$this->setNome( $nome );
 		$this->setTelefone( $telefone );
 		$this->setEmail( $email );
 		$this->setCookie( $cookie );
 		$this->setMensagem( $mensagem );
+		if ( $referencia ) {
+			$this->referencia = $referencia;
+		}
 	}
 	public function contato_cliente( ) {
 		$options = get_option( 'pinedu_imovel_options', [] );
@@ -34,6 +37,7 @@ class Pinedu_Imovel_Enviar_Cliente {
 					, 'email' => sanitize_text_field($this->email)
 					, 'cookie' => sanitize_text_field($this->cookie)
 					, 'mensagem' => sanitize_text_field($this->mensagem)
+					, 'referencia' => sanitize_text_field($this->referencia)
 				]
 			)
 			, 'headers' => [
