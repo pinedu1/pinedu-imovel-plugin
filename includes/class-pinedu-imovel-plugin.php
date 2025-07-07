@@ -101,6 +101,7 @@ class Pinedu_Imovel_Plugin {
 		require_once plugin_dir_path( __FILE__ ) . 'classes/Taxonomias.php';
 		require_once plugin_dir_path( __FILE__ ) . 'classes/PaginasIniciais.php';
 		require_once plugin_dir_path( __FILE__ ) . 'classes/MailConfig.php';
+		require_once plugin_dir_path( __FILE__ ) . 'classes/PrettyUrl.php';
 
 		/**
 		 * The class responsible for orchestrating the actions and filters of the
@@ -175,13 +176,16 @@ class Pinedu_Imovel_Plugin {
 	private function define_public_hooks() {
 
 		$plugin_public = new Pinedu_Imovel_Plugin_Public( $this->get_plugin_name(), $this->get_version() );
+		$pretty_url = new PrettyUrl( true );
+
 		$this->loader->add_action( 'phpmailer_init', $plugin_public, 'config_wp_mail', 0 );
 
 		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_styles', 5 );
 		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_scripts', 10 );
 
-		$this->loader->add_action( 'init', $plugin_public, 'register_posttypes', 5 );
-		$this->loader->add_action( 'init', $plugin_public, 'register_taxonomies', 10 );
+		$this->loader->add_action( 'init', $plugin_public, 'register_posttypes', 6 );
+		$this->loader->add_action( 'init', $plugin_public, 'register_taxonomies', 5 );
+		$this->loader->add_action( 'init', $pretty_url, 'do', 10 );
 
 		$this->loader->add_action( 'pre_get_posts', $plugin_public, 'register_search_posttype_imovel' );
 

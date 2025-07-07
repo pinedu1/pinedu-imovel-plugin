@@ -122,6 +122,9 @@ class Pinedu_Imovel_Plugin_Public {
 		$campoSort = 'vendaValor';
 		$direction = $direction ?? 'DESC';
 		$type = 'meta_value';
+		if ( ( ($campoSort = 'vendaValor') || ($campoSort = 'locacaoValor') ) && ( empty( $contrato) || ( ( (int)$contrato ) <= 0 ) ) ) {
+			return;
+		}
 		switch ( $sort ) {
 			case 'dataPreco':
 				$campoSort = 'vendaDataAtualizacao';
@@ -206,125 +209,78 @@ class Pinedu_Imovel_Plugin_Public {
 		$query->set( 'meta_key', $campoSort );
 		$query->set( 'orderby', $type );
 		$query->set( 'order', $direction );
-
-		return array( $campoSort => $direction, 'type' => $type );
 	}
 	public function register_search_posttype_imovel( $query ) {
-		if ( $query->is_main_query( ) && ( isset( get_queried_object()->post_name ) && ( get_queried_object()->post_name == 'pesquisa' ) ) ) {
-			$sort = $_REQUEST[ 'sort' ]?? 'dataPreco';
-			$direction = $_REQUEST[ 'ordem' ]?? 'DESC';
-			$query->set('post_type', 'imovel');
-			$query->set('posts_per_page', intval( $_REQUEST[ 'max' ] ?? 12 ) );
-			$meta_query = [ 'key' => 'statusImovel', 'value' => 'D', 'compare' => '=' ];
-			$query->set('meta_query', $meta_query);
-			$contrato = $this->get_request_param( 'contrato' );
-			if ( empty( $contrato ) || ((int)$contrato) <= 0 ) {
-				$options = get_option('pinedu_imovel_options');
-				$contrato = $options['contrato'];
-			}
-			if ( !empty( $contrato ) && ((int)$contrato) > 0 ) {
-				$t = array(
-					'taxonomy' => 'contrato'
-					, 'field' => 'slug'
-					, 'terms'	=> array((string)$contrato)
-				);
-				$tax_query[] = $t;
-			}
-			$this->ordenar_pesquisa( $query, $contrato, $sort, $direction );
-			//$query->set( 'orderby', $this->ordenar_pesquisa( $query, $contrato, $sort, $direction ) );
-		}
-		if ( $query->is_main_query( ) && !empty( $this->get_request_param( 'tipo_pesquisa_submit' ) ) ) {
-			if ( $this->get_request_param( 'tipo_pesquisa_submit' ) == 'imovel' ) {
-				$sort = $this->get_request_param( 'sort' )?? 'dataPreco';
-				$direction = $this->get_request_param( 'ordem' )?? 'DESC';
-				$query->set('post_type', 'imovel');
-				$query->set('posts_per_page', intval( $this->get_request_param( 'max' ) ?? 12 ) );
-				$meta_query = [ 'key' => 'statusImovel', 'value' => 'D', 'compare' => '=' ];
-				$query->set('meta_query', $meta_query);
-				$tax_query = array(
-					'relation' => 'AND',
-				);
-				$contrato = $this->get_request_param( 'contrato' );
-				if ( !empty( $contrato ) && ((int)$contrato) > 0 ) {
-					$t = array(
-						'taxonomy' => 'contrato'
-						, 'field' => 'slug'
-						, 'terms'	=> array((string)$contrato)
-					);
-					$tax_query[] = $t;
-				}
-				$tipo_imovel = $this->get_request_param( 'tipo-imovel' );
-				if ( !empty( $tipo_imovel ) && ((int)$tipo_imovel) > 0 ) {
-					$t = array(
-						'taxonomy' => 'tipo-imovel'
-						, 'field' => 'slug'
-						, 'terms'	=> array((string)$tipo_imovel)
-					);
-					$tax_query[] = $t;
-				}
-				$cidade = $this->get_request_param( 'cidade' );
-				if ( !empty( $cidade ) && ((int)$cidade) > 0 ) {
-					$t = array(
-						'taxonomy' => 'cidade'
-						, 'field' => 'slug'
-						, 'terms'	=> array((string)$cidade)
-					);
-					$tax_query[] = $t;
-				}
-				$regiao = $this->get_request_param( 'regiao' );
-				if ( !empty( $regiao ) && ((int)$regiao) > 0 ) {
-					$t = array(
-						'taxonomy' => 'regiao'
-						, 'field' => 'slug'
-						, 'terms'	=> array((string)$regiao)
-					);
-					$tax_query[] = $t;
-				}
-				$query->set('tax_query', $tax_query);
+		if ( $query->is_main_query( ) ) {
+			if ( !empty( $this->get_request_param( 'tipo_pesquisa_submit' ) ) ) {
+				if ( $this->get_request_param( 'tipo_pesquisa_submit' ) == 'imovel' ) {
+					$sort = $this->get_request_param( 'sort' ) ?? 'dataPreco';
+					$direction = $this->get_request_param( 'ordem' ) ?? 'DESC';
+					$query->set( 'post_type', 'imovel' );
+					$query->set( 'posts_per_page', 12 );
+					$max = (int)$this->get_request_param( 'max' );
+					if ( $max > 0 ) {
+						$query->set( 'posts_per_page', $max );
+					}
+					$meta_query = [ 'key' => 'statusImovel', 'value' => 'D', 'compare' => '=' ];
+					$query->set( 'meta_query', $meta_query );
+					$tax_query = array( 'relation' => 'AND', );
+					$contrato = $this->get_request_param( 'contrato' );
+					if ( !empty( $contrato ) && ( (int)$contrato ) > 0 ) {
+						$t = array( 'taxonomy' => 'contrato', 'field' => 'slug', 'terms' => array( (string)$contrato ) );
+						$tax_query[] = $t;
+					}
+					$tipo_imovel = $this->get_request_param( 'tipo-imovel' );
+					if ( !empty( $tipo_imovel ) && ( (int)$tipo_imovel ) > 0 ) {
+						$t = array( 'taxonomy' => 'tipo-imovel', 'field' => 'slug', 'terms' => array( (string)$tipo_imovel ) );
+						$tax_query[] = $t;
+					}
+					$cidade = $this->get_request_param( 'cidade' );
+					if ( !empty( $cidade ) && ( (int)$cidade ) > 0 ) {
+						$t = array( 'taxonomy' => 'cidade', 'field' => 'slug', 'terms' => array( (string)$cidade ) );
+						$tax_query[] = $t;
+					}
+					$regiao = $this->get_request_param( 'regiao' );
+					if ( !empty( $regiao ) && ( (int)$regiao ) > 0 ) {
+						$t = array( 'taxonomy' => 'regiao', 'field' => 'slug', 'terms' => array( (string)$regiao ) );
+						$tax_query[] = $t;
+					}
+					$query->set( 'tax_query', $tax_query );
 
-				$valor_inicial = $this->get_request_param( 'valor-inicial' );
-				if ( ( empty( $valor_inicial ) || ((int)$valor_inicial) <= 0 ) ) {
-					$valor_inicial = 0;
-				}
-				$valor_final = $this->get_request_param( 'valor-final' );
-				if (!empty($contrato) && ((int)$contrato) > 0) {
-					switch ( $contrato ) {
-						case 1:
-							$propValor = 'vendaValor';
-							break;
-						case 2:
-							$propValor = 'locacaoValor';
-							break;
-						case 3:
-							$propValor = 'lancamentoValor';
-							break;
+					$valor_inicial = $this->get_request_param( 'valor-inicial' );
+					if ( ( empty( $valor_inicial ) || ( (int)$valor_inicial ) <= 0 ) ) {
+						$valor_inicial = 0;
 					}
-					if ( ( !empty( $valor_final ) && ((int)$valor_final) > 0 ) ) {
-						$meta_query = array(
-							'relation' => 'AND'
-							, array(
-								'key' => $propValor && ((int)$contrato) > 0
-								, 'value' => array((float)$valor_inicial, (float)$valor_final)
-								, 'type' => 'numeric'
-								, 'compare' => 'BETWEEN'
-							)
-						);
-						$query->set('meta_query', $meta_query);
+					$valor_final = $this->get_request_param( 'valor-final' );
+					if ( !empty( $contrato ) && ( (int)$contrato ) > 0 ) {
+						switch ( $contrato ) {
+							case 1:
+								$propValor = 'vendaValor';
+								break;
+							case 2:
+								$propValor = 'locacaoValor';
+								break;
+							case 3:
+								$propValor = 'lancamentoValor';
+								break;
+						}
+						if ( ( !empty( $valor_final ) && ( (int)$valor_final ) > 0 ) ) {
+							$meta_query = array( 'relation' => 'AND', array( 'key' => $propValor && ( (int)$contrato ) > 0, 'value' => array( (float)$valor_inicial, (float)$valor_final ), 'type' => 'numeric', 'compare' => 'BETWEEN' ) );
+							$query->set( 'meta_query', $meta_query );
+						}
 					}
+					$this->ordenar_pesquisa( $query, $contrato, $sort, $direction );
+				} else if ( $this->get_request_param( 'tipo_pesquisa_submit' ) == 'consulta' ) {
+					$referencia = $this->get_request_param( 'referencia' );
+					$query->set( 'post_type', 'imovel' );
+					$query->set( 'posts_per_page', 1 );
+					$meta_query = array( 'relation' => 'AND', array( 'key' => 'statusImovel', 'value' => 'D', 'compare' => '=' ), array( 'key' => 'referencia', 'value' => $referencia, 'compare' => '=' ) );
+					$query->set( 'meta_query', $meta_query );
 				}
-				$ordenacao = $this->ordenar_pesquisa( $query, $contrato, $sort, $direction );
-				//$query->set( 'orderby', $ordenacao );
-			}
-			if ( $this->get_request_param( 'tipo_pesquisa_submit' ) == 'consulta' ) {
-				$referencia = $this->get_request_param( 'referencia' );
-				$query->set('post_type', 'imovel');
-				$query->set('posts_per_page', 1);
-				$meta_query = array(
-					'relation' => 'AND'
-					, array('key' => 'statusImovel', 'value' => 'D', 'compare' => '=')
-					, array('key' => 'referencia', 'value' => $referencia, 'compare' => '=')
-				);
-				$query->set('meta_query', $meta_query);
+			} else {
+				/**
+				 * Não pode por nada aqui
+				 */
 			}
 		}
 	}

@@ -48,7 +48,8 @@ class Imovel implements PosttypeInterface {
 			, 'map_meta_cap' => true
 			, 'menu_position' => 20
 			, 'publicly_queryable' => true
-			, 'rewrite' => array('slug' => 'imoveis')
+			, 'rewrite' => array('slug' => 'imoveis', 'with_front' => false)
+			, 'taxonomies' => array( 'contrato', 'cidade', 'regiao', 'bairro', 'tipo-imovel' )
 			, 'menu_icon' => 'dashicons-store'
 		);
 		register_post_type( 'imovel', $args );

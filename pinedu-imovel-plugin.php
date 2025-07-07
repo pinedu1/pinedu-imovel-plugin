@@ -29,7 +29,7 @@
 if ( ! defined( 'WPINC' ) ) {
 	die;
 }
-
+define( 'PINEDU_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 /**
  * Currently plugin version.
  * Start at version 1.0.0 and use SemVer - https://semver.org
@@ -253,7 +253,6 @@ function get_tipo_dependencias_imovel( $post_id ) {
 	return $dependencias;
 }
 function formata_valor($valor, $decimais = 0, $moeda = ''): string {
-	// Converte para float se for string numérica
 	$valor = is_numeric($valor) ? (float)$valor : 0;
 
 	$valor_formatado = '';

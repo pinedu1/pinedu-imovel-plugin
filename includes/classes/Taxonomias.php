@@ -37,7 +37,7 @@ class Contrato implements TaxonomiaInterface {
 
 		$args = array(
 			'labels' => $labels
-			, 'public' => false
+			, 'public' => true
 			, 'show_ui' => true
 			, 'show_in_nav_menus' => false
 			, 'show_admin_column' => true
@@ -47,10 +47,9 @@ class Contrato implements TaxonomiaInterface {
 			, 'query_var' => true
 			, 'pll_translatable' => true
 			, 'show_in_rest' => true
-			, 'rewrite' => array( 'slug' => 'contrato' )
+			, 'rewrite' => array( 'slug' => 'contrato', 'hierarchical' => true, 'with_front' => false )
 			, 'menu_icon' => 'dashicons-sticky'
 		);
-
 		register_taxonomy( 'contrato', array( 'imovel' ), $args );
 	}
 	public function desregistrar() {
@@ -88,7 +87,7 @@ class TipoImovel implements TaxonomiaInterface {
 			, 'query_var' => true
 			, 'pll_translatable' => true
 			, 'show_ui' => true
-			, 'rewrite' => array( 'slug' => 'tipo-imovel' )
+			, 'rewrite' => array( 'slug' => 'tipo-imovel', 'hierarchical' => true, 'with_front' => false )
 		);
 		register_taxonomy( 'tipo-imovel', array( 'imovel' ), $args );
 	}
@@ -119,7 +118,7 @@ class Cidade implements TaxonomiaInterface {
 
 		$args = array(
 			'labels' => $labels
-			, 'public' => false
+			, 'public' => true
 			, 'show_ui' => true
 			, 'show_in_nav_menus' => false
 			, 'show_admin_column' => true
@@ -128,7 +127,7 @@ class Cidade implements TaxonomiaInterface {
 			, 'show_in_tag_cloud' => true
 			, 'query_var' => true
 			, 'pll_translatable' => true
-			, 'rewrite' => array( 'slug' => 'cidade' )
+			, 'rewrite' => array( 'slug' => 'cidade', 'hierarchical' => true, 'with_front' => false )
 		);
 		register_taxonomy( 'cidade', array( 'imovel' ), $args );
 	}
@@ -159,7 +158,7 @@ class Regiao implements TaxonomiaInterface {
 
 		$args = [
 			'labels' => $labels
-			, 'public' => false
+			, 'public' => true
 			, 'show_ui' => true
 			, 'show_in_nav_menus' => false
 			, 'show_admin_column' => true
@@ -168,7 +167,7 @@ class Regiao implements TaxonomiaInterface {
 			, 'show_in_tag_cloud' => true
 			, 'query_var' => true
 			, 'pll_translatable' => true
-			, 'rewrite' => array( 'slug' => 'regiao' )
+			, 'rewrite' => array( 'slug' => 'regiao', 'hierarchical' => true, 'with_front' => false )
 		];
 		register_taxonomy( 'regiao', array( 'imovel' ), $args );
 	}
@@ -199,7 +198,7 @@ class Bairro implements TaxonomiaInterface {
 
 		$args = array(
 			'labels' => $labels
-			, 'public' => false
+			, 'public' => true
 			, 'show_ui' => true
 			, 'show_in_nav_menus' => false
 			, 'show_admin_column' => true
@@ -238,7 +237,7 @@ class Captador implements TaxonomiaInterface {
 
 		$args = array(
 			'labels' => $labels
-			, 'public' => false
+			, 'public' => true
 			, 'show_ui' => true
 			, 'show_in_nav_menus' => false
 			, 'show_admin_column' => true

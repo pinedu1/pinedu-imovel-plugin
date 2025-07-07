@@ -19,6 +19,7 @@
 			require_once plugin_dir_path( __FILE__ ) . 'class-pinedu-imovel-importa-cidade.php';
 			require_once plugin_dir_path( __FILE__ ) . 'class-pinedu-imovel-importa-faixa-valor.php';
 			require_once plugin_dir_path( __FILE__ ) . 'class-pinedu-imovel-importa-tipo-dependencia.php';
+			require_once PINEDU_PLUGIN_DIR . '/includes/classes/PrettyUrl.php';
 
 			$this->empresa = new Pinedu_Imovel_Importa_Empresa( );
 			$this->loja = new Pinedu_Imovel_Importa_Loja( );
@@ -75,6 +76,8 @@
 					$this->importa_faixa_valor( $data );
 					// Tipo de Dependencia
 					$this->importa_tipo_dependencia( $data );
+					// Faz o cache de Pretty Url
+					$this->cria_url_cache();
 				} else {
 					wp_send_json_error( [
 						'message' => $data['message'] ?? 'Formato do arquivo inválido ( Básicos )!'
@@ -184,5 +187,10 @@
 			}
 			$tipo_dependencias = $data['tipoDependencias'];
 			$this->tipo_dependencia->importa( $tipo_dependencias );
+		}
+
+		private function cria_url_cache() {
+			$pretty_urls = new PrettyUrl( true );
+			$pretty_urls->do();
 		}
 	}
