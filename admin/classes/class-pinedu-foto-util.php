@@ -1,4 +1,5 @@
 <?php
+require_once plugin_dir_path(__FILE__) . 'class-pinedu-foto-util.php';
 class Pinedu_Imovel_Importa_Foto_Loja extends Pinedu_Foto_Util {
 	private $loja;
 	private $post_id;
@@ -120,6 +121,7 @@ class Pinedu_Imovel_Importa_Foto extends Pinedu_Foto_Util {
 		$imagem_destaque = $this->resolve_imagem_destaque( );
 		if ( $imagem_destaque && ! empty( $imagem_destaque ) ) {
 			$this->salva_post_imagem( $imagem_destaque );
+			//error_log("(atualizar7)PostId:" . $this->post_id);
 		}
 	}
 	private function resolve_imagem_destaque( ) {
@@ -313,24 +315,9 @@ abstract class Pinedu_Foto_Util {
 			$file_name = sanitize_file_name( $file_name );
 		}
 		$temp_file = trailingslashit( $temp_dir ) . wp_unique_filename( $temp_dir, $file_name );
-		$options = get_option('pinedu_imovel_options', []);
-		$token = $options['token'] ?? '';
-		$headers = [
-			'timeout' => ( 60 * 5 )
-			, 'headers' => [
-				'Content-Type' => 'application/json'
-				, 'Authorization' => 'Bearer ' . sanitize_text_field( $token )
-			]
-			, 'sslverify' => true
-			, 'timeout' => 300
-			, 'stream' => true
-			, 'filename' => $temp_file
-		];
-		$args = [ 'username' => $options['token_username'], 'password' => $options['token_password'] ];
-		$my_url = $this->monta_get_url( $url, $args );
-		$response = wp_remote_get( $my_url, $headers );
+		$response = PineduRequest::getFile( $url, $temp_file, [] );
 		if ( is_wp_error( $response ) ) {
-			@unlink( $temp_file ); // Remove o arquivo temporário se existir
+			@unlink( $temp_file );
 			return false;
 		}
 		if ( wp_remote_retrieve_response_code( $response ) != 200 ) {

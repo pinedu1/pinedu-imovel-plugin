@@ -1,4 +1,6 @@
 <?php
+require_once plugin_dir_path(__FILE__) . 'PineduRequest.php';
+
 class Pinedu_Imovel_Importar_Imoveis extends Pinedu_Importa_Libs {
 	const ENDPOINT = '/pndPortal/wordpress/imoveis';
 	const IMOVEIS_POR_BLOCO = 50;
@@ -65,11 +67,11 @@ class Pinedu_Imovel_Importar_Imoveis extends Pinedu_Importa_Libs {
 
 			$imoveis_importar = new Pinedu_Imovel_Importa_Imovel();
 			do {
+				$clicks = [];
 				if ( $offset <= 0 ) {
-					$data = $this->call_remote_server( $fullUrl, $max, $offset, $this->imoveis_clicks(), $ultima_atualizacao, $forcar );
-				} else {
-					$data = $this->call_remote_server( $fullUrl, $max, $offset, [], $ultima_atualizacao, $forcar );
+					$clicks = $this->imoveis_clicks();
 				}
+				$data = $this->call_remote_server( $fullUrl, $max, $offset, $clicks, $ultima_atualizacao, $forcar );
 				if (!$data) {
 					break;
 				}
@@ -79,7 +81,6 @@ class Pinedu_Imovel_Importar_Imoveis extends Pinedu_Importa_Libs {
 				if ( isset($data['excluidos']) && !empty( $data['excluidos'] ) ) {
 					$this->imoveis_excluidos = $data['excluidos'];
 				}
-
 				$pagination = $data['pagination'];
 				$returned = (int)$pagination['returned'];
 				$total = (int)$pagination['total'];
@@ -87,7 +88,6 @@ class Pinedu_Imovel_Importar_Imoveis extends Pinedu_Importa_Libs {
 				$this->imoveis_importados = ($this->imoveis_importados + $returned);
 				/* Invoca importacao */
 				$imoveis_importar->importa_imoveis( $data['imoveis'] );
-
 			} while ($offset < $total);
 			if ( isset( $this->imoveis_excluidos ) && !empty( $this->imoveis_excluidos ) ) {
 				$imoveis_importar->trata_excluidos( $this->imoveis_excluidos );
@@ -108,20 +108,9 @@ class Pinedu_Imovel_Importar_Imoveis extends Pinedu_Importa_Libs {
 		}
 	}
 	private function call_remote_server( $url, $max = 0, $offset = 0, $clicados = array(), $ultima_atualizacao = null, $forcar = false ) {
-		$options = get_option('pinedu_imovel_options', []);
-		$token = $options['token'] ?? '';
-		$headers = [
-			'timeout' => ( 60 * 5 )
-			, 'headers' => [
-				'Content-Type' => 'application/json'
-				, 'Authorization' => 'Bearer ' . sanitize_text_field( $token )
-			]
-			, 'sslverify' => true
-			//, 'blocking' => false
-		];
-		$args = [ 'max' => $max, 'offset' => $offset,'username' => $options['token_username'], 'password' => $options['token_password'] ];
+		$args = [ 'max' => $max, 'offset' => $offset ];
 		$args['forcar'] = false;
-		if ( $forcar ) {
+		if ( $forcar === true ) {
 			$args['forcar'] = true;
 		}
 		if ( $clicados ) {
@@ -130,21 +119,15 @@ class Pinedu_Imovel_Importar_Imoveis extends Pinedu_Importa_Libs {
 		if ( $ultima_atualizacao ) {
 			$args['ultimaAtualizacao'] = formataData_iso8601( $ultima_atualizacao );
 		}
-		$my_url = $this->monta_get_url( $url, $args );
-		$response = wp_remote_get( $my_url, $headers );
-		if ( is_wp_error( $response ) ) {
-			wp_send_json_error( ['message' => 'Erro de conexão com o servidor'] );
-		}
-		$body = wp_remote_retrieve_body( $response );
-		$data = json_decode( $body, true );
-		if ( isset( $data[ 'success' ] ) && $data[ 'success' ] === true ) {
-			return $data;
-		} else {
-			wp_send_json_error( [
-				'message' => $data[ 'message' ] ?? 'Formato do arquivo inválido (Imóveis)!'
-			] );
+		$data = PineduRequest::get( $url, $args );
+
+		if ( ((bool)$data[ 'success' ]) != true ) {
+			error_log( "Imoveis success false ");
+			wp_send_json_error( ['message' => $data[ 'message' ] ?? 'Formato do arquivo inválido (Imóveis)!'] );
 			return null;
 		}
+		error_log( "Imoveis success true ");
+		return $data;
 	}
 }
 class Pinedu_Importa_Libs {
@@ -152,3 +135,18 @@ class Pinedu_Importa_Libs {
 		return add_query_arg( $args, $url );
 	}
 }
+
+/*
+		if ( defined('WP_DEBUG') && WP_DEBUG ) {
+			error_log( 'Teste de WP_DEBUG_LOG: Esta mensagem deve ir para o arquivo de debug do WordPress. Hora: ' . date('Y-m-d H:i:s') );
+
+			// Exemplo de log de uma variável
+			$minhaVariavel = ['chave' => 'valor', 'id' => 123];
+			error_log( 'Teste de WP_DEBUG_LOG: Minha variável: ' . print_r($minhaVariavel, true) );
+		} else {
+			error_log( 'WP_DEBUG não está definido ou é falso. O debug do WordPress não está ativo.' );
+		}
+
+
+
+*/

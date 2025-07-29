@@ -2,7 +2,7 @@
 
 	class MailConfig {
 		public static function config_options_mail( ) {
-			$options = get_option( 'pinedu_imovel_options' );
+			$options = get_option( 'pinedu_imovel_options', []);
 			$options['url_servidor'] = 'https://penta.intranet.pndimo.com.br';
 			$options['nome_remetente'] = 'Pinedu Software';
 			$options['email_remetente'] = 'eduardo@pinedu.com.br';
@@ -21,7 +21,7 @@
 			update_option( 'pinedu_imovel_options', $options );
 		}
 		public static function config_wp_mail( $phpmailer ) {
-			$options = get_option( 'pinedu_imovel_options' );
+			$options = get_option( 'pinedu_imovel_options', [] );
 			$phpmailer->IsSMTP( );
 			$phpmailer->Host = $options[ 'servidor_smtp' ];
 			$phpmailer->Port = $options[ 'porta_smtp' ];

@@ -2,6 +2,7 @@
 
 abstract class Pinedu_Importa_Taxonomia_Base {
 	protected function salva( $key, $nome, $taxonomy ) {
+		//error_log('salva: ' . $key . ' - ' . $nome . ' - ' .$taxonomy );
 		$existing_terms = get_terms( [
 			'taxonomy' => $taxonomy,
 			'hide_empty' => false,
@@ -12,14 +13,11 @@ abstract class Pinedu_Importa_Taxonomia_Base {
 			//$term = $term->term_id;
 			// Atualiza o termo
 			$term = wp_update_term( $term->term_id, $taxonomy, [
-				'name' => $nome,
-				'slug' => $key,
-				'description' => $nome . '(s)'
+				'name' => $nome, 'slug' => $key, 'description' => $nome . '(s)'
 			] );
 		} else {
 			$term = wp_insert_term( $nome, $taxonomy, [
-				'slug' => $key,
-				'description' => $nome . '(s)'
+				'name' => $nome, 'slug' => $key, 'description' => $nome . '(s)'
 			] );
 		}
 		return $term;

@@ -137,7 +137,7 @@ class Pinedu_Imovel_Plugin_Admin {
 		add_settings_field( 'email_contato', 'Email Contato', [$this, 'exibir_email_contato'], 'pinedu-imovel', 'secao_email' );
 	}
 	public function exibir_secao_integracao( ) {
-		$options = get_option( 'pinedu_imovel_options' );
+		$options = get_option( 'pinedu_imovel_options', [] );
 		$ultima_atualizacao = !empty( $options['ultima_atualizacao'] ) ? $options['ultima_atualizacao']: null;
 		$imoveis_importados = $options['imoveis_importados'] ?? 0;
 		$tempo_utilizado = $options['tempo_utilizado'] ?? '';
@@ -164,62 +164,62 @@ class Pinedu_Imovel_Plugin_Admin {
 		<?php
 	}
 	public function exibir_url_servidor( ) {
-		$options = get_option( 'pinedu_imovel_options' );
+		$options = get_option( 'pinedu_imovel_options', [] );
 		echo '<input type="text" placeholder="Url do Servidor de Imóveis" id="url_servidor" name="pinedu_imovel_options[url_servidor]" value="'.esc_attr( $options['url_servidor']??'' ).'" required>';
 	}
 	public function exibir_tempo_atualizacao( ) {
-		$options = get_option( 'pinedu_imovel_options' );
+		$options = get_option( 'pinedu_imovel_options', [] );
 		echo '<input type="number" min="1" max="24" name="pinedu_imovel_options[tempo_atualizacao]" value="'.( $options['tempo_atualizacao']??1 ).'">';
 	}
 	public function exibir_token_bearer( ) {
-		$options = get_option( 'pinedu_imovel_options' );
+		$options = get_option( 'pinedu_imovel_options', [] );
 		echo '<textarea placeholder="Token" id="token" name="pinedu_imovel_options[token]" rows="6" cols="50">'.esc_textarea( $options['token']??'' ).'</textarea>';
 	}
 	public function exibir_token_username( ) {
-		$options = get_option( 'pinedu_imovel_options' );
+		$options = get_option( 'pinedu_imovel_options', [] );
 		echo '<input type="text" placeholder="Usuário" name="pinedu_imovel_options[token_username]" value="'.esc_attr( $options['token_username']??'' ).'" required>';
 	}
 	public function exibir_token_password( ) {
-		$options = get_option( 'pinedu_imovel_options' );
+		$options = get_option( 'pinedu_imovel_options', [] );
 		echo '<input type="password" placeholder="Senha" name="pinedu_imovel_options[token_password]" value="'.esc_attr( $options['token_password']??'' ).'" required>';
 	}
 
 
 	public function exibir_chave_google_api( ) {
-		$options = get_option( 'pinedu_imovel_options' );
+		$options = get_option( 'pinedu_imovel_options', [] );
 		echo '<input type="text" placeholder="Chave do Google Api" name="pinedu_imovel_options[chave_google_api]" value="'.esc_attr( $options['chave_google_api']??'' ).'">';
 	}
 	public function exibir_secao_email( ) {  }
 	public function exibir_nome_remetente( ) {
-		$options = get_option( 'pinedu_imovel_options' );
+		$options = get_option( 'pinedu_imovel_options', [] );
 		echo '<input type="text" placeholder="Nome Remetente" name="pinedu_imovel_options[nome_remetente]" value="'.esc_attr( $options['nome_remetente']??'' ).'" required>';
 	}
 	public function exibir_email_remetente( ) {
-		$options = get_option( 'pinedu_imovel_options' );
+		$options = get_option( 'pinedu_imovel_options', [] );
 		echo '<input type="email" placeholder="Email Remetente" name="pinedu_imovel_options[email_remetente]" value="'.esc_attr( $options['email_remetente']??'' ).'" required>';
 	}
 	public function exibir_email_contato( ) {
-		$options = get_option( 'pinedu_imovel_options' );
+		$options = get_option( 'pinedu_imovel_options', [] );
 		echo '<input type="email" placeholder="Email Contato" name="pinedu_imovel_options[email_contato]" value="'.esc_attr( $options['email_contato']??'' ).'" required>';
 	}
 	public function exibir_nome_usuario( ) {
-		$options = get_option( 'pinedu_imovel_options' );
+		$options = get_option( 'pinedu_imovel_options', [] );
 		echo '<input type="text" placeholder="Usuário" name="pinedu_imovel_options[usuario]" value="'.esc_attr( $options['usuario']??'' ).'" required>';
 	}
 	public function exibir_senha_usuario( ) {
-		$options = get_option( 'pinedu_imovel_options' );
+		$options = get_option( 'pinedu_imovel_options', [] );
 		echo '<input type="password" placeholder="Senha" name="pinedu_imovel_options[password]" value="'.esc_attr( $options['password']??'' ).'" required>';
 	}
 	public function exibir_servidor_smtp( ) {
-		$options = get_option( 'pinedu_imovel_options' );
+		$options = get_option( 'pinedu_imovel_options', [] );
 		echo '<input type="text" placeholder="Servidor SMTP" name="pinedu_imovel_options[servidor_smtp]" value="'.esc_attr( $options['servidor_smtp']??'' ).'" required>';
 	}
 	public function exibir_porta_smtp( ) {
-		$options = get_option( 'pinedu_imovel_options' );
+		$options = get_option( 'pinedu_imovel_options', [] );
 		echo '<input type="number" min="0" max="65535" name="pinedu_imovel_options[porta_smtp]" value="'.( $options['porta_smtp']??587 ).'" required>';
 	}
 	public function exibir_tipo_seguranca( ) {
-		$options = get_option( 'pinedu_imovel_options' );
+		$options = get_option( 'pinedu_imovel_options', [] );
 		$tipo_seguranca = $options['tipo_seguranca'] ?? ''; // estava pegando 'porta_smtp' por engano
 		$opcoes = array( '' => 'Nenhum', 'ssl' => 'SSL', 'tls' => 'TLS' );
 		echo '<select name="pinedu_imovel_options[tipo_seguranca]">';
@@ -231,7 +231,7 @@ class Pinedu_Imovel_Plugin_Admin {
 		echo '<p class="description">Selecione o tipo de criptografia para conexão SMTP</p>';
 	}
 	public function exibir_requer_autenticacao( ) {
-		$options = get_option( 'pinedu_imovel_options' );
+		$options = get_option( 'pinedu_imovel_options', [] );
 
 		$requer_autenticacao = false;
         if ( isset( $options['requer_autenticacao'] ) ) {

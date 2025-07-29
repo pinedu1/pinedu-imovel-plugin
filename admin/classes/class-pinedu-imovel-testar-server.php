@@ -1,5 +1,5 @@
 <?php
-
+require_once plugin_dir_path(__FILE__) . 'PineduRequest.php';
 class Pinedu_Imovel_Testar_Server {
 	const ENDPOINT = '/pndPortal/wordpress/index';
 	public function __construct() {
@@ -12,7 +12,10 @@ class Pinedu_Imovel_Testar_Server {
 	 * @return false|mixed
 	 */
 	public static function testar_server( $url, $isHook = false ) {
-		$options = get_option('pinedu_imovel_options', []);
+		$fullUrl = trailingslashit($url) . ltrim(self::ENDPOINT, '/');
+		$result = PineduRequest::post( $fullUrl );
+		return $result;
+/*		$options = get_option('pinedu_imovel_options', []);
 		if (!filter_var($url, FILTER_VALIDATE_URL)) {
 			wp_send_json_error(['message' => 'URL inválida.']);
 			return false;
@@ -37,7 +40,7 @@ class Pinedu_Imovel_Testar_Server {
 		$body = wp_remote_retrieve_body($response);
 		$data = json_decode($body, true);
 
-		return $data;
+		return $data;*/
 	}
 	public function invoca_server( ) {
 		$url = $_POST['url_servidor'] ?? '';
