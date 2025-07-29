@@ -277,9 +277,9 @@ abstract class Pinedu_Foto_Util {
 		$wp_filetype = wp_check_filetype( $filename );
 		$attachment = array(
 			'post_mime_type' => $wp_filetype[ 'type' ]
-		, 'post_title' => sanitize_title( $image_title )
-		, 'post_content' => ''
-		, 'post_status' => 'inherit'
+			, 'post_title' => sanitize_title( $image_title )
+			, 'post_content' => ''
+			, 'post_status' => 'inherit'
 		);
 		// Insere o attachment no banco de dados
 		$attach_id = wp_insert_attachment( $attachment, $filename );
@@ -313,11 +313,22 @@ abstract class Pinedu_Foto_Util {
 			$file_name = sanitize_file_name( $file_name );
 		}
 		$temp_file = trailingslashit( $temp_dir ) . wp_unique_filename( $temp_dir, $file_name );
-		$response = wp_remote_get( $url, array(
-			'timeout' => 300,
-			'stream' => true,
-			'filename' => $temp_file
-		) );
+		$options = get_option('pinedu_imovel_options', []);
+		$token = $options['token'] ?? '';
+		$headers = [
+			'timeout' => ( 60 * 5 )
+			, 'headers' => [
+				'Content-Type' => 'application/json'
+				, 'Authorization' => 'Bearer ' . sanitize_text_field( $token )
+			]
+			, 'sslverify' => true
+			, 'timeout' => 300
+			, 'stream' => true
+			, 'filename' => $temp_file
+		];
+		$args = [ 'username' => $options['token_username'], 'password' => $options['token_password'] ];
+		$my_url = $this->monta_get_url( $url, $args );
+		$response = wp_remote_get( $my_url, $headers );
 		if ( is_wp_error( $response ) ) {
 			@unlink( $temp_file ); // Remove o arquivo temporário se existir
 			return false;

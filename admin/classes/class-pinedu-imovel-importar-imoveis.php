@@ -1,6 +1,6 @@
 <?php
 class Pinedu_Imovel_Importar_Imoveis extends Pinedu_Importa_Libs {
-	const ENDPOINT = '/pndWordpress/api/imoveis';
+	const ENDPOINT = '/pndPortal/wordpress/imoveis';
 	const IMOVEIS_POR_BLOCO = 50;
 	private $imoveis_importados = 0;
 	private $ultima_atualizacao;
@@ -10,7 +10,7 @@ class Pinedu_Imovel_Importar_Imoveis extends Pinedu_Importa_Libs {
 		require_once plugin_dir_path(__FILE__) . 'class-pinedu-imovel-importa-imovel.php';
 	}
 	public function getToken(): string {
-		return $this->token;
+		return $this->token??'';
 	}
 	public function getUltimaAtualizacao() {
 		return $this->ultima_atualizacao;
@@ -119,7 +119,7 @@ class Pinedu_Imovel_Importar_Imoveis extends Pinedu_Importa_Libs {
 			, 'sslverify' => true
 			//, 'blocking' => false
 		];
-		$args = [ 'max' => $max, 'offset' => $offset ];
+		$args = [ 'max' => $max, 'offset' => $offset,'username' => $options['token_username'], 'password' => $options['token_password'] ];
 		$args['forcar'] = false;
 		if ( $forcar ) {
 			$args['forcar'] = true;

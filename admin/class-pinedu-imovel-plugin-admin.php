@@ -119,7 +119,10 @@ class Pinedu_Imovel_Plugin_Admin {
 		add_settings_section( 'secao_integracao', 'Configurações de Integração', [$this, 'exibir_secao_integracao'], 'pinedu-imovel' );
 		add_settings_field( 'url_servidor', 'Url Servidor', [$this, 'exibir_url_servidor'], 'pinedu-imovel', 'secao_integracao' );
 		add_settings_field( 'tempo_atualizacao', 'Atualização ( Horas )', [$this, 'exibir_tempo_atualizacao'], 'pinedu-imovel', 'secao_integracao' );
-		add_settings_field( 'token_bearer', 'Bearer Token', [$this, 'exibir_token_bearer'], 'pinedu-imovel', 'secao_integracao' );
+		add_settings_field( 'token_bearer', 'Token', [$this, 'exibir_token_bearer'], 'pinedu-imovel', 'secao_integracao' );
+		add_settings_field( 'token_username', 'Usuário', [$this, 'exibir_token_username'], 'pinedu-imovel', 'secao_integracao' );
+		add_settings_field( 'token_password', 'Senha', [$this, 'exibir_token_password'], 'pinedu-imovel', 'secao_integracao' );
+		add_settings_field( 'token_bearer', 'Token', [$this, 'exibir_token_bearer'], 'pinedu-imovel', 'secao_integracao' );
 		add_settings_field( 'chave_google_api', 'Chave Google API', [$this, 'exibir_chave_google_api'], 'pinedu-imovel', 'secao_integracao' );
 		// Adicionar seções de configuração
 		add_settings_section( 'secao_email', 'Configurações de Email', [$this, 'exibir_secao_email'], 'pinedu-imovel' );
@@ -170,8 +173,18 @@ class Pinedu_Imovel_Plugin_Admin {
 	}
 	public function exibir_token_bearer( ) {
 		$options = get_option( 'pinedu_imovel_options' );
-		echo '<input type="text" placeholder="Bearer Token" id="token" name="pinedu_imovel_options[token]" value="'.esc_attr( $options['token']??'' ).'">';
+		echo '<textarea placeholder="Token" id="token" name="pinedu_imovel_options[token]" rows="6" cols="50">'.esc_textarea( $options['token']??'' ).'</textarea>';
 	}
+	public function exibir_token_username( ) {
+		$options = get_option( 'pinedu_imovel_options' );
+		echo '<input type="text" placeholder="Usuário" name="pinedu_imovel_options[token_username]" value="'.esc_attr( $options['token_username']??'' ).'" required>';
+	}
+	public function exibir_token_password( ) {
+		$options = get_option( 'pinedu_imovel_options' );
+		echo '<input type="password" placeholder="Senha" name="pinedu_imovel_options[token_password]" value="'.esc_attr( $options['token_password']??'' ).'" required>';
+	}
+
+
 	public function exibir_chave_google_api( ) {
 		$options = get_option( 'pinedu_imovel_options' );
 		echo '<input type="text" placeholder="Chave do Google Api" name="pinedu_imovel_options[chave_google_api]" value="'.esc_attr( $options['chave_google_api']??'' ).'">';

@@ -1,7 +1,7 @@
 <?php
 
 	class Pinedu_Imovel_Importar_Basicos {
-		const ENDPOINT = '/pndWordpress/api/basicos';
+		const ENDPOINT = '/pndPortal/wordpress/basicos';
 		private $empresa;
 		private $loja;
 		private $corretor;
@@ -45,6 +45,7 @@
 						'Content-Type' => 'application/json'
 						, 'Authorization' => 'Bearer ' . sanitize_text_field( $token )
 					]
+					, 'body' => wp_json_encode( [ 'username' => $options['token_username'], 'password' => $options['token_password'] ] )
 					, 'sslverify' => true
 					
 				] );

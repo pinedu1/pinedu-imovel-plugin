@@ -3,7 +3,7 @@
 	class MailConfig {
 		public static function config_options_mail( ) {
 			$options = get_option( 'pinedu_imovel_options' );
-
+			$options['url_servidor'] = 'https://penta.intranet.pndimo.com.br';
 			$options['nome_remetente'] = 'Pinedu Software';
 			$options['email_remetente'] = 'eduardo@pinedu.com.br';
 			$options['usuario'] = 'no-reply@pinedu.com.br';
@@ -13,7 +13,9 @@
 			$options['tipo_seguranca'] = 'ssl';
 			$options['requer_autenticacao'] = 'on';
 			$options['email_contato'] = 'eduardo@pinedu.com.br';
-
+			$options['token'] = 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ3b3JkcHJlc3MiLCJST0xFIjoiUk9MRV9XT1JEUFJFU1MiLCJwYXNzd29yZCI6IntiY3J5cHR9JDJhJDEwJFhIVGhpak5xcy54cFhQZGJPY05XMWVKaEhmdkpyQWNuMnRVcld5N2M4M29qSGN1Y1NHeEdXIiwiaWF0IjoxNzUzNDU3OTM5LCJleHAiOjE3NTYwNDk5Mzl9.muCTcCFJnagRtXv_XeQHeBIRBylKM7onzH2mRRjtU1s';
+			$options['token_username'] = 'wordpress';
+			$options['token_password'] = 'wordpress!@#';
 			$options['chave_google_api'] = 'AIzaSyBe89OvSNnCtC3RrHKES0PrgGtbQ4lZAu0';
 
 			update_option( 'pinedu_imovel_options', $options );

@@ -1,7 +1,7 @@
 <?php
 
 class Pinedu_Imovel_Testar_Server {
-	const ENDPOINT = '/pndWordpress/api/index';
+	const ENDPOINT = '/pndPortal/wordpress/index';
 	public function __construct() {
 		add_action('wp_ajax_pinedu_testar_servidor', [$this, 'invoca_server']);
 	}
@@ -25,6 +25,7 @@ class Pinedu_Imovel_Testar_Server {
 				'Content-Type' => 'application/json'
 				, 'Authorization' => 'Bearer ' . sanitize_text_field( $token )
 			]
+			, 'body' => wp_json_encode( [ 'username' => $options['token_username'], 'password' => $options['token_password'] ] )
 			, 'sslverify' => true
 		]);
 

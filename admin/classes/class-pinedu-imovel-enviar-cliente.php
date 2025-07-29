@@ -1,7 +1,7 @@
 <?php
 
 class Pinedu_Imovel_Enviar_Cliente {
-	const ENDPOINT = '/pndWordpress/api/contatoCliente';
+	const ENDPOINT = '/pndPortal/wordpress/contatoCliente';
 	private $nome;
 	private $telefone;
 	private $email;
@@ -38,6 +38,8 @@ class Pinedu_Imovel_Enviar_Cliente {
 					, 'cookie' => sanitize_text_field($this->cookie)
 					, 'mensagem' => sanitize_text_field($this->mensagem)
 					, 'referencia' => sanitize_text_field($this->referencia)
+					, 'username' => $options['token_username']
+					, 'password' => $options['token_password']
 				]
 			)
 			, 'headers' => [
