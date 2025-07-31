@@ -114,101 +114,115 @@ class Pinedu_Imovel_Plugin_Public {
 		PosttypeFactory::criar( 'Corretor' )->registrar( );
 		PosttypeFactory::criar( 'Imovel' )->registrar( );
 	}
+
 	// Função segura para obter parâmetros de qualquer método
 	function get_request_param($key, $default = '') {
 		return isset($_REQUEST[$key]) ? sanitize_text_field($_REQUEST[$key]) : $default;
 	}
 	private function ordenar_pesquisa( $query, $contrato, $sort, $direction ) {
-		$campoSort = 'vendaValor';
-		$direction = $direction ?? 'DESC';
-		$type = 'meta_value';
-		if ( ( ($campoSort = 'vendaValor') || ($campoSort = 'locacaoValor') ) && ( empty( $contrato) || ( ( (int)$contrato ) <= 0 ) ) ) {
-			return;
-		}
+		error_log( 'Contrato: ' . $contrato . ' Sort: ' . $sort . ' Direction: ' . $direction );
 		switch ( $sort ) {
 			case 'dataPreco':
-				$campoSort = 'vendaDataAtualizacao';
-				$type = 'meta_value_date';
-				switch ( $contrato ) {
-					case 1:
-						$campoSort = 'vendaDataAtualizacao';
-						break;
-					case 2:
-						$campoSort = 'locacaoDataAtualizacao';
-						break;
-					case 3:
-						$campoSort = 'lancamentoDataAtualizacao';
-						break;
-					default:
-						$campoSort = 'vendaDataAtualizacao';
-						break;
+				if ( ((int)$contrato) == 1 ) {
+					$query->set( 'meta_query', [
+							'venda_clause' => [ 'key' => 'vendaDataAtualizacao', 'type' => 'DATETIME', 'compare' => 'EXISTS' ]
+						]
+					);
+					$query->set('orderby', [ 'venda_clause' => $direction ]);
+				} else if ( ((int)$contrato) == 2 ) {
+					$query->set( 'meta_query', [
+							'locacao_clause' => [ 'key' => 'locacaoDataAtualizacao', 'type' => 'DATETIME', 'compare' => 'EXISTS' ]
+						]
+					);
+					$query->set('orderby', [ 'locacao_clause' => $direction ]);
+				} else {
+					$query->set( 'meta_query', [
+							'relation' => 'OR'
+							, 'venda_update_clause' => [ 'key' => 'vendaDataAtualizacao', 'type' => 'DATETIME', 'compare' => 'EXISTS' ]
+							, 'locacao_update_clause' => [ 'key' => 'locacaoDataAtualizacao', 'type' => 'DATETIME', 'compare' => 'EXISTS' ]
+						]
+					);
+					if ( $direction == 'ASC' ) {
+						$query->set('orderby', [ 'locacao_sort_clause' => $direction, 'venda_sort_clause' => 'ASC' ]);
+					} else {
+						$query->set('orderby', [ 'venda_sort_clause' => $direction, 'locacao_sort_clause' => 'DESC' ]);
+					}
 				}
 				break;
 			case 'valor':
-				$type = 'meta_value_num';
-				switch ( $contrato ) {
-					case 1:
-						$campoSort = 'vendaValor';
-						break;
-					case 2:
-						$campoSort = 'locacaoValor';
-						break;
-					case 3:
-						$campoSort = 'lancamentoValor';
-						break;
-					default:
-						$campoSort = 'vendaValor';
-						break;
+				if ( ((int)$contrato) == 1 ) {
+					$query->set('meta_key', 'vendaValor');
+					$query->set('orderby', 'meta_value_num');
+					$query->set('order', $direction);
+				} else if ( ((int)$contrato) == 2 ) {
+					$query->set('meta_key', 'locacaoValor');
+					$query->set('orderby', 'meta_value_num');
+					$query->set('order', $direction);
+				} else {
+					$query->set( 'meta_query', [ 'relation' => 'OR', 'venda_valor_clause' => [ 'key' => 'vendaValor', 'type' => 'FLOAT', 'compare' => 'EXISTS' ], 'locacao_valor_clause' => [ 'key' => 'locacaoValor', 'type' => 'FLOAT', 'compare' => 'EXISTS' ] ] );
+					if ( $direction == 'ASC' ) {
+						$query->set( 'orderby', [ 'locacao_valor_clause' => 'ASC', 'venda_valor_clause' => 'ASC' ] );
+					} else {
+						$query->set( 'orderby', [ 'venda_valor_clause' => 'DESC', 'locacao_valor_clause' => 'DESC' ] );
+					}
 				}
 				break;
 			case 'referencia':
-				$type = 'meta_value_num';
-				$campoSort = 'referencia';
+				$query->set('meta_key', 'referencia');
+				$query->set('orderby', 'meta_value_num');
+				$query->set('order', $direction);
 				break;
 			case 'cidade':
-				$type = 'meta_value';
-				$campoSort = 'cidade';
+				$query->set('meta_key', 'cidade');
+				$query->set('orderby', 'meta_value');
+				$query->set('order', $direction);
 				break;
 			case 'tipoimovel':
-				$type = 'meta_value';
-				$campoSort = 'tipoImovelNome';
+				$query->set('meta_key', 'tipoImovelNome');
+				$query->set('orderby', 'meta_value');
+				$query->set('order', $direction);
 				break;
 			case 'regiao':
-				$type = 'meta_value';
-				$campoSort = 'tipoImovelNome';
+				$query->set('meta_key', 'regiao');
+				$query->set('orderby', 'meta_value');
+				$query->set('order', $direction);
 				break;
 			case 'bairro':
-				$type = 'meta_value';
-				$campoSort = 'regiao';
+				$query->set('meta_key', 'bairro');
+				$query->set('orderby', 'meta_value');
+				$query->set('order', $direction);
 				break;
 			case 'finalidade':
-				$type = 'meta_value';
-				$campoSort = 'finalidadeNome';
+				$query->set('meta_key', 'finalidadeNome');
+				$query->set('orderby', 'meta_value');
+				$query->set('order', $direction);
 				break;
 			case 'dormitorio':
-				$type = 'meta_value_num';
-				$campoSort = 'DOR';
+				$query->set('meta_key', 'DOR');
+				$query->set('orderby', 'meta_value_num');
+				$query->set('order', $direction);
 				break;
 			case 'suite':
-				$type = 'meta_value_num';
-				$campoSort = 'SUI';
+				$query->set('meta_key', 'SUI');
+				$query->set('orderby', 'meta_value_num');
+				$query->set('order', $direction);
 				break;
 			case 'garagem':
-				$type = 'meta_value_num';
-				$campoSort = 'GAR';
+				$query->set('meta_key', 'GAR');
+				$query->set('orderby', 'meta_value_num');
+				$query->set('order', $direction);
 				break;
 			case 'iptu':
-				$type = 'meta_value_num';
-				$campoSort = 'valorIptu';
+				$query->set('meta_key', 'valorIptu');
+				$query->set('orderby', 'meta_value_num');
+				$query->set('order', $direction);
 				break;
 			case 'condominio':
-				$type = 'meta_value_num';
-				$campoSort = 'valorCondominio';
+				$query->set('meta_key', 'valorCondominio');
+				$query->set('orderby', 'meta_value_num');
+				$query->set('order', $direction);
 				break;
 		}
-		$query->set( 'meta_key', $campoSort );
-		$query->set( 'orderby', $type );
-		$query->set( 'order', $direction );
 	}
 	public function register_search_posttype_imovel( $query ) {
 		if ( $query->is_main_query( ) ) {

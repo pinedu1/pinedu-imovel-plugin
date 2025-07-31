@@ -30,11 +30,11 @@
 	 */
 } ) ( jQuery );
 $ = jQuery;
-function importarImoveis( e ) {
+function importarImoveisNormal( e ) {
 	e.preventDefault( );
 	importarImoveis( false );
 }
-function forcarImportarImoveis( e ) {
+function importarImoveisForcado( e ) {
 	e.preventDefault( );
 	importarImoveis( true );
 }
@@ -42,17 +42,14 @@ function importarImoveis( forcarImportarImoveis ) {
 	const info = $( '#info' );
 	const urlServidor = $( '#url_servidor' ).val( );
 	info.removeClass( 'error' ).removeClass( 'success' ).addClass( 'info' ).text( 'Executando Importação. Por favor, aguarde.' ).fadeIn( );;
-	var forcar = false;
-	if ( forcarImportarImoveis === true ) {
-		forcar = true;
-	}
+	var forcar = (forcarImportarImoveis == true);
 	$.ajax({
 		url: ajaxurl,
 		type: 'POST',
 		data: {
 			action: 'pinedu_importar',
 			url_servidor: urlServidor,
-			forcar: forcar
+			forcar: true
 		},
 		timeout: 3600000, // 1 hora em milissegundos
 		beforeSend: function() {

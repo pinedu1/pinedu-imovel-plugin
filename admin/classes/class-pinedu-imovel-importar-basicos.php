@@ -31,34 +31,10 @@ class Pinedu_Imovel_Importar_Basicos {
 		$this->faixa_valor = new Pinedu_Imovel_Importa_Faixa_Valor( );
 		$this->tipo_dependencia = new Pinedu_Imovel_Importa_Tipo_Dependencia( );
 	}
-	public function invoca_server( ) {
+	public function invoca_server( $url, $forcar = false ) {
 		try {
-/*				$options = get_option('pinedu_imovel_options', []);
-			$url = $_POST['url_servidor'] ?? '';
-			if ( !filter_var( $url, FILTER_VALIDATE_URL ) ) {
-				wp_send_json_error( ['message' => 'URL inválida.'] );
-			}
 			$fullUrl = trailingslashit( $url ) . ltrim( self::ENDPOINT, '/' );
-			$token = $options['token'] ?? '';
-			$response = wp_remote_post( $fullUrl, [
-				'timeout' => ( 60 * 5 )
-				, 'headers' => [
-					'Content-Type' => 'application/json'
-					, 'Authorization' => 'Bearer ' . sanitize_text_field( $token )
-				]
-				, 'body' => wp_json_encode( [ 'username' => $options['token_username'], 'password' => $options['token_password'] ] )
-				, 'sslverify' => true
-
-			] );
-			if ( is_wp_error( $response ) ) {
-				wp_send_json_error( ['message' => 'Erro de conexão com o servidor'] );
-			}
-			$body = wp_remote_retrieve_body( $response );
-			$data = json_decode( $body, true );*/
-			$options = get_option('pinedu_imovel_options', []);
-			$url = $options['url_servidor'] ?? '';
-			$fullUrl = trailingslashit( $url ) . ltrim( self::ENDPOINT, '/' );
-			$data = PineduRequest::post($fullUrl);
+			$data = PineduRequest::post( $fullUrl, ['forcar' => $forcar] );
 			if ( json_last_error( ) !== JSON_ERROR_NONE ) {
 				wp_send_json_error( ['message' => 'Erro ao decodificar JSON: ' . json_last_error_msg( )] );
 				return false;

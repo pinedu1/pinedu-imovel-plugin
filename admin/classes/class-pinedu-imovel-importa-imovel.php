@@ -174,7 +174,7 @@ class Pinedu_Imovel_Importa_Imovel {
 	}
 }
 class Pinedu_Imovel_Importa_Metadados {
-	const PROPRIEDADES = ['id', 'referencia', 'anoConstrucao', 'anuncio', 'anuncioRenderizado', 'ativarLancamento', 'ativarLocacao', 'ativarVenda', 'bairro', 'bairroCorretagem', 'captadorPrincipalId', 'captadorPrincipalNome', 'captadorPrincipalPessoaId', 'carteira', 'cep', 'chaves_id', 'cidade', 'cidadeCorretagem', 'condominio_id', 'custoAnuncio', 'dataCaptacao', 'dateCreated', 'descricaoChaves', 'desocupacao', 'edificio_id', 'enderecoRenderizado', 'enviarWeb', 'estado', 'estado_id', 'finalidade', 'finalidadeNome', 'horarioVisita', 'lancamento', 'lancamentoDataAtualizacao', 'lancamentoProxAtualizacao', 'lancamentoNome', 'lancamentoPromocao', 'lancamentoSlug', 'lancamentoValor', 'lastUpdated', 'latitude', 'locacaoDataAtualizacao', 'locacaoNome', 'locacaoPromocao', 'locacaoProxAtualizacao', 'locacaoSlug', 'locacaoValor', 'logradouroDNE', 'loja_id', 'longitude', 'matAgua', 'matEner', 'matGaz', 'matIPTU', 'memorialDescritivo', 'nomeUsuCriador', 'novo', 'observacoes', 'obsLocal', 'padraoConstrucao', 'permiteIntermediacao', 'permitePlaca', 'permiteUnidades', 'placa_id', 'pontoReferencia', 'proprietario_id', 'regiao', 'regiaoCorretagem', 'segmento_id', 'statusImovel', 'tipoImovel_id', 'tipoOcupacao', 'tipoOcupacaoNome', 'tituloEdificio', 'valorCondominio', 'valorIptu', 'vendaDataAtualizacao', 'vendaNome', 'vendaPromocao', 'vendaProxAtualizacao', 'vendaSlug', 'vendaValor', 'version', 'zoneamento'];
+	const PROPRIEDADES = ['id', 'referencia', 'anoConstrucao', 'anuncio', 'anuncioRenderizado', 'ativarLancamento', 'ativarLocacao', 'ativarVenda', 'bairro', 'bairroCorretagem', 'captadorPrincipalId', 'captadorPrincipalNome', 'captadorPrincipalPessoaId', 'carteira', 'cep', 'chaves_id', 'cidade', 'cidadeCorretagem', 'condominio_id', 'custoAnuncio', 'dataCaptacao', 'dateCreated', 'descricaoChaves', 'desocupacao', 'edificio_id', 'enderecoRenderizado', 'enviarWeb', 'estado', 'estado_id', 'finalidade', 'finalidadeNome', 'horarioVisita', 'lancamento', 'lancamentoDataAtualizacao', 'lancamentoProxAtualizacao', 'lancamentoNome', 'lancamentoPromocao', 'lancamentoSlug', 'lancamentoValor', 'lastUpdated', 'latitude', 'logradouroDNE', 'loja_id', 'longitude', 'matAgua', 'matEner', 'matGaz', 'matIPTU', 'memorialDescritivo', 'nomeUsuCriador', 'novo', 'observacoes', 'obsLocal', 'padraoConstrucao', 'permiteIntermediacao', 'permitePlaca', 'permiteUnidades', 'placa_id', 'pontoReferencia', 'proprietario_id', 'regiao', 'regiaoCorretagem', 'segmento_id', 'statusImovel', 'tipoImovel_id', 'tipoOcupacao', 'tipoOcupacaoNome', 'tituloEdificio', 'valorCondominio', 'valorIptu', 'version', 'zoneamento'];
 	const TIPO_DEPENDENCIA = array(
 		'tipDep_descricao' => 'descricao'
 		, 'tipDep_nome' => 'nome'
@@ -258,14 +258,71 @@ class Pinedu_Imovel_Importa_Metadados {
 			}
 		}
 	}
+
+	/**
+	 * Salva metadasdos do contrato venda
+	 * É monótono e manual, mas não achei maneira melhor de fazer isto, visto que preciso da propriedade no POST_TYPE para ordenação
+	 * @param $properties
+	 * @return void
+	 */
+	private function salva_contrato_venda( &$properties ) {
+		$vendaValor = (float)$properties[ 'vendaValor' ] ?? 0;
+		unset( $properties[ 'vendaValor' ] );
+		$vendaDataAtualizacao = $properties[ 'vendaDataAtualizacao' ] ?? '1980-01-01T00:00:00Z';
+		unset( $properties[ 'vendaDataAtualizacao' ] );
+		$vendaNome = $properties[ 'vendaNome' ] ?? '';
+		unset( $properties[ 'vendaNome' ] );
+		$vendaPromocao = $properties[ 'vendaPromocao' ] ?? '';
+		unset( $properties[ 'vendaPromocao' ] );
+		$vendaProxAtualizacao = $properties[ 'vendaProxAtualizacao' ] ?? '';
+		unset( $properties[ 'vendaProxAtualizacao' ] );
+		$vendaSlug = $properties[ 'vendaSlug' ] ?? '';
+		unset( $properties[ 'vendaSlug' ] );
+		add_post_meta( $this->post_id, 'vendaValor', (float)$vendaValor, true );
+		add_post_meta( $this->post_id, 'vendaDataAtualizacao', $vendaDataAtualizacao, true );
+		add_post_meta( $this->post_id, 'vendaNome', $vendaNome, true );
+		add_post_meta( $this->post_id, 'vendaPromocao', $vendaPromocao, true );
+		add_post_meta( $this->post_id, 'vendaProxAtualizacao', $vendaProxAtualizacao, true );
+		add_post_meta( $this->post_id, 'vendaSlug', $vendaSlug, true );
+	}
+	/**
+	 * Salva metadasdos do contrato venda
+	 * É monótono e manual, mas não achei maneira melhor de fazer isto, visto que preciso da propriedade no POST_TYPE para ordenação
+	 * @param $properties
+	 * @return void
+	 */
+	private function salva_contrato_locacao( &$properties ) {
+		$locacaoValor = (float)$properties[ 'locacaoValor' ] ?? 0;
+		unset( $properties[ 'locacaoValor' ] );
+		$locacaoDataAtualizacao = $properties[ 'locacaoDataAtualizacao' ] ?? '1980-01-01T00:00:00Z';
+		unset( $properties[ 'locacaoDataAtualizacao' ] );
+		$locacaoNome = $properties[ 'locacaoNome' ] ?? '';
+		unset( $properties[ 'locacaoNome' ] );
+		$locacaoPromocao = $properties[ 'locacaoPromocao' ] ?? '';
+		unset( $properties[ 'locacaoPromocao' ] );
+		$locacaoProxAtualizacao = $properties[ 'locacaoProxAtualizacao' ] ?? '';
+		unset( $properties[ 'locacaoProxAtualizacao' ] );
+		$locacaoSlug = $properties[ 'locacaoSlug' ] ?? '';
+		unset( $properties[ 'locacaoSlug' ] );
+		add_post_meta( $this->post_id, 'locacaoValor', (float)$locacaoValor, true );
+		add_post_meta( $this->post_id, 'locacaoDataAtualizacao', $locacaoDataAtualizacao, true );
+		add_post_meta( $this->post_id, 'locacaoNome', $locacaoNome, true );
+		add_post_meta( $this->post_id, 'locacaoPromocao', $locacaoPromocao, true );
+		add_post_meta( $this->post_id, 'locacaoProxAtualizacao', $locacaoProxAtualizacao, true );
+		add_post_meta( $this->post_id, 'locacaoSlug', $locacaoSlug, true );
+	}
 	private function salvar_metadados_imovel( ) {
 		$properties = $this->recolhe_propriedades( $this->imovel );
+		$this->salva_contrato_venda( $this->imovel );
+		$this->salva_contrato_locacao( $this->imovel );
 		if ( !isset( $properties['visitas'] ) ) {
 			$properties['visitas'] = 0;
 		}
 		$properties['clicks'] = $properties['visitas'];
 		$latitude = (float)$properties['latitude'];
 		$longitude = (float)$properties['longitude'];
+		//
+
 		foreach( $properties as $key => $value ) {
 			if ( is_string( $value ) && trim( $value ) === '' ) {
 				continue;

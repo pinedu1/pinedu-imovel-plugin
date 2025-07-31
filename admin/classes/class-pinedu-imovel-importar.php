@@ -73,8 +73,8 @@ class Pinedu_Imovel_Importar {
 	public function invoca_importacao( ) {
 		do_action('pinedu_pre_import');
 		if ( $this->testar_server() === true ) {
-			$this->basicos->invoca_server();
-			$this->imovel->invoca_server();
+			$this->basicos->invoca_server( $_POST['url_servidor'], $_POST['forcar'] );
+			$this->imovel->invoca_server( $_POST['url_servidor'], $_POST['forcar'] );;
 			do_action('pinedu_post_import', $this->imovel->getImoveisImportados());
 			wp_send_json_success([
 				'message' => $data['message'] ?? 'Importação dos Imóveis Realizada com sucesso!'

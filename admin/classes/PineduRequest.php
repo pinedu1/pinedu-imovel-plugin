@@ -6,8 +6,6 @@ class PineduRequest{
 	public function __construct( ) {
 	}
 	public static function get( $url, $argumentos = [], $isHook = false ) {
-		//error_log( "PineduRequest: " . $url );
-
 		$options = get_option('pinedu_imovel_options', []);
 		$token = $options['token'] ?? '';
 		$headers = [
@@ -15,9 +13,10 @@ class PineduRequest{
 			, 'headers' => [ 'Content-Type' => 'application/json' , 'Authorization' => 'Bearer ' . sanitize_text_field( $token ) ]
 			, 'sslverify' => true
 		];
-		$credenciais = [ 'username' => $options['token_username'], 'password' => $options['token_password'] ];
+		$credenciais = [ 'username' => urlencode( $options['token_username'] ), 'password' => urlencode( $options['token_password'] ) ];
 		$args = array_merge( $credenciais, $argumentos );
 		$my_url = self::monta_get_url( $url, $args );
+		//error_log( "URL: " . $my_url );
 		$response = wp_remote_get( $my_url, $headers );
 		if ( is_wp_error( $response ) ) {
 			if ( $isHook ) wp_send_json_error( ['message' => 'Erro de conexão com o servidor'] );
@@ -49,7 +48,7 @@ class PineduRequest{
 	}
 	public static function post( $url, $argumentos = [], $isHook = false ) {
 		$options = get_option( 'pinedu_imovel_options', [] );
-		$credenciais = [ 'username' => $options['token_username'], 'password' => $options['token_password'] ];
+		$credenciais = [ 'username' => urlencode( $options['token_username'] ), 'password' => urlencode( $options['token_password'] ) ];
 		if ( !filter_var( $url, FILTER_VALIDATE_URL ) ) {
 			wp_send_json_error( ['message' => 'URL inválida.'] );
 			return false;
@@ -57,16 +56,15 @@ class PineduRequest{
 		$token = $options['token'] ?? '';
 		$payload = [
 			'timeout' => self::TIMEOUT
-			, 'headers' => [ 'Content-Type' => 'application/json' , 'Authorization' => 'Bearer ' . sanitize_text_field( $token ) ]
+			, 'headers' => [ 'Content-Type' => 'application/json' , 'Authorization' => 'Bearer ' . $token ]
 			, 'sslverify' => true
 		];
 		if ( $argumentos && is_array( $argumentos ) ) {
-			$a = array_merge( $credenciais, $argumentos );
+			$a = array_merge( $argumentos, $credenciais );
 			$payload['body'] = wp_json_encode( $a );
 		} else {
 			$payload[ 'body' ] = wp_json_encode( $credenciais );
 		}
-
 		$response = wp_remote_post( $url, $payload );
 		if ( is_wp_error( $response ) ) {
 			error_log( "Erro: " . json_encode( $response ) );
@@ -79,6 +77,17 @@ class PineduRequest{
 		return $data;
 	}
 	protected static function monta_get_url( $url, $args) {
+		if ( ! empty( $args ) ) {
+			$query_string = http_build_query( $args );
+			if ( strpos( $url, '?' ) !== false ) {
+				return $url . '&' . $query_string;
+			} else {
+				return $url . '?' . $query_string;
+			}
+		}
+		return $url;
+	}
+	protected static function monta_get_url_( $url, $args) {
 		return add_query_arg( $args, $url );
 	}
 	public static function put( $url, $data ) {}

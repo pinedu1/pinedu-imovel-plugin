@@ -30,10 +30,10 @@
                     <button id="testar-servidor-btn" class="button secondary" onclick="return testarServidor(event);">Testar Servidor</button>
                 </li>
                 <li>
-                    <button id="importar-btn" class="button secondary" onclick="return importarImoveis(event);">Importar imóveis agora</button>
+                    <button id="importar-btn" class="button secondary" onclick="return importarImoveisNormal(event);">Importar imóveis agora</button>
                 </li>
                 <li>
-                    <button id="importar-forcado-btn" class="button secondary" onclick="return forcarImportarImoveis(event);">Forçar Importação</button>
+                    <button id="importar-forcado-btn" class="button secondary" onclick="return importarImoveisForcado(event);">Forçar Importação</button>
                 </li>
             </ul>
         </div>

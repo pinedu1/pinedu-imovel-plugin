@@ -47,10 +47,9 @@ class Pinedu_Imovel_Importar_Imoveis extends Pinedu_Importa_Libs {
 		wp_reset_postdata();
 		return json_encode( $visitados );
 	}
-	public function invoca_server() {
+	public function invoca_server( $url, $forcar = false) {
 		try {
-			$url = $_POST[ 'url_servidor' ] ?? '';
-			$forcar = $_POST[ 'forcar' ] ?? false;
+			set_time_limit(0);
 			if ( !filter_var( $url, FILTER_VALIDATE_URL ) ) {
 				wp_send_json_error( [ 'message' => 'URL inválida.' ] );
 			}
@@ -108,25 +107,27 @@ class Pinedu_Imovel_Importar_Imoveis extends Pinedu_Importa_Libs {
 		}
 	}
 	private function call_remote_server( $url, $max = 0, $offset = 0, $clicados = array(), $ultima_atualizacao = null, $forcar = false ) {
-		$args = [ 'max' => $max, 'offset' => $offset ];
-		$args['forcar'] = false;
-		if ( $forcar === true ) {
-			$args['forcar'] = true;
-		}
+		$args = [ 'max' => $max, 'offset' => $offset, 'forcar' => $forcar ];
 		if ( $clicados ) {
 			$args['visitas'] = $clicados;
 		}
 		if ( $ultima_atualizacao ) {
 			$args['ultimaAtualizacao'] = formataData_iso8601( $ultima_atualizacao );
 		}
+		if ( $forcar == true ) {
+			$args['ultimaAtualizacao'] = '1980-01-01T00:00:00.000Z';
+		}
+/*		error_log('call_remote_server: ' . print_r($args, true)); // ADICIONE ESTA LINHA PARA DEBUG
+		wp_die(); // Sempre finalize a requisição AJAX com wp_die()
+*/
 		$data = PineduRequest::get( $url, $args );
 
 		if ( ((bool)$data[ 'success' ]) != true ) {
-			error_log( "Imoveis success false ");
+			//error_log( "Imoveis success false ");
 			wp_send_json_error( ['message' => $data[ 'message' ] ?? 'Formato do arquivo inválido (Imóveis)!'] );
 			return null;
 		}
-		error_log( "Imoveis success true ");
+		//error_log( "Imoveis success true ");
 		return $data;
 	}
 }

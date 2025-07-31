@@ -185,6 +185,7 @@ class Pinedu_Imovel_Plugin {
 
 		$this->loader->add_action( 'init', $plugin_public, 'register_posttypes', 6 );
 		$this->loader->add_action( 'init', $plugin_public, 'register_taxonomies', 5 );
+
 		$this->loader->add_action( 'init', $pretty_url, 'do', 10 );
 
 		$this->loader->add_action( 'pre_get_posts', $plugin_public, 'register_search_posttype_imovel' );
