@@ -174,7 +174,7 @@ class Pinedu_Imovel_Importa_Imovel {
 	}
 }
 class Pinedu_Imovel_Importa_Metadados {
-	const PROPRIEDADES = ['id', 'referencia', 'anoConstrucao', 'anuncio', 'anuncioRenderizado', 'ativarLancamento', 'ativarLocacao', 'ativarVenda', 'bairro', 'bairroCorretagem', 'captadorPrincipalId', 'captadorPrincipalNome', 'captadorPrincipalPessoaId', 'carteira', 'cep', 'chaves_id', 'cidade', 'cidadeCorretagem', 'condominio_id', 'custoAnuncio', 'dataCaptacao', 'dateCreated', 'descricaoChaves', 'desocupacao', 'edificio_id', 'enderecoRenderizado', 'enviarWeb', 'estado', 'estado_id', 'finalidade', 'finalidadeNome', 'horarioVisita', 'lancamento', 'lancamentoDataAtualizacao', 'lancamentoProxAtualizacao', 'lancamentoNome', 'lancamentoPromocao', 'lancamentoSlug', 'lancamentoValor', 'lastUpdated', 'latitude', 'logradouroDNE', 'loja_id', 'longitude', 'matAgua', 'matEner', 'matGaz', 'matIPTU', 'memorialDescritivo', 'nomeUsuCriador', 'novo', 'observacoes', 'obsLocal', 'padraoConstrucao', 'permiteIntermediacao', 'permitePlaca', 'permiteUnidades', 'placa_id', 'pontoReferencia', 'proprietario_id', 'regiao', 'regiaoCorretagem', 'segmento_id', 'statusImovel', 'tipoImovel_id', 'tipoOcupacao', 'tipoOcupacaoNome', 'tituloEdificio', 'valorCondominio', 'valorIptu', 'version', 'zoneamento'];
+	const PROPRIEDADES = ['id', 'referencia', 'anoConstrucao', 'anuncio', 'anuncioRenderizado', 'ativarLancamento', 'ativarLocacao', 'ativarVenda', 'bairro', 'bairroCorretagem', 'captadorPrincipalId', 'captadorPrincipalNome', 'captadorPrincipalPessoaId', 'carteira', 'cep', 'chaves_id', 'cidade', 'cidadeCorretagem', 'condominio_id', 'custoAnuncio', 'dataCaptacao', 'dateCreated', 'descricaoChaves', 'desocupacao', 'edificio_id', 'enderecoRenderizado', 'enviarWeb', 'estado', 'estado_id', 'finalidade', 'finalidadeNome', 'horarioVisita', 'lancamento', 'lancamentoDataAtualizacao', 'lancamentoProxAtualizacao', 'lancamentoNome', 'lancamentoPromocao', 'lancamentoSlug', 'lancamentoValor', 'lastUpdated', 'latitude', 'logradouroDNE', 'loja_id', 'longitude', 'matAgua', 'matEner', 'matGaz', 'matIPTU', 'memorialDescritivo', 'nomeUsuCriador', 'novo', 'observacoes', 'obsLocal', 'padraoConstrucao', 'permiteIntermediacao', 'permitePlaca', 'permiteUnidades', 'placa_id', 'pontoReferencia', 'proprietario_id', 'regiao', 'regiaoCorretagem', 'segmento_id', 'statusImovel', 'tipoImovel_id', 'tipoOcupacao', 'tipoOcupacaoNome', 'tituloEdificio', 'version', 'zoneamento'];
 	const TIPO_DEPENDENCIA = array(
 		'tipDep_descricao' => 'descricao'
 		, 'tipDep_nome' => 'nome'
@@ -258,7 +258,6 @@ class Pinedu_Imovel_Importa_Metadados {
 			}
 		}
 	}
-
 	/**
 	 * Salva metadasdos do contrato venda
 	 * É monótono e manual, mas não achei maneira melhor de fazer isto, visto que preciso da propriedade no POST_TYPE para ordenação
@@ -284,6 +283,7 @@ class Pinedu_Imovel_Importa_Metadados {
 		add_post_meta( $this->post_id, 'vendaPromocao', $vendaPromocao, true );
 		add_post_meta( $this->post_id, 'vendaProxAtualizacao', $vendaProxAtualizacao, true );
 		add_post_meta( $this->post_id, 'vendaSlug', $vendaSlug, true );
+		return ['valor' => $vendaValor, 'data' => new DateTime( $vendaDataAtualizacao ) ];
 	}
 	/**
 	 * Salva metadasdos do contrato venda
@@ -310,14 +310,43 @@ class Pinedu_Imovel_Importa_Metadados {
 		add_post_meta( $this->post_id, 'locacaoPromocao', $locacaoPromocao, true );
 		add_post_meta( $this->post_id, 'locacaoProxAtualizacao', $locacaoProxAtualizacao, true );
 		add_post_meta( $this->post_id, 'locacaoSlug', $locacaoSlug, true );
+		return ['valor' => $locacaoValor, 'data' => new DateTime( $locacaoDataAtualizacao ) ];
 	}
 	private function salvar_metadados_imovel( ) {
 		$properties = $this->recolhe_propriedades( $this->imovel );
-		$this->salva_contrato_venda( $this->imovel );
-		$this->salva_contrato_locacao( $this->imovel );
+		$dados_contrato = $this->salva_contrato_venda( $this->imovel );
+
+		$valorCondominio = (float)$this->imovel[ 'valorCondominio' ];
+		unset( $this->imovel[ 'valorCondominio' ] );
+		$valorIptu = (float)$this->imovel[ 'valorIptu' ];
+		unset( $this->imovel[ 'valorIptu' ] );
+		/*
+		 * Ajusta Condominio e IPTU para numerico
+		*/
+		add_post_meta( $this->post_id, 'valorCondominio', $valorCondominio, true );
+		add_post_meta( $this->post_id, 'valorIptu', $valorIptu, true );
+		/**/
+
+		$valor = $dados_contrato['valor'];
+		$data = $dados_contrato['data'];
+		$dados_contrato = $this->salva_contrato_locacao( $this->imovel );
+		if ( $dados_contrato['valor'] > $valor ) {
+			$valor = $dados_contrato['valor'];
+		}
+		if ( $dados_contrato['data'] > $data ) {
+			$data = $dados_contrato['data'];
+		}
 		if ( !isset( $properties['visitas'] ) ) {
 			$properties['visitas'] = 0;
 		}
+		/* Quando o sistema pesquisar por todos os contratos
+		 * precisa desta coluna para ordenar
+		 * Caso contrário: Organiza pelo campo do contrato
+		 * Aka: vendaValor
+		*/
+		add_post_meta( $this->post_id, 'valor', $valor, true );
+		add_post_meta( $this->post_id, 'data', $data->format('Y-m-d H:i:s'), true );
+		/**/
 		$properties['clicks'] = $properties['visitas'];
 		$latitude = (float)$properties['latitude'];
 		$longitude = (float)$properties['longitude'];
