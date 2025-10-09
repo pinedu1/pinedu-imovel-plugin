@@ -14,7 +14,7 @@ class Pinedu_Imovel_Importa_Cidade extends Pinedu_Importa_Taxonomia_Base {
 		}
 
 		foreach ( $cidades as $cidade ) {
-			$key = ( int )$cidade['id'];
+			$key = ( string )$cidade['id'];
 			$nome = sanitize_text_field( $cidade['nome'] );
 			$this->salva($key, $nome, 'cidade');
 			$regioes = $cidade['regioes'];

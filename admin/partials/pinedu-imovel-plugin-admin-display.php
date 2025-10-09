@@ -22,18 +22,36 @@
 			submit_button('Salvar Configurações');
 		?>
     </form>
+    <?php
+        $options = get_option( 'pinedu_imovel_options', [] );
+        $importacao_andamento = false;
+        if ( isset( $options['importacao_andamento'] ) ) {
+            $importacao_andamento = $options['importacao_andamento'];
+        }
+        if ( $importacao_andamento === true ) {
+            echo '<div id="info" class="informacao info">Importação em andamento. Volte novamente mais tarde!</div>';
+        } else {
+            echo '<div id="info" class="informacao"></div>';
+        }
+    ?>
+
     <form method="post" action="">
-		<?php wp_nonce_field('pinedu_imovel_actions', 'pinedu_imovel_nonce'); ?>
+		<?php
+        wp_nonce_field('pinedu_imovel_actions', 'pinedu_imovel_nonce');
+        $options = get_option( 'pinedu_imovel_options', [] );
+        $importacao_andamento = $options['importacao_andamento'] ?? false;
+        echo '<input type="hidden" name="importacao_andamento" value="' . (((bool)$importacao_andamento)?1:0) . '">';
+        ?>
         <div class="form-table">
             <ul>
                 <li>
-                    <button id="testar-servidor-btn" class="button secondary" onclick="return testarServidor(event);">Testar Servidor</button>
+                    <button id="testar-servidor-btn" class="button secondary" <?php echo $importacao_andamento?'disabled':'' ?> onclick="return testarServidor(event);">Testar Servidor</button>
                 </li>
                 <li>
-                    <button id="importar-btn" class="button secondary" onclick="return importarImoveisNormal(event);">Importar imóveis agora</button>
+                    <button id="importar-btn" class="button secondary" <?php echo $importacao_andamento?'disabled':'' ?> onclick="return importarImoveisNormal(event);">Importar imóveis agora</button>
                 </li>
                 <li>
-                    <button id="importar-forcado-btn" class="button secondary" onclick="return importarImoveisForcado(event);">Forçar Importação</button>
+                    <button id="importar-forcado-btn" class="button secondary" <?php echo $importacao_andamento?'disabled':'' ?> onclick="return importarImoveisForcado(event);">Forçar Importação</button>
                 </li>
             </ul>
         </div>

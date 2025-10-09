@@ -11,7 +11,7 @@ class Pinedu_Imovel_Importa_Bairro extends Pinedu_Importa_Taxonomia_Base {
 			return;
 		}
 		foreach ( $bairros as $bairro ) {
-			$key = ( int )$bairro['id'];
+			$key = ( string )$bairro['id'];
 			$nome = sanitize_text_field( $bairro['nome'] );
 			$term = $this->salva( $key, $nome, 'bairro');
 			if ( !is_wp_error( $term ) ) {

@@ -2,7 +2,7 @@
 require_once plugin_dir_path(__FILE__) . 'PineduRequest.php';
 
 class Pinedu_Imovel_Importar_Basicos {
-	const ENDPOINT = '/pndPortal/wordpress/basicos';
+	const ENDPOINT = '/wordpress/basicos';
 	private $empresa;
 	private $loja;
 	private $corretor;

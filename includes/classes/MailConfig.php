@@ -3,7 +3,7 @@
 	class MailConfig {
 		public static function config_options_mail( ) {
 			$options = get_option( 'pinedu_imovel_options', []);
-			$options['url_servidor'] = 'https://penta.intranet.pndimo.com.br';
+			$options['url_servidor'] = 'https://haddad.intranet.pndimo.com.br/sisprof';
 			$options['nome_remetente'] = 'Pinedu Software';
 			$options['email_remetente'] = 'eduardo@pinedu.com.br';
 			$options['usuario'] = 'no-reply@pinedu.com.br';
@@ -15,9 +15,10 @@
 			$options['email_contato'] = 'eduardo@pinedu.com.br';
 			$options['token'] = 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ3b3JkcHJlc3MiLCJST0xFIjoiUk9MRV9XT1JEUFJFU1MiLCJwYXNzd29yZCI6IntiY3J5cHR9JDJhJDEwJFhIVGhpak5xcy54cFhQZGJPY05XMWVKaEhmdkpyQWNuMnRVcld5N2M4M29qSGN1Y1NHeEdXIiwiaWF0IjoxNzUzNDU3OTM5LCJleHAiOjE3NTYwNDk5Mzl9.muCTcCFJnagRtXv_XeQHeBIRBylKM7onzH2mRRjtU1s';
 			$options['token_username'] = 'wordpress';
-			$options['token_password'] = 'wordpress!@#';
+			$options['token_password'] = 'wordpress123';
+            $options['token_expiration_date'] = '1980-01-01T00:00:00-300';
 			$options['chave_google_api'] = 'AIzaSyBe89OvSNnCtC3RrHKES0PrgGtbQ4lZAu0';
-
+            $options['fotos_demanda'] = 'on';
 			update_option( 'pinedu_imovel_options', $options );
 		}
 		public static function config_wp_mail( $phpmailer ) {

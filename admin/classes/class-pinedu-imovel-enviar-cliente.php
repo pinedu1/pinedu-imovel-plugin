@@ -1,7 +1,7 @@
 <?php
 
 class Pinedu_Imovel_Enviar_Cliente {
-	const ENDPOINT = '/pndPortal/wordpress/contatoCliente';
+	const ENDPOINT = '/wordpress/contatoCliente';
 	private $nome;
 	private $telefone;
 	private $email;

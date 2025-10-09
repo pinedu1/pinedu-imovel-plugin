@@ -223,7 +223,6 @@ class Pinedu_Imovel_Importa_Metadados {
 					if ( !empty( $valor ) ) {
 						add_post_meta( $this->post_id, $sigla, $valor, true );
 						add_post_meta( $this->post_id, ( $sigla . 'Nome' ), $nome, true );
-						//add_post_meta( $this->post_id, ( $sigla . 'Relativo' ), $relativo, true );
 					}
 					break;
 				case 'INTEIRO':
@@ -232,7 +231,7 @@ class Pinedu_Imovel_Importa_Metadados {
 					if ( $valor > 0 ) {
 						add_post_meta( $this->post_id, $sigla, $valor, true );
 						add_post_meta( $this->post_id, ( $sigla . 'Nome' ), $nome, true );
-						//add_post_meta( $this->post_id, ( $sigla . 'Relativo' ), $relativo, true );
+                        add_post_meta( $this->post_id, ( $sigla . 'Relativo' ), $relativo, true );
 					}
 					break;
 				case 'FLOAT':
@@ -241,7 +240,7 @@ class Pinedu_Imovel_Importa_Metadados {
 					if ( $valor > 0 ) {
 						add_post_meta( $this->post_id, $sigla, $valor, true );
 						add_post_meta( $this->post_id, ( $sigla . 'Nome' ), $nome, true );
-						//add_post_meta( $this->post_id, ( $sigla . 'Relativo' ), $relativo, true );
+						add_post_meta( $this->post_id, ( $sigla . 'Relativo' ), $relativo, true );
 					}
 					break;
 				case 'BOOLEAN':
@@ -250,7 +249,7 @@ class Pinedu_Imovel_Importa_Metadados {
 					if ( $valor === true ) {
 						add_post_meta( $this->post_id, $sigla, $valor, true );
 						add_post_meta( $this->post_id, ( $sigla . 'Nome' ), $nome, true );
-						//add_post_meta( $this->post_id, ( $sigla . 'Relativo' ), $relativo, true );
+						add_post_meta( $this->post_id, ( $sigla . 'Relativo' ), $relativo, true );
 					}
 					break;
 				default:
@@ -262,9 +261,9 @@ class Pinedu_Imovel_Importa_Metadados {
 	 * Salva metadasdos do contrato venda
 	 * É monótono e manual, mas não achei maneira melhor de fazer isto, visto que preciso da propriedade no POST_TYPE para ordenação
 	 * @param $properties
-	 * @return void
-	 */
-	private function salva_contrato_venda( &$properties ) {
+	 * @return array
+     */
+	private function salva_contrato_venda( &$properties ): array {
 		$vendaValor = (float)$properties[ 'vendaValor' ] ?? 0;
 		unset( $properties[ 'vendaValor' ] );
 		$vendaDataAtualizacao = $properties[ 'vendaDataAtualizacao' ] ?? '1980-01-01T00:00:00Z';
@@ -291,7 +290,7 @@ class Pinedu_Imovel_Importa_Metadados {
 	 * @param $properties
 	 * @return void
 	 */
-	private function salva_contrato_locacao( &$properties ) {
+	private function salva_contrato_locacao( &$properties ): array {
 		$locacaoValor = (float)$properties[ 'locacaoValor' ] ?? 0;
 		unset( $properties[ 'locacaoValor' ] );
 		$locacaoDataAtualizacao = $properties[ 'locacaoDataAtualizacao' ] ?? '1980-01-01T00:00:00Z';
@@ -348,8 +347,14 @@ class Pinedu_Imovel_Importa_Metadados {
 		add_post_meta( $this->post_id, 'data', $data->format('Y-m-d H:i:s'), true );
 		/**/
 		$properties['clicks'] = $properties['visitas'];
-		$latitude = (float)$properties['latitude'];
-		$longitude = (float)$properties['longitude'];
+        $latitude = 0;
+        if ( isset( $properties['latitude'] ) ) {
+            $latitude = (float)$properties['latitude'];
+        }
+        $longitude = 0;
+        if ( isset( $properties['longitude'] ) ) {
+            $longitude = (float)$properties['longitude'];
+        }
 		//
 
 		foreach( $properties as $key => $value ) {

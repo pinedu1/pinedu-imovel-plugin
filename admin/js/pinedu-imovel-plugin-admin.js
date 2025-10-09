@@ -39,21 +39,22 @@ function importarImoveisForcado( e ) {
 	importarImoveis( true );
 }
 function importarImoveis( forcarImportarImoveis ) {
-	const info = $( '#info' );
+    const info = $( 'div.informacao' ); // Seleciona TODAS as divs com classe info
 	const urlServidor = $( '#url_servidor' ).val( );
-	info.removeClass( 'error' ).removeClass( 'success' ).addClass( 'info' ).text( 'Executando Importação. Por favor, aguarde.' ).fadeIn( );;
-	var forcar = (forcarImportarImoveis == true);
+	info.removeClass( 'error' ).removeClass( 'success' ).addClass( 'info' ).text( 'Processando importação, esta operação pode demorar algumas horas. Por favor, aguarde...' ).fadeIn( );;
+	const forcar = (forcarImportarImoveis == true);
+    $("button#testar-servidor-btn, button#importar-btn, button#importar-forcado-btn").prop('disabled', true);
 	$.ajax({
 		url: ajaxurl,
 		type: 'POST',
 		data: {
 			action: 'pinedu_importar',
 			url_servidor: urlServidor,
-			forcar: true
+			forcar: forcar
 		},
-		timeout: 3600000, // 1 hora em milissegundos
+		timeout: 7200000, // 2 hora em milissegundos
 		beforeSend: function() {
-			info.removeClass('error success').addClass('info').text('Processando importação...').fadeIn();
+			info.removeClass('error success').addClass('info').text('Processando importação, esta operação pode demorar algumas horas. Por favor, aguarde...').fadeIn();
 		}
 	}).done(function(response) {
 		if (response.success) {
@@ -117,10 +118,11 @@ function importarImoveis( forcarImportarImoveis ) {
 		} else {
 			info.removeClass('success info').addClass('error').text(response.data.message).fadeIn();
 		}
+        $("button#testar-servidor-btn, button#importar-btn, button#importar-forcado-btn").prop('disabled', false);
 		info.delay(5000).fadeOut();
 	})
 	.fail(function(jqXHR, textStatus, errorThrown) {
-		var errorMessage = 'Timeout no servidor. Volte novamente daqui 1 hora e veerifique o resultado da importação.';
+		var errorMessage = 'Timeout no servidor. Volte novamente daqui 1 hora e verifique o resultado da importação.';
 
 		if (textStatus === 'timeout') {
 			errorMessage = 'A operação excedeu o tempo limite de 1 hora.';
@@ -132,23 +134,42 @@ function importarImoveis( forcarImportarImoveis ) {
 		info.removeClass('success info').addClass('error')
 			.text(errorMessage).fadeIn()
 			.delay(5000).fadeOut();
+        $("button#testar-servidor-btn, button#importar-btn, button#importar-forcado-btn").prop('disabled', false);
 	});
 }
-function testarServidor ( e ) {
-	e.preventDefault( );
-	const info = $( '#info' );
-	const urlServidor = $( '#url_servidor' ).val( );
-	info.removeClass( 'error' ).removeClass( 'success' ).addClass( 'info' ).text( 'Testando Conexão com o servidor remoto. Por favor, aguarde.' ).fadeIn( );;
-	$.post( ajaxurl, { action: 'pinedu_testar_servidor', url_servidor: urlServidor }, function( response ) {
-		if ( response.success ) {
-			info.removeClass( 'error' ).removeClass( 'info' ).addClass( 'success' ).text( response.data.message ).fadeIn( );;
-			$( '#url_servidor' ).val( response.data.url_servidor );
-		} else {
-			info.removeClass( 'success' ).removeClass( 'info' ).addClass( 'error' ).text( response.data.message ).fadeIn( );
-		}
-		info.delay( 5000 ).fadeOut( );
-	} ).fail( function( ) {
-		info.removeClass( 'success' ).removeClass( 'info' ).addClass( 'error' ).text ( 'Houve um erro desconhecido!' ).fadeIn( );
-		info.delay( 5000 ).fadeOut( );
-	} );
+function testarServidor( e ) {
+    e.preventDefault();
+
+    const urlServidor = $( '#url_servidor' ).val();
+    const info = $( 'div.informacao' ); // Seleciona TODAS as divs com classe info
+
+    // Esconde e limpa todas as divs de info
+    info.removeClass( 'error' ).removeClass( 'success' ).removeClass( 'info' )
+        .addClass( 'info' ).text( 'Testando Conexão com o servidor remoto. Por favor, aguarde.' )
+        .stop( true, true ).fadeIn();
+    $("button#testar-servidor-btn, button#importar-btn, button#importar-forcado-btn").prop('disabled', true);
+    $.post( ajaxurl, {
+        action: 'pinedu_testar_servidor',
+        url_servidor: urlServidor
+    }, function( response ) {
+        if ( response.success ) {
+            info.removeClass( 'error' ).removeClass( 'info' )
+                .addClass( 'success' ).text( response.data.message )
+                .stop( true, true ).fadeIn();
+            $( '#url_servidor' ).val( response.data.url_servidor );
+        } else {
+            info.removeClass( 'success' ).removeClass( 'info' )
+                .addClass( 'error' ).text( response.data.message )
+                .stop( true, true ).fadeIn();
+        }
+        // Esconde todas após delay
+        info.delay( 5000 ).fadeOut();
+        $("button#testar-servidor-btn, button#importar-btn, button#importar-forcado-btn").prop('disabled', false);
+    } ).fail( function( ) {
+        info.removeClass( 'success' ).removeClass( 'info' )
+            .addClass( 'error' ).text( 'Houve um erro desconhecido!' )
+            .stop( true, true ).fadeIn();
+        info.delay( 5000 ).fadeOut();
+        $("button#testar-servidor-btn, button#importar-btn, button#importar-forcado-btn").prop('disabled', false);
+    } );
 }

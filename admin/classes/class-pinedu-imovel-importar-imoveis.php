@@ -2,7 +2,7 @@
 require_once plugin_dir_path(__FILE__) . 'PineduRequest.php';
 
 class Pinedu_Imovel_Importar_Imoveis extends Pinedu_Importa_Libs {
-	const ENDPOINT = '/pndPortal/wordpress/imoveis';
+	const ENDPOINT = '/wordpress/imoveis';
 	const IMOVEIS_POR_BLOCO = 50;
 	private $imoveis_importados = 0;
 	private $ultima_atualizacao;
@@ -84,9 +84,10 @@ class Pinedu_Imovel_Importar_Imoveis extends Pinedu_Importa_Libs {
 				$returned = (int)$pagination['returned'];
 				$total = (int)$pagination['total'];
 				$offset += $returned;
-				$this->imoveis_importados = ($this->imoveis_importados + $returned);
 				/* Invoca importacao */
 				$imoveis_importar->importa_imoveis( $data['imoveis'] );
+                /* Atualiza contador de imoveis importados */
+                $this->imoveis_importados = ($this->imoveis_importados + $returned);
 			} while ($offset < $total);
 			if ( isset( $this->imoveis_excluidos ) && !empty( $this->imoveis_excluidos ) ) {
 				$imoveis_importar->trata_excluidos( $this->imoveis_excluidos );
@@ -117,9 +118,7 @@ class Pinedu_Imovel_Importar_Imoveis extends Pinedu_Importa_Libs {
 		if ( $forcar == true ) {
 			$args['ultimaAtualizacao'] = '1980-01-01T00:00:00.000Z';
 		}
-/*		error_log('call_remote_server: ' . print_r($args, true)); // ADICIONE ESTA LINHA PARA DEBUG
-		wp_die(); // Sempre finalize a requisição AJAX com wp_die()
-*/
+        error_log( "Argumentos: " . print_r( $args, true ) );
 		$data = PineduRequest::get( $url, $args );
 
 		if ( ((bool)$data[ 'success' ]) != true ) {

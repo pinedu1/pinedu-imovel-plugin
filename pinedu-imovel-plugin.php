@@ -74,13 +74,17 @@ require plugin_dir_path( __FILE__ ) . 'includes/class-pinedu-imovel-plugin.php';
  * @since    1.0.0
  */
 function run_pinedu_imovel_plugin( ) {
-
+    require_once plugin_dir_path( __FILE__ ) . 'admin/classes/class-pinedu-foto-util.php';
+    require_once plugin_dir_path( __FILE__ ) . 'includes/classes/Pinedu_Foto_Demanda_Controller.php';
 	$plugin = new Pinedu_Imovel_Plugin( );
 	$plugin->run( );
 
 }
 run_pinedu_imovel_plugin( );
-
+function normalizar($texto) {
+    $texto = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $texto);
+    return strtoupper($texto);
+}
 function lista_contratos( ) {
 	require_once plugin_dir_path( __FILE__ ) . 'admin/classes/class-pinedu-imovel-importa-contrato.php';
 	return Pinedu_Imovel_Importa_Contrato::list( );
@@ -228,6 +232,7 @@ function get_tipo_dependencias_imovel( $post_id ) {
 	$caracteristica_icons = [ 'DOR' => 'fa fa-bed', 'SUI' => 'fa fa-shower', 'BAN' => 'fa fa-bath', 'GAR' => 'fa fa-car', 'COZ' => 'fa-solid fa-kitchen-set', 'PIS' => 'fa-solid fa-person-swimming', 'PISPRV' => 'fa-solid fa-person-swimming', 'SAL' => 'fa-solid fa-couch', 'ARS' => 'fa fa-brush', 'INTERFON' => 'fa fa-bell', 'ARCOND' => 'fa fa-snowflake', 'ARUTIL' => 'fa-solid fa-ruler-combined', 'ARCONS' => 'fa-solid fa-draw-polygon', 'ARTOT' => 'fa-solid fa-circle-nodes' ];
 	$dependencias = [];
 	$tipo_dependencias = Pinedu_Imovel_Importa_Tipo_Dependencia::get_tipo_dependencias();
+
 	$meta = get_post_meta( $post_id, '', true );
 	foreach ( [ 'CARACTERISTICAS', 'CONDOMINIO', 'EDIFICIO', 'INFRAEXTRUTURA' ] as $relativo ) {
 		$caracteristicas = $tipo_dependencias[ $relativo ];
@@ -240,10 +245,30 @@ function get_tipo_dependencias_imovel( $post_id ) {
 				$caracteristica['valor'] = $meta[$sigla][0];
 				if ( $relativo == 'CARACTERISTICAS' ) {
 					$caracteristica['icone'] = 'fa-solid fa-thumbtack';
-					if ( isset( $caracteristica_icons[ $sigla ] ) ) {
-						$caracteristica['icone'] = $caracteristica_icons[ $sigla ];
-					}
-				} else {
+                    if ( isset( $caracteristica_icons[ $sigla ] ) ) {
+						$caracteristica['icone'] = 'fa-solid fa-thumbtack';;
+                    } else if ( str_contains(normalizar( $caracteristica['nome'] ), 'GARAGE') || str_contains(strtolower( $caracteristica['nome'] ), 'VAGA') ) {
+                        $caracteristica['icone'] = 'fa fa-car';
+                    } else if ( str_contains(normalizar( $caracteristica['nome'] ), 'DORMIT') || str_contains(strtolower( $caracteristica['nome'] ), 'QUARTO') ) {
+                        $caracteristica['icone'] = 'fa fa-bed';
+                    } else if ( str_contains(normalizar( $caracteristica['nome'] ), 'SUITE') ) {
+                        $caracteristica['icone'] = 'fa fa-shower';
+                    } else if ( str_contains(normalizar( $caracteristica['nome'] ), 'SALA') ) {
+                        $caracteristica['icone'] = 'fa-solid fa-couch';
+                    } else if ( str_contains(normalizar( $caracteristica['nome'] ), 'BANHEIRO') || str_contains(strtolower( $caracteristica['nome'] ), 'WC')) {
+                        $caracteristica['icone'] = 'fa fa-shower';
+                    } else if ( str_contains(normalizar( $caracteristica['nome'] ), 'COZINHA')) {
+                        $caracteristica['icone'] = 'fa-solid fa-kitchen-set';
+                    } else if ( str_contains(normalizar( $caracteristica['nome'] ), 'AREA')) {
+                        $caracteristica['icone'] = 'fa-solid fa-ruler-combined';
+                    } else if ( str_contains(normalizar( $caracteristica['nome'] ), 'PISCINA')) {
+                        $caracteristica['icone'] = 'fa-solid fa-person-swimming';
+                    } else if ( str_contains(normalizar( $caracteristica['nome'] ), 'VARANDA') || str_contains(normalizar( $caracteristica['nome'] ), 'SACADA')) {
+                        $caracteristica['icone'] = 'fa-solid fa-chair';
+                    } else if ( $caracteristica['tipo'] == 'BOOLEAN') {
+                        $caracteristica['icone'] = 'fa fa-check-circle';
+                    }
+                } else {
 					$caracteristica['icone'] = 'fa-solid fa-thumbtack';
 				}
 				$dependencias[ $relativo ][] = $caracteristica;
@@ -262,4 +287,21 @@ function formata_valor($valor, $decimais = 0, $moeda = ''): string {
 	}
 
 	return $valor_formatado . number_format($valor, $decimais, ',', '.');
+}
+function verificar_fotos_demanda(): bool {
+    $options = get_option( 'pinedu_imovel_options', [] );
+    if ( isset( $options['fotos_demanda'] ) ) {
+        return true;
+    }
+    return false;
+}
+function get_the_post() {
+    Pinedu_Foto_Demanda_Controller::the_post();
+}
+function get_google_maps_key() {
+    $options = get_option( 'pinedu_imovel_options', [] );
+    if ( isset( $options[ 'chave_google_api' ] ) ) {
+        return $options[ 'chave_google_api' ];
+    }
+    return '';
 }

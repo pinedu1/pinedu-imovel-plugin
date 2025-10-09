@@ -122,8 +122,13 @@ class Pinedu_Imovel_Plugin_Admin {
 		add_settings_field( 'token_bearer', 'Token', [$this, 'exibir_token_bearer'], 'pinedu-imovel', 'secao_integracao' );
 		add_settings_field( 'token_username', 'Usuário', [$this, 'exibir_token_username'], 'pinedu-imovel', 'secao_integracao' );
 		add_settings_field( 'token_password', 'Senha', [$this, 'exibir_token_password'], 'pinedu-imovel', 'secao_integracao' );
-		add_settings_field( 'token_bearer', 'Token', [$this, 'exibir_token_bearer'], 'pinedu-imovel', 'secao_integracao' );
-		add_settings_field( 'chave_google_api', 'Chave Google API', [$this, 'exibir_chave_google_api'], 'pinedu-imovel', 'secao_integracao' );
+        add_settings_field( 'token_bearer', 'Token', [$this, 'exibir_token_bearer'], 'pinedu-imovel', 'secao_integracao' );
+        add_settings_field( 'token_expiration_date', 'Validade do Token', [$this, 'exibir_token_expiration_date'], 'pinedu-imovel', 'secao_integracao' );
+        add_settings_field( 'importacao_andamento', 'Importacao em andamento', [$this, 'exibir_importacao_andamento'], 'pinedu-imovel', 'secao_integracao' );
+        add_settings_section( 'secao_comportamento', 'Comportamento', [$this, 'exibir_secao_comportamento'], 'pinedu-imovel' );
+        add_settings_field( 'fotos_demanda', 'Carregar fotos sob Demanda', [$this, 'exibir_fotos_demanda'], 'pinedu-imovel', 'secao_comportamento' );
+        add_settings_section( 'secao_certificados', 'Certificados', [$this, 'exibir_secao_certificados'], 'pinedu-imovel' );
+		add_settings_field( 'chave_google_api', 'Chave Google API', [$this, 'exibir_chave_google_api'], 'pinedu-imovel', 'secao_certificados' );
 		// Adicionar seções de configuração
 		add_settings_section( 'secao_email', 'Configurações de Email', [$this, 'exibir_secao_email'], 'pinedu-imovel' );
 		add_settings_field( 'nome_remetente', 'Nome Remetente', [$this, 'exibir_nome_remetente'], 'pinedu-imovel', 'secao_email' );
@@ -160,9 +165,16 @@ class Pinedu_Imovel_Plugin_Admin {
 				</ul>
 			<?php endif; ?>
 		</div>
-		<div id="info"></div>
+		<div id="info" class="informacao"></div>
 		<?php
 	}
+    public function exibir_secao_comportamento( ) {
+        $options = get_option( 'pinedu_imovel_options', [] );
+        error_log( "Opções: " . print_r( $options, true ) );
+    }
+    public function exibir_secao_certificados( ) {
+    }
+
 	public function exibir_url_servidor( ) {
 		$options = get_option( 'pinedu_imovel_options', [] );
 		echo '<input type="text" placeholder="Url do Servidor de Imóveis" id="url_servidor" name="pinedu_imovel_options[url_servidor]" value="'.esc_attr( $options['url_servidor']??'' ).'" required>';
@@ -173,7 +185,7 @@ class Pinedu_Imovel_Plugin_Admin {
 	}
 	public function exibir_token_bearer( ) {
 		$options = get_option( 'pinedu_imovel_options', [] );
-		echo '<textarea placeholder="Token" id="token" name="pinedu_imovel_options[token]" rows="6" cols="50">'.esc_textarea( $options['token']??'' ).'</textarea>';
+		echo '<textarea placeholder="Token" id="token" name="pinedu_imovel_options[token]" rows="4" cols="50">'.esc_textarea( $options['token']??'' ).'</textarea>';
 	}
 	public function exibir_token_username( ) {
 		$options = get_option( 'pinedu_imovel_options', [] );
@@ -184,6 +196,37 @@ class Pinedu_Imovel_Plugin_Admin {
 		echo '<input type="password" placeholder="Senha" name="pinedu_imovel_options[token_password]" value="'.esc_attr( $options['token_password']??'' ).'" required>';
 	}
 
+    public function exibir_token_expiration_date( ) {
+        $options = get_option( 'pinedu_imovel_options', [] );
+        try {
+            $token_date = $options['token_expiration_date'] ?? '1980-01-01T00:00:00-300';
+            $date_time = new DateTime($token_date);
+            $field_value = $date_time->format('Y-m-d\TH:i');
+        } catch (Exception $e) {
+            $field_value = '';
+        }
+        echo '<input type="datetime-local" name="pinedu_imovel_options[token_expiration_date]" value="'. esc_attr($field_value) . '" placeholder="Data de expiração do token">';
+    }
+    public function exibir_importacao_andamento( ) {
+        $options = get_option( 'pinedu_imovel_options', [] );
+
+        $importacao_andamento = false;
+        if ( isset( $options['importacao_andamento'] ) ) {
+            $importacao_andamento = $options['importacao_andamento'];
+        }
+        $checked = checked( $importacao_andamento, true, false );
+        echo '<input type="checkbox" name="pinedu_imovel_options[importacao_andamento]" ' . $checked . ' />';
+    }
+    public function exibir_fotos_demanda( ) {
+        $options = get_option( 'pinedu_imovel_options', [] );
+
+        $fotos_demanda = false;
+        if ( isset( $options['fotos_demanda'] ) ) {
+            $fotos_demanda = $options['fotos_demanda'];
+        }
+        $checked = checked( $fotos_demanda, 'on', false );
+        echo '<input type="checkbox" name="pinedu_imovel_options[fotos_demanda]" ' . $checked . ' />';
+    }
 
 	public function exibir_chave_google_api( ) {
 		$options = get_option( 'pinedu_imovel_options', [] );

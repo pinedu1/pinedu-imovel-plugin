@@ -178,7 +178,7 @@ class Pinedu_Imovel_Plugin {
 		$plugin_public = new Pinedu_Imovel_Plugin_Public( $this->get_plugin_name(), $this->get_version() );
 		$pretty_url = new PrettyUrl( true );
 
-		$this->loader->add_action( 'phpmailer_init', $plugin_public, 'config_wp_mail', 0 );
+        $this->loader->add_action( 'phpmailer_init', $plugin_public, 'config_wp_mail', 0 );
 
 		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_styles', 5 );
 		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_scripts', 10 );

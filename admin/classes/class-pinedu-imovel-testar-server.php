@@ -1,7 +1,7 @@
 <?php
 require_once plugin_dir_path(__FILE__) . 'PineduRequest.php';
 class Pinedu_Imovel_Testar_Server {
-	const ENDPOINT = '/pndPortal/wordpress/index';
+	const ENDPOINT = '/wordpress/index';
 	public function __construct() {
 		add_action('wp_ajax_pinedu_testar_servidor', [$this, 'invoca_server']);
 	}
@@ -13,36 +13,13 @@ class Pinedu_Imovel_Testar_Server {
 	 */
 	public static function testar_server( $url, $isHook = false ) {
 		$fullUrl = trailingslashit($url) . ltrim(self::ENDPOINT, '/');
-		$result = PineduRequest::post( $fullUrl );
-		return $result;
-/*		$options = get_option('pinedu_imovel_options', []);
-		if (!filter_var($url, FILTER_VALIDATE_URL)) {
-			wp_send_json_error(['message' => 'URL inválida.']);
-			return false;
-		}
-		$fullUrl = trailingslashit($url) . ltrim(self::ENDPOINT, '/');
-		$token = $options['token'] ?? '';
-		$response = wp_remote_post($fullUrl, [
-			'timeout' => 10
-			, 'headers' => [
-				'Content-Type' => 'application/json'
-				, 'Authorization' => 'Bearer ' . sanitize_text_field( $token )
-			]
-			, 'body' => wp_json_encode( [ 'username' => $options['token_username'], 'password' => $options['token_password'] ] )
-			, 'sslverify' => true
-		]);
-
-		if (is_wp_error($response)) {
-			if ($isHook) wp_send_json_error(['message' => 'Erro de conexão com o servidor']);
-			return false;
-		}
-
-		$body = wp_remote_retrieve_body($response);
-		$data = json_decode($body, true);
-
-		return $data;*/
+        error_log('testar_server:url: ' . print_r( $fullUrl, true ) );
+        $data = PineduRequest::post( $fullUrl );
+        error_log('testar_server:data: ' . print_r( $data, true ) );
+		return $data;
 	}
 	public function invoca_server( ) {
+        xdebug_break();
 		$url = $_POST['url_servidor'] ?? '';
 
 		$data = self::testar_server( $url, true );

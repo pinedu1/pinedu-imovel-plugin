@@ -11,7 +11,7 @@ class Pinedu_Imovel_Importa_Tipo_Imovel extends Pinedu_Importa_Taxonomia_Base {
 		}
 
 		foreach ( $tipo_imoveis as $tipo_imovel ) {
-			$key = ( int )$tipo_imovel['id'];
+			$key = ( string )$tipo_imovel['id'];
 			$nome = sanitize_text_field( $tipo_imovel['nome'] );
 			$this->salva($key, $nome, 'tipo-imovel');
 		}

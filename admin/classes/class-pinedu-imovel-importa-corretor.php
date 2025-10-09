@@ -54,7 +54,9 @@ class Pinedu_Imovel_Importa_Corretor extends Pinedu_Foto_Util {
 		$this->salvar_metadados( $corretor );
 
 		$importa_fotos = new Pinedu_Imovel_Importa_Foto_Corretor( $this->post_id, $corretor );
-		$importa_fotos->salva_imagem_destaque();
+        if (!empty( $corretor['fotoNormal'] )) {
+            $importa_fotos->salva_imagem_destaque();
+        }
 		return true;
 	}
 	public function atualizar( $post_id, $corretor ) {
@@ -113,26 +115,32 @@ class Pinedu_Imovel_Importa_Corretor extends Pinedu_Foto_Util {
 			}
 			add_post_meta( $this->post_id, $key, $value,true );
 		}
-		$emails = $this->recolhe_emails( $corretor['emails'] );
-		foreach( $emails as $key => $value ) {
-			$endereco = $value['endereco'];
-			add_post_meta( $this->post_id, 'email', $endereco,true );
-		}
-		$enderecos = $this->recolhe_enderecos( $corretor['enderecos'] );
-		foreach( $enderecos as $key => $value ) {
-			$enderecoRenderizado = $value['enderecoRenderizado'];
-			add_post_meta( $this->post_id, 'endereco', $enderecoRenderizado,false );
-		}
-		$telefones = $this->recolhe_telefones( $corretor['telefones'] );
-		foreach( $telefones as $key => $value ) {
-			$numero = $value['numero'];
-			$tipo = strtolower( $value['tipo'] );
-			if ( $tipo == 'whatsapp' ) {
-				add_post_meta( $this->post_id, 'whatsapp', $numero,false );
-			} else {
-				add_post_meta( $this->post_id, 'telefone', $numero,false );
-			}
-		}
+        if ( isset( $corretor['emails'] ) ) {
+            $emails = $this->recolhe_emails( $corretor['emails'] );
+            foreach( $emails as $key => $value ) {
+                $endereco = $value['endereco'];
+                add_post_meta( $this->post_id, 'email', $endereco,true );
+            }
+        }
+        if ( isset( $corretor['enderecos'] ) ) {
+            $enderecos = $this->recolhe_enderecos( $corretor['enderecos'] );
+            foreach( $enderecos as $key => $value ) {
+                $enderecoRenderizado = $value['enderecoRenderizado'];
+                add_post_meta( $this->post_id, 'endereco', $enderecoRenderizado,false );
+            }
+        }
+        if ( isset( $corretor['telefones'] ) ) {
+            $telefones = $this->recolhe_telefones( $corretor['telefones'] );
+            foreach( $telefones as $key => $value ) {
+                $numero = $value['numero'];
+                $tipo = strtolower( $value['tipo'] );
+                if ( $tipo == 'whatsapp' ) {
+                    add_post_meta( $this->post_id, 'whatsapp', $numero,false );
+                } else {
+                    add_post_meta( $this->post_id, 'telefone', $numero,false );
+                }
+            }
+        }
 	}
 	private function recolhe_telefones( $telefones ) {
 		$tels = [];

@@ -97,10 +97,18 @@ class Pinedu_Imovel_Importa_Empresa extends Pinedu_Foto_Util {
 		return $properties;
 	}
 	public function salvar( $empresa ) {
-		$obs = $empresa['marketing']?? $empresa['nome'];
+        $obs = '';
+        if ( isset($empresa['marketing']) ) {
+            $obs = $empresa['marketing'];
+        }
+        if (empty($obs)) {
+            if ( isset($empresa['nome']) ) {
+                $obs = $empresa['nome'];
+            }
+        }
 		$post_data = array(
 			'post_title' => sanitize_title( $empresa['p_codNome']?? $empresa['nome'] )
-			, 'post_content' => $obs??''
+			, 'post_content' => $obs
 			, 'post_status' => 'publish'
 			, 'post_type' => 'empresa'
 			, 'post_date' => current_time( 'mysql' )
@@ -112,12 +120,20 @@ class Pinedu_Imovel_Importa_Empresa extends Pinedu_Foto_Util {
 		}
 		$this->post_id = $result;
 		$this->salvar_metadados( $empresa );
-
-		$importa_fotos = new Pinedu_Imovel_Importa_Foto_Loja( $this->post_id, $empresa );
-		$importa_fotos->salva_imagem_destaque();
+        if ( isset( $empresa['logo'] ) && !empty( $empresa['logo'] ) ) {
+            $importa_fotos = new Pinedu_Imovel_Importa_Foto_Loja( $this->post_id, $empresa );
+            $importa_fotos->salva_imagem_destaque();
+        }
 	}
 	public function atualizar( $post_id, $empresa ) {
-		$obs = $empresa['marketing']?? $empresa['nome'];
+        if (!empty( $empresa['marketing'] )) {
+            $obs = $empresa['marketing'];
+        }
+        if (empty($obs)) {
+            if (!empty( $empresa['nome'] )) {
+                $obs = $empresa['nome'];
+            }
+        }
 		$post_data = array(
 			'post_title' => sanitize_title( $empresa['p_codNome'] )
 			, 'post_content' => $obs??''

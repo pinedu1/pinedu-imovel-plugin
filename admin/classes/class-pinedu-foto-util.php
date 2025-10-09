@@ -71,7 +71,7 @@ class Pinedu_Imovel_Importa_Foto_Corretor extends Pinedu_Foto_Util {
 		}
 	}
 	private function resolve_imagem_destaque( ) {
-		return $this->corretor['fotoNormal'];
+		return $this->corretor['foto'];
 	}
 	private function salva_post_imagem( $imagem_destaque ) {
 		$image_ulr = $this->corretor['fotoNormal'];
@@ -100,6 +100,148 @@ class Pinedu_Imovel_Importa_Foto_Corretor extends Pinedu_Foto_Util {
 		return false;
 	}
 }
+class Pinedu_Imovel_Importa_Foto_Batch extends Pinedu_Foto_Util {
+    private $post_id;
+    public function salva_imagens_destaque( ) {
+        $args = array(
+            'post_type'  => 'imovel',
+            'posts_per_page' => -1,
+            'post_status'    => 'publish',
+            'meta_query' => array(
+                array(
+                    'key'     => 'imagem_destaque',
+                    'compare' => 'EXISTS', // Apenas verifica a existência da chave
+                ),
+            ),
+        );
+        $query = new WP_Query( $args );
+
+        if ( $query->have_posts() ) {
+            foreach ( $query->posts as $post ) {
+                $this->post_id = $post->ID;
+                $imagem_meta = get_post_meta( $this->post_id, 'imagem_destaque', true );
+
+                if ( $imagem_meta && is_array( $imagem_meta ) ) {
+                    //error_log( 'Imagem_Meta' . print_r( $imagem_meta, true ) );
+                    $foto = [
+                        'nome' => $imagem_meta['title'],
+                        'descricao' => $imagem_meta['description'],
+                        'big'   => $imagem_meta['url'],
+                    ];
+                    if ( $this->salva_post_imagem( $foto ) ) {
+                        $this->delete_destaque_term( $this->post_id );
+                    }
+                }
+            }
+        }
+        wp_reset_postdata();
+    }
+    public function salva_imagens_fotos( ) {
+        $args = array(
+            'post_type'      => 'imovel',
+            'posts_per_page' => -1, // Retorna todos os posts
+            'post_status'    => 'publish',
+            'meta_query'     => array(
+                array(
+                    'key'     => 'fotos',
+                    'compare' => 'EXISTS',
+                ),
+            ),
+        );
+
+        $query = new WP_Query( $args );
+        //error_log( '$query->have_posts()' . print_r( $query->have_posts(), true ) );
+        if ( $query->have_posts( ) ) {
+            foreach ( $query->posts as $post ) {
+                $this->post_id = $post->ID;
+                $this->importa_fotos_post( $post );
+            }
+        }
+        wp_reset_postdata();
+    }
+    public function importa_fotos_post( $post, $delete_fotos = true ) {
+        $this->post_id = $post->ID;
+        $fotos_array = get_post_meta( $this->post_id, 'fotos', false );
+        if ( is_array( $fotos_array ) && ! empty( $fotos_array ) ) {
+            foreach ( $fotos_array as $foto_meta ) {
+                if ( $foto_meta && is_array( $foto_meta ) ) {
+                    $this->salvar_fotografia( $foto_meta );
+                }
+            }
+            if ( $delete_fotos === true ) {
+                $ret = delete_post_meta( $this->post_id, 'fotos' );
+            }
+        }
+    }
+    private function delete_image( $image_id ) {
+        $deletou_midia = wp_delete_attachment( $image_id, true );
+        if ( !$deletou_midia ) {
+            return new WP_Error( 'falha_delecao_foto', 'A imagem foi removida do post, mas houve falha ao deletar o arquivo de mídia.' );
+        }
+        return true;
+    }
+
+    /**
+     * Exclui o único meta campo de destaque ('imagem_destaque') do post.
+     * A exclusão só ocorre se o meta campo existir.
+     *
+     * @return bool Retorna true em caso de sucesso na exclusão, false se não existir ou falha no DB.
+     */
+    private function delete_destaque_term( $post_id ) {
+        $meta_key_slug = 'imagem_destaque';
+        if ( empty( $post_id ) || ! is_numeric( $post_id ) ) {
+            error_log( 'Erro: ID do Post inválido ou ausente em delete_destaque_term.' );
+            return false;
+        }
+        $existe_meta = get_post_meta( $post_id, $meta_key_slug, true );
+        if ( empty( $existe_meta ) ) {
+            error_log( 'Aviso: Meta campo fixo "' . $meta_key_slug . '" não existe no post. Exclusão não necessária.' );
+            return false;
+        }
+        $resultado = delete_post_meta(
+            $post_id, // ID do Post
+            $meta_key_slug  // A chave FIXA: 'imagem_destaque'
+        );
+        if ( $resultado === true ) {
+            return true;
+        }
+        error_log( 'Erro DB: Falha na exclusão do meta campo "' . $meta_key_slug .
+            '" (Post ID: ' . $this->post_id . ').' );
+        return false;
+    }
+
+    private function salva_post_imagem( $imagem_destaque ) {
+        $image_ulr = $imagem_destaque['big'];
+        $alt_text = $imagem_destaque['nome'];
+        $title = $imagem_destaque['nome'];
+        $attachment_id = $this->importa_foto( $image_ulr, $imagem_destaque['nome'], $title, $alt_text );
+        if ( $this->post_id && $attachment_id ) {
+            set_post_thumbnail( $this->post_id, $attachment_id );
+        }
+        return $attachment_id;
+    }
+    private function salvar_fotografia( $foto ) {
+        $foto_id = $foto[ 'id' ];
+        $nome = $foto[ 'nome' ];
+        $descricao = $foto[ 'descricao' ];
+        $ordem= $foto[ 'ordem' ];
+        $fachada = false;
+        //
+        $image_ulr = $foto['big'];
+        $alt_text = $nome;
+        $title = $nome;
+        $attachment_id = $this->importa_foto( $image_ulr, $foto['nome'], $title, $alt_text );
+        if ( $attachment_id ) {
+            $valor = [ 'nome' => $nome, 'descricao' => $descricao, 'ordem' => $ordem, 'fachada' => $fachada, 'foto_id' => $foto_id, 'id' => $attachment_id];
+            $pm = add_post_meta( $this->post_id, 'fotografias', $valor, false );
+            $x=$pm;
+            error_log('Foto: ' . $foto[ 'nome' ] . ' - ' . print_r( $pm, true) );
+            return true;
+        }
+        return false;
+    }
+
+}
 class Pinedu_Imovel_Importa_Foto extends Pinedu_Foto_Util {
 	private $imovel;
 	private $post_id;
@@ -107,25 +249,155 @@ class Pinedu_Imovel_Importa_Foto extends Pinedu_Foto_Util {
 		$this->imovel = $imovel;
 		$this->post_id = $post_id;
 	}
-	public function salva_imagem_destaque( ) {
-		$imagem_destaque = $this->resolve_imagem_destaque( );
-		if ( $imagem_destaque && ! empty( $imagem_destaque ) ) {
-			$this->salva_post_imagem( $imagem_destaque );
-		}
-	}
+
+    public function salva_imagem_destaque( ) {
+        $imagem_destaque = $this->resolve_imagem_destaque( );
+        if ( $imagem_destaque && ! empty( $imagem_destaque ) ) {
+            //$this->salva_post_imagem( $imagem_destaque );
+            $this->salva_destaque_term( $imagem_destaque );
+        }
+    }
+    public function salvar_fotografias( ) {
+        $fotografias = $this->imovel[ 'fotos' ];
+        if ( empty( $fotografias ) ) return false;
+        foreach( $fotografias as $foto ) {
+            //$this->salvar_fotografia( $foto );
+            $this->salvar_fotografia_term( $foto );
+        }
+    }
+
+    /**
+     * Salva o único meta campo de destaque no post, usando add_post_meta().
+     * ESTA FUNÇÃO SÓ ADICIONARÁ O CAMPO NA PRIMEIRA VEZ (meta_key única).
+     *
+     * @param array $imagem_destaque Array associativo contendo os dados do destaque.
+     * @return bool Retorna true em caso de sucesso (adicionado), false se o campo já existe ou falha.
+     */
+    private function salva_destaque_term( $imagem_destaque ) {
+        $meta_key_slug = 'imagem_destaque';
+        if ( empty( $this->post_id ) || ! is_numeric( $this->post_id ) ) {
+            error_log( 'Erro: ID do Post inválido ou ausente em salva_destaque_term.' );
+            return false;
+        }
+        if ( ! is_array( $imagem_destaque ) || empty( $imagem_destaque['big'] ) || empty( $imagem_destaque['id'] ) ) {
+            error_log( 'Erro: Dados de destaque (array) inválidos, URL principal (big) ou ID (id) ausentes.' );
+            return false;
+        }
+        $imagem_url_sanitizada = esc_url_raw( $imagem_destaque['big'] );
+        $imagem_id_sanitizado  = sanitize_key( $imagem_destaque['id'] );
+        if ( empty( $imagem_url_sanitizada ) || empty( $imagem_id_sanitizado ) ) {
+            error_log( 'Erro: URL ou ID da imagem inválidos após a sanitização.' );
+            return false;
+        }
+        $dados_para_salvar = array(
+            'id'          => $imagem_id_sanitizado,
+            'url'         => $imagem_url_sanitizada,
+            'alt_text'    => sanitize_text_field( $imagem_destaque['nome'] ),
+            'title'       => sanitize_text_field( $imagem_destaque['nome'] ),
+            'description' => sanitize_textarea_field( $imagem_destaque['descricao'] ),
+            'label'       => sanitize_text_field( $imagem_destaque['nome'] ),
+        );
+        $meta_id = add_post_meta(
+            $this->post_id,         // ID do Post
+            $meta_key_slug,         // A chave FIXA: 'imagem_destaque'
+            $dados_para_salvar,     // O array de dados (serializado automaticamente)
+            true                    // TRUE: Garante que esta chave é única
+        );
+        if ( $meta_id === false ) {
+            // Falha: O meta campo já existe ou houve um erro no DB.
+            // Se ele já existe, isso é esperado ao usar TRUE como quarto parâmetro.
+            error_log( 'Aviso: Meta campo fixo "' . $meta_key_slug . '" já existe ou falha na adição (Post ID: ' . $this->post_id . ').' );
+            return false;
+        }
+        return true;
+    }
+    /**
+     * Salva/Atualiza o único meta campo de destaque no post (Upsert).
+     *
+     * @param array $imagem_destaque Array associativo contendo os dados do destaque.
+     * @return bool Retorna true em caso de sucesso (adicionado ou atualizado), false em caso de falha.
+     */
+    private function update_destaque_term( $imagem_destaque ) {
+        $meta_key_slug = 'imagem_destaque';
+        if ( empty( $this->post_id ) || ! is_numeric( $this->post_id ) ) {
+            error_log( 'Erro: ID do Post inválido ou ausente em update_destaque_term.' );
+            return false;
+        }
+        if ( ! is_array( $imagem_destaque ) || empty( $imagem_destaque['big'] ) || empty( $imagem_destaque['id'] ) ) {
+            error_log( 'Erro: Dados de destaque (array) inválidos, URL principal (big) ou ID (id) ausentes.' );
+            return false;
+        }
+        $existe_meta = get_post_meta( $this->post_id, $meta_key_slug, true );
+        if ( empty( $existe_meta ) ) {
+            return $this->salva_destaque_term( $imagem_destaque );
+        }
+        $imagem_id_sanitizado = sanitize_key( $imagem_destaque['id'] );
+        $imagem_url_sanitizada = esc_url_raw( $imagem_destaque['big'] );
+        if ( empty( $imagem_url_sanitizada ) || empty( $imagem_id_sanitizado ) ) {
+            error_log( 'Erro: URL ou ID da imagem inválidos após a sanitização.' );
+            return false;
+        }
+        $dados_para_salvar = array(
+            'id'          => $imagem_id_sanitizado,
+            'url'         => $imagem_url_sanitizada,
+            'alt_text'    => sanitize_text_field( $imagem_destaque['nome'] ),
+            'title'       => sanitize_text_field( $imagem_destaque['nome'] ),
+            'description' => sanitize_textarea_field( $imagem_destaque['descricao'] ),
+            'label'       => sanitize_text_field( $imagem_destaque['nome'] ),
+        );
+        $resultado = update_post_meta(
+            $this->post_id,
+            $meta_key_slug, // A chave FIXA: 'imagem_destaque'
+            $dados_para_salvar
+        );
+        if ( $resultado === false ) {
+            error_log( 'Erro DB: Falha ao executar update_post_meta para a chave "' . $meta_key_slug . '" (Post ID: ' . $this->post_id . ').' );
+            return false;
+        }
+        return true; // Sucesso na adição ou atualização
+    }
+    /**
+     * Exclui o único meta campo de destaque ('imagem_destaque') do post.
+     * A exclusão só ocorre se o meta campo existir.
+     *
+     * @return bool Retorna true em caso de sucesso na exclusão, false se não existir ou falha no DB.
+     */
+    private function delete_destaque_term( $post_id ) {
+        $meta_key_slug = 'imagem_destaque';
+        if ( empty( $post_id ) || ! is_numeric( $post_id ) ) {
+            error_log( 'Erro: ID do Post inválido ou ausente em delete_destaque_term.' );
+            return false;
+        }
+        $existe_meta = get_post_meta( $post_id, $meta_key_slug, true );
+        if ( empty( $existe_meta ) ) {
+            error_log( 'Aviso: Meta campo fixo "' . $meta_key_slug . '" não existe no post. Exclusão não necessária.' );
+            return false;
+        }
+        $resultado = delete_post_meta(
+            $post_id, // ID do Post
+            $meta_key_slug  // A chave FIXA: 'imagem_destaque'
+        );
+        if ( $resultado === true ) {
+            return true;
+        }
+        error_log( 'Erro DB: Falha na exclusão do meta campo "' . $meta_key_slug .
+            '" (Post ID: ' . $this->post_id . ').' );
+        return false;
+    }
 	public function exclui_imagem_destaque( ) {
-		$this->delete_post_thumbnail( $this->post_id );
+		//$this->delete_post_thumbnail( $this->post_id );
+        $this->delete_destaque_term( $this->post_id );
 	}
 	public function atualiza_imagem_destaque( ) {
 		$this->delete_post_thumbnail( $this->post_id );
 		$imagem_destaque = $this->resolve_imagem_destaque( );
 		if ( $imagem_destaque && ! empty( $imagem_destaque ) ) {
-			$this->salva_post_imagem( $imagem_destaque );
-			//error_log("(atualizar7)PostId:" . $this->post_id);
+			//$this->salva_post_imagem( $imagem_destaque );
+            $this->update_destaque_term( $imagem_destaque );
 		}
 	}
 	private function resolve_imagem_destaque( ) {
-		if ( isset( $this->imovel['fotos'] ) ) {
+		if ( isset( $this->imovel['fotos'] ) && !empty( $this->imovel['fotos'] ) ) {
 			$fotografias = $this->imovel['fotos'];
 			if ( $fotografias != null && !empty( $fotografias ) ) {
 				foreach ( $fotografias as $foto ) {
@@ -162,42 +434,16 @@ class Pinedu_Imovel_Importa_Foto extends Pinedu_Foto_Util {
 		return false;
 	}
 	public function atualizar_fotografias( $fotografias_post ) {
+        if ( !empty( $fotografias_post ) ) {
+            $this->apagar_fotografias( $fotografias_post );
+        }
 		$fotografias = $this->imovel[ 'fotos' ];
 		if ( empty( $fotografias ) ) {
 			return false;
 		}
 		foreach( $fotografias as $foto ) {
-			$exibir = $foto[ 'exibeInternet' ];
-			if ( !$exibir ) break;
-			$foto_id = $foto[ 'id' ];
-			$nome = $foto[ 'nome' ];
-			$descricao = $foto[ 'descricao' ];
-			$ordem= $foto[ 'ordem' ];
-			$fachada = $foto[ 'fotoBanner' ];
-			//
-			$image_ulr = $foto['big'];
-			$alt_text = $nome;
-			$title = $nome;
-
-			$valor = [ 'nome' => $nome, 'descricao' => $descricao, 'ordem' => $ordem, 'exibir' => $exibir, 'fachada' => $fachada, 'foto_id' => $foto_id];
-			$ft = $this->find_by_foto_id( $foto_id, $fotografias_post );
-			if ( $ft ) {
-				$valor['id'] = $ft[ 'id' ];
-
-				$chave = array_search($ft, $fotografias_post);
-				if ($chave !== false) {
-					unset( $fotografias_post[$chave] );
-				}
-			} else {
-				$attachment_id = $this->importa_foto( $image_ulr, $foto['nome'], $title, $alt_text );
-				$valor['id'] = $attachment_id;
-			}
-
-			$pm = add_post_meta( $this->post_id, 'fotografias', $valor, false );
-			$x=$pm;
-		}
-		if ( !empty( $fotografias_post ) ) {
-			$this->apagar_fotografias( $fotografias_post );
+            //$this->atualizar_fotografia( $foto, $fotografias_post );
+            $this->salvar_fotografia_term( $foto );
 		}
 	}
 	public function excluir_fotografias( $fotografias_post ) {
@@ -205,28 +451,106 @@ class Pinedu_Imovel_Importa_Foto extends Pinedu_Foto_Util {
 			$this->apagar_fotografias( $fotografias_post );
 		}
 	}
-	public function salvar_fotografias( ) {
-		$fotografias = $this->imovel[ 'fotos' ];
-		if ( empty( $fotografias ) ) return false;
-		foreach( $fotografias as $foto ) {
-			$exibir = $foto[ 'exibeInternet' ];
-			if ( !$exibir ) break;
-			$foto_id = $foto[ 'id' ];
-			$nome = $foto[ 'nome' ];
-			$descricao = $foto[ 'descricao' ];
-			$ordem= $foto[ 'ordem' ];
-			$fachada = $foto[ 'fotoBanner' ];
-			//
-			$image_ulr = $foto['big'];
-			$alt_text = $nome;
-			$title = $nome;
-			$attachment_id = $this->importa_foto( $image_ulr, $foto['nome'], $title, $alt_text );
+    private function salvar_fotografia( $foto ) {
+        error_log( 'Buscando Foto:' . print_r( $foto, true ) );
 
-			$valor = [ 'nome' => $nome, 'descricao' => $descricao, 'ordem' => $ordem, 'exibir' => $exibir, 'fachada' => $fachada, 'foto_id' => $foto_id, 'id' => $attachment_id];
-			$pm = add_post_meta( $this->post_id, 'fotografias', $valor, false );
-			$x=$pm;
-		}
-	}
+        $exibir = $foto[ 'exibeInternet' ];
+        if ( !$exibir ) return false;
+        $foto_id = $foto[ 'id' ];
+        $nome = $foto[ 'nome' ];
+        $descricao = $foto[ 'descricao' ];
+        $ordem= $foto[ 'ordem' ];
+        $fachada = $foto[ 'fotoBanner' ];
+        //
+        $image_ulr = $foto['big'];
+        $alt_text = $nome;
+        $title = $nome;
+        $attachment_id = $this->importa_foto( $image_ulr, $foto['nome'], $title, $alt_text );
+
+        $valor = [ 'nome' => $nome, 'descricao' => $descricao, 'ordem' => $ordem, 'exibir' => $exibir, 'fachada' => $fachada, 'foto_id' => $foto_id, 'id' => $attachment_id];
+        $pm = add_post_meta( $this->post_id, 'fotografias', $valor, false );
+        $x=$pm;
+        return true;
+    }
+    private function atualizar_fotografia( $foto, &$fotografias_post ) {
+        $exibir = $foto[ 'exibeInternet' ];
+        if ( !$exibir ) return false;
+        $foto_id = $foto[ 'id' ];
+        $nome = $foto[ 'nome' ];
+        $descricao = $foto[ 'descricao' ];
+        $ordem= $foto[ 'ordem' ];
+        $fachada = $foto[ 'fotoBanner' ];
+        //
+        $image_ulr = $foto['big'];
+        $alt_text = $nome;
+        $title = $nome;
+
+        $valor = [ 'nome' => $nome, 'descricao' => $descricao, 'ordem' => $ordem, 'exibir' => $exibir, 'fachada' => $fachada, 'foto_id' => $foto_id];
+        $ft = $this->find_by_foto_id( $foto_id, $fotografias_post );
+        if ( $ft ) {
+            $valor['id'] = $ft[ 'id' ];
+
+            $chave = array_search($ft, $fotografias_post);
+            if ($chave !== false) {
+                unset( $fotografias_post[$chave] );
+            }
+        } else {
+            $attachment_id = $this->importa_foto( $image_ulr, $foto['nome'], $title, $alt_text );
+            $valor['id'] = $attachment_id;
+        }
+
+        $pm = add_post_meta( $this->post_id, 'fotografias', $valor, false );
+        $x=$pm;
+        return true;
+    }
+    public function salvar_fotografia_term( $foto ): bool {
+        $meta_key_slug = 'fotos';
+        if ( empty( $this->post_id ) || ! is_numeric( $this->post_id ) ) {
+            error_log( 'Erro: ID do Post inválido ou ausente em salva_destaque_term.' );
+            return false;
+        }
+        if ( ! is_array( $foto ) || empty( $foto['big'] ) || empty( $foto['id'] ) ) {
+            error_log( 'Erro: Dados de destaque (array) inválidos, URL principal (big) ou ID (id) ausentes.' );
+            return false;
+        }
+        $imagem_url_sanitizada = esc_url_raw( $foto['big'] );
+        $imagem_id_sanitizado  = sanitize_key( $foto['id'] );
+        if ( empty( $imagem_url_sanitizada ) || empty( $imagem_id_sanitizado ) ) {
+            error_log( 'Erro: URL ou ID da imagem inválidos após a sanitização.' );
+            return false;
+        }
+        $exibir = $foto[ 'exibeInternet' ];
+        if ( !$exibir ) return false;
+
+        $dados_para_salvar = array(
+            'id' => $imagem_id_sanitizado
+            , 'url' => $imagem_url_sanitizada
+            , 'alt_text' => sanitize_text_field( $foto['nome'] )
+            , 'title' => sanitize_text_field( $foto['nome'] )
+            , 'description' => sanitize_textarea_field( $foto['descricao'] )
+            , 'label' => sanitize_text_field( $foto['nome'] )
+            , 'nome' => $foto['nome']
+            , 'descricao' => $foto['descricao']
+            , 'ordem' => $foto['ordem']
+            , 'foto_id' => $foto['id']
+            , 'big' => $foto['big']
+            , 'fachada' => $foto[ 'fotoBanner' ]
+            , 'exibir' => $foto[ 'exibeInternet' ]
+        );
+        $meta_id = add_post_meta(
+            $this->post_id,         // ID do Post
+            $meta_key_slug,         // A chave FIXA: 'imagem_destaque'
+            $dados_para_salvar,     // O array de dados (serializado automaticamente)
+            false                    // TRUE: Garante que esta chave é única
+        );
+        if ( $meta_id === false ) {
+            // Falha: O meta campo já existe ou houve um erro no DB.
+            // Se ele já existe, isso é esperado ao usar TRUE como quarto parâmetro.
+            error_log( 'Aviso: Meta campo fixo "' . $meta_key_slug . '" já existe ou falha na adição (Post ID: ' . $this->post_id . ').' );
+            return false;
+        }
+        return true;
+    }
 	private function delete_image( $image_id ) {
 		$deletou_midia = wp_delete_attachment( $image_id, true );
 		if ( !$deletou_midia ) {

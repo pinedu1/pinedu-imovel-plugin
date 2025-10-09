@@ -49,6 +49,9 @@ class Pinedu_Imovel_Importar {
 		return $tempo_atualizacao;
 	}
 	public function pre_import( ) {
+        $options = get_option('pinedu_imovel_options', []);
+        $options['importacao_andamento'] = true;
+        update_option('pinedu_imovel_options', $options);
 		$this->time_inicio_importacao = new DateTime();
 		$this->exclui_agendamento_completo();
 	}
@@ -58,7 +61,6 @@ class Pinedu_Imovel_Importar {
 		$this->imoveis_importados = $this->getImoveisImportados();
 		$this->tempo_utilizado = $this->getTempoUtilizado();
 		$options = get_option('pinedu_imovel_options', []);
-
 		$options['tempo_atualizacao'] = $this->getTempoAtualizacao();
 		$options['imoveis_importados'] = $this->imovel->getImoveisImportados();
 		$options['ultima_atualizacao'] = $this->ultima_atualizacao;
@@ -68,13 +70,30 @@ class Pinedu_Imovel_Importar {
 		$data_hora = $this->time_inicio_importacao->getTimestamp();
 		$this->agendar_importacao( $data_hora, $this->getTempoAtualizacao() );
 		$options['proxima_atualizacao'] = $this->consulta_agendamento();
+        $options['importacao_andamento'] = false;
 		update_option('pinedu_imovel_options', $options);
+        /*
+         * Vai Importar apenas as imagens de destaque
+         * As fotografias serão importadas via HOOK THE_POST
+         */
+        $importar_fotos = new Pinedu_Imovel_Importa_Foto_Batch( );
+        error_log( '!!! Importar Destaques !!!' );
+        $importar_fotos->salva_imagens_destaque();
+        if ( verificar_fotos_demanda() !== true ) {
+            error_log( '!!! Importar Fotos !!!' );
+            $importar_fotos->salva_imagens_fotos();
+        }
+        error_log( '!!! Terminou importação !!!' );
 	}
 	public function invoca_importacao( ) {
+        $url_servidor = $_POST['url_servidor'];
+        $forcar = $_POST['forcar'];
 		do_action('pinedu_pre_import');
-		if ( $this->testar_server() === true ) {
-			$this->basicos->invoca_server( $_POST['url_servidor'], $_POST['forcar'] );
-			$this->imovel->invoca_server( $_POST['url_servidor'], $_POST['forcar'] );;
+        $data = $this->testar_server();
+        error_log('$this->testar_server(): ' . print_r( $data, true ) );
+		if ( $data === true ) {
+			$this->basicos->invoca_server( $url_servidor, $forcar );
+			$this->imovel->invoca_server( $url_servidor, $forcar );;
 			do_action('pinedu_post_import', $this->imovel->getImoveisImportados());
 			wp_send_json_success([
 				'message' => $data['message'] ?? 'Importação dos Imóveis Realizada com sucesso!'
@@ -120,9 +139,11 @@ class Pinedu_Imovel_Importar {
 	}
 	private function testar_server() {
 		$options = get_option('pinedu_imovel_options', []);
-		$url = isset( $options[ 'url_servidor' ] )? $options[ 'url_servidor' ]: '';
+		$url = $options['url_servidor'] ?? '';
 		if ( empty( $url ) ) return false;
+        error_log('Pinedu_Imovel_Testar_Server::url: ' . print_r( $url, true ) );
 		$data = Pinedu_Imovel_Testar_Server::testar_server( $url, false );
+        error_log('Pinedu_Imovel_Testar_Server::testar_server: ' . print_r( $data, true ) );
 		if ( isset( $data['success'] ) ) {
 			return $data[ 'success' ];
 		}
