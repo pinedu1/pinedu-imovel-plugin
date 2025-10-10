@@ -247,23 +247,23 @@ function get_tipo_dependencias_imovel( $post_id ) {
 					$caracteristica['icone'] = 'fa-solid fa-thumbtack';
                     if ( isset( $caracteristica_icons[ $sigla ] ) ) {
 						$caracteristica['icone'] = 'fa-solid fa-thumbtack';;
-                    } else if ( str_contains(normalizar( $caracteristica['nome'] ), 'GARAGE') || str_contains(strtolower( $caracteristica['nome'] ), 'VAGA') ) {
+                    } else if ( str_starts_with(normalizar( $caracteristica['nome'] ), 'GARAGE') || str_contains(strtolower( $caracteristica['nome'] ), 'VAGA') ) {
                         $caracteristica['icone'] = 'fa fa-car';
-                    } else if ( str_contains(normalizar( $caracteristica['nome'] ), 'DORMIT') || str_contains(strtolower( $caracteristica['nome'] ), 'QUARTO') ) {
+                    } else if ( str_starts_with(normalizar( $caracteristica['nome'] ), 'DORMIT') || str_contains(strtolower( $caracteristica['nome'] ), 'QUARTO') ) {
                         $caracteristica['icone'] = 'fa fa-bed';
-                    } else if ( str_contains(normalizar( $caracteristica['nome'] ), 'SUITE') ) {
+                    } else if ( str_starts_with(normalizar( $caracteristica['nome'] ), 'SUITE') ) {
                         $caracteristica['icone'] = 'fa fa-shower';
-                    } else if ( str_contains(normalizar( $caracteristica['nome'] ), 'SALA') ) {
+                    } else if ( str_starts_with(normalizar( $caracteristica['nome'] ), 'SALA') ) {
                         $caracteristica['icone'] = 'fa-solid fa-couch';
-                    } else if ( str_contains(normalizar( $caracteristica['nome'] ), 'BANHEIRO') || str_contains(strtolower( $caracteristica['nome'] ), 'WC')) {
+                    } else if ( str_starts_with(normalizar( $caracteristica['nome'] ), 'BANHEIRO') || str_contains(strtolower( $caracteristica['nome'] ), 'WC')) {
                         $caracteristica['icone'] = 'fa fa-shower';
-                    } else if ( str_contains(normalizar( $caracteristica['nome'] ), 'COZINHA')) {
+                    } else if ( str_starts_with(normalizar( $caracteristica['nome'] ), 'COZINHA')) {
                         $caracteristica['icone'] = 'fa-solid fa-kitchen-set';
-                    } else if ( str_contains(normalizar( $caracteristica['nome'] ), 'AREA')) {
+                    } else if ( str_starts_with(normalizar( $caracteristica['nome'] ), 'AREA')) {
                         $caracteristica['icone'] = 'fa-solid fa-ruler-combined';
-                    } else if ( str_contains(normalizar( $caracteristica['nome'] ), 'PISCINA')) {
+                    } else if ( str_starts_with(normalizar( $caracteristica['nome'] ), 'PISCINA')) {
                         $caracteristica['icone'] = 'fa-solid fa-person-swimming';
-                    } else if ( str_contains(normalizar( $caracteristica['nome'] ), 'VARANDA') || str_contains(normalizar( $caracteristica['nome'] ), 'SACADA')) {
+                    } else if ( str_starts_with(normalizar( $caracteristica['nome'] ), 'VARANDA') || str_starts_with(normalizar( $caracteristica['nome'] ), 'SACADA')) {
                         $caracteristica['icone'] = 'fa-solid fa-chair';
                     } else if ( $caracteristica['tipo'] == 'BOOLEAN') {
                         $caracteristica['icone'] = 'fa fa-check-circle';
@@ -276,6 +276,15 @@ function get_tipo_dependencias_imovel( $post_id ) {
 		}
 	}
 	return $dependencias;
+}
+function corta_texto( $texto, $tamanho ): string {
+    if (!is_string($texto)) {
+        return '';
+    }
+    if ( ( strlen($texto) > $tamanho ) ) {
+        return substr($texto, 0, $tamanho);
+    }
+    return $texto;
 }
 function formata_valor($valor, $decimais = 0, $moeda = ''): string {
 	$valor = is_numeric($valor) ? (float)$valor : 0;
