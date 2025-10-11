@@ -314,3 +314,32 @@ function get_google_maps_key() {
     }
     return '';
 }
+function formatar_title_case(string $endereco_maiusculo, string $encoding = 'UTF-8'): string {
+    $endereco_minusculo = mb_strtolower($endereco_maiusculo, $encoding);
+    $endereco_title_case = mb_convert_case($endereco_minusculo, MB_CASE_TITLE, $encoding);
+    $substituicoes = [
+        ' Cep' => ' CEP',
+        ' Sp' => ' SP',
+        '/sp' => '/SP',
+        ' / Sp' => ' / SP',
+        ' Rg' => ' RG',
+        ' Cpf' => ' CPF',
+        ' Pj' => ' PJ',
+        ' Me' => ' ME',
+        ' Epp' => ' EPP',
+        ' Ltda' => ' LTDA',
+    ];
+    $endereco_final = str_replace(
+        array_keys($substituicoes),
+        array_values($substituicoes),
+        $endereco_title_case
+    );
+    return $endereco_final;
+}
+function formata_link_telefone( $telefone ) {
+	$telefone = preg_replace( '/[^0-9]/', '', $telefone );
+    if (! str_starts_with( $telefone, 55 ) ) {
+        $telefone = '+55' . $telefone;
+    }
+    return $telefone;
+}

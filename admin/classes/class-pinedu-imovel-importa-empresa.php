@@ -63,12 +63,15 @@ class Pinedu_Imovel_Importa_Empresa extends Pinedu_Foto_Util {
 			$enderecoRenderizado = $value['enderecoRenderizado'];
 			add_post_meta( $this->post_id, 'endereco', $enderecoRenderizado,false );
 		}
-		$telefones = $this->recolhe_telefones( $empresa['telefones'] );
+        $telefones = $this->recolhe_telefones( $empresa['telefones'] );
 		foreach( $telefones as $key => $value ) {
 			$numero = $value['numero'];
 			$tipo = strtolower( $value['tipo'] );
-			if ( $tipo == 'whatsapp' ) {
-				add_post_meta( $this->post_id, 'whatsapp', $numero,false );
+            $padrao = $value['padrao'];
+            if ( $padrao === true ) {
+                add_post_meta( $this->post_id, 'telefonePadrao', $numero,true );
+            } else if ( $tipo == 'whatsapp' ) {
+				add_post_meta( $this->post_id, 'whatsapp', $numero,true );
 			} else {
 				add_post_meta( $this->post_id, 'telefone', $numero,false );
 			}
@@ -155,7 +158,8 @@ class Pinedu_Imovel_Importa_Empresa extends Pinedu_Foto_Util {
 		foreach ( $telefones as $tel ) {
 			$tipoendereco = $tel['tipoendereco'];
 			$tels[] = array(
-				'numero' => $tel['telefone']
+                'numero' => $tel['telefone']
+				, 'padrao' => $tel['padrao']
 				, 'tipo' => $tipoendereco['nome']
 			);
 		}
