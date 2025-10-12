@@ -105,6 +105,19 @@ function lista_faixa_valor( $contrato ) {
 	require_once plugin_dir_path( __FILE__ ) . 'admin/classes/class-pinedu-imovel-importa-faixa-valor.php';
 	return Pinedu_Imovel_Importa_Faixa_Valor::list( $contrato );
 }
+function lista_faixa_valor_valores( $contrato ) {
+    require_once plugin_dir_path( __FILE__ ) . 'admin/classes/class-pinedu-imovel-importa-faixa-valor.php';
+    if ( empty( $contrato ) ) {
+        return [];
+    }
+    $lista = Pinedu_Imovel_Importa_Faixa_Valor::list( $contrato );
+    $l = [ 0 ];
+    foreach ((array) $lista as $key) {
+        $m = get_term_meta( $key->term_id, 'valor-final', true );
+        $l[] = floatval( $m );
+    }
+    return $l;
+}
 function registra_visita_imovel( $post = 0 ) {
 	$post = get_post( $post );
 	$post_id = $post->ID;
