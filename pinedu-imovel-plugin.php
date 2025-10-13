@@ -356,3 +356,75 @@ function formata_link_telefone( $telefone ) {
     }
     return $telefone;
 }
+
+
+/**
+ * Calcula os pontos de um círculo (polígono) em torno de um ponto central
+ * usando a fórmula da Grande Rota (Great Circle Distance).
+ *
+ * @param array<string, float> $center Um array com as chaves 'latitude' e 'longitude' (em graus).
+ * @param int $radiusMeters O raio do círculo em metros.
+ * @return array<int, array<string, float>> Uma lista de pontos (latitude e longitude em graus) que formam o círculo.
+ */
+function drawCircle(array $center, int $radiusMeters): array {
+    // Constantes
+    $EARTH_RADIUS_KM = 6371.0;
+
+    // PHP usa a constante M_PI para o valor de Pi
+    $PI = pi();
+
+    // 1. Converter centro e raio para radianos
+    // A fórmula original do Groovy já usa (graus * PI / 180.0)
+    $latitudeRadians = $center['latitude'] * $PI / 180.0;
+    $longitudeRadians = $center['longitude'] * $PI / 180.0;
+
+    // Raio em radianos: (metros / 1000) / Raio da Terra em KM
+    $radiusRadians = ($radiusMeters / 1000.0) / $EARTH_RADIUS_KM;
+
+    // 2. Cálculos Prefixados (partes constantes do cálculo de latitude)
+    $calcLatPrefix = sin($latitudeRadians) * cos($radiusRadians);
+    $calcLatSuffix = cos($latitudeRadians) * sin($radiusRadians);
+
+    $path = [];
+
+    // 3. Loop (ângulo de 0 a 360, passos de 10)
+    for ($angle = 0; $angle < 361; $angle += 10) {
+
+        // Converter ângulo do loop para radianos
+        $angleRadians = $angle * $PI / 180.0;
+
+        // CÁLCULO DA LATITUDE (em radianos)
+        // latitude = Math.asin(calcLatPrefix + calcLatSuffix * Math.cos(angleRadians));
+        $latitude = asin($calcLatPrefix + $calcLatSuffix * cos($angleRadians));
+
+        // CÁLCULO DA LONGITUDE (em radianos, antes da conversão final)
+        // Numerador: Math.sin(angleRadians) * Math.sin(radiusRadians) * Math.cos(latitudeRadians)
+        $numerator = sin($angleRadians) * sin($radiusRadians) * cos($latitudeRadians);
+
+        // Denominador: Math.cos(radiusRadians) - Math.sin(latitudeRadians) * Math.sin(latitude)
+        $denominator = cos($radiusRadians) - sin($latitudeRadians) * sin($latitude);
+
+        // A expressão completa do Groovy é:
+        // longitude = ((longitudeRadians + Math.atan2(Numerador, Denominador)) * 180) / Math.PI;
+        $longitude = (($longitudeRadians + atan2($numerator, $denominator)) * 180) / $PI;
+
+        // Converter Latitude de radianos para graus
+        // latitude = latitude * 180.0 / Math.PI;
+        $latitude = $latitude * 180.0 / $PI;
+
+        // 4. Adicionar ao Path (Lista de arrays associativos)
+        $path[] = [
+            'latitude' => $latitude,
+            'longitude' => $longitude
+        ];
+    }
+    return $path;
+}
+function formatCoordinatesToCircle(array $points): string {
+    $formattedPoints = array_map(function($point) {
+        return $point['latitude'] . ',' . $point['longitude'];
+    }, $points);
+    $resultString = implode('|', $formattedPoints);
+    return $resultString;
+}
+
