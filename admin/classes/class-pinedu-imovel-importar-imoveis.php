@@ -59,7 +59,7 @@ class Pinedu_Imovel_Importar_Imoveis extends Pinedu_Importa_Libs {
 			$this->imoveis_importados = 0;
 
 			$options = get_option('pinedu_imovel_options', []);
-			$ultima_atualizacao = new DateTime();
+			$ultima_atualizacao = new DateTime( 'now', new DateTimeZone('America/Sao_Paulo') );
 			if ( isset( $options['ultima_atualizacao'] ) ) {
 				$ultima_atualizacao = $options[ 'ultima_atualizacao' ];
 			}
@@ -93,7 +93,7 @@ class Pinedu_Imovel_Importar_Imoveis extends Pinedu_Importa_Libs {
 				$imoveis_importar->trata_excluidos( $this->imoveis_excluidos );
 			}
 
-			$this->ultima_atualizacao = new DateTime( 'now', new DateTimeZone( wp_timezone_string( ) ) );
+			$this->ultima_atualizacao = new DateTime( 'now', new DateTimeZone('America/Sao_Paulo') );
 		} catch ( Exception $e ) {
 			error_log('Erro durante a importação de imóveis: ' . $e->getMessage());
 			wp_send_json_error([
@@ -107,6 +107,39 @@ class Pinedu_Imovel_Importar_Imoveis extends Pinedu_Importa_Libs {
 			return true;
 		}
 	}
+    public function importar_callback( $data ) {
+        try {
+            $options = get_option('pinedu_imovel_options', []);
+            $options['importacao_andamento'] = true;
+            $imoveis_importar = new Pinedu_Imovel_Importa_Imovel();
+            if ( isset( $data['imoveis'] ) && !empty( $data['imoveis'] ) ) {
+                /* Invoca importacao */
+                $imoveis_importar->importa_imoveis( $data['imoveis'] );
+                /* Atualiza contador de imoveis importados */
+            }
+            if ( isset( $this->imoveis_excluidos ) && !empty( $this->imoveis_excluidos ) ) {
+                $imoveis_importar->trata_excluidos( $this->imoveis_excluidos );
+            }
+            $this->ultima_atualizacao = new DateTime( 'now', new DateTimeZone('America/Sao_Paulo') );
+            $options['imoveis_importados'] = $imoveis_importar->getImoveisImportados();
+            $options['ultima_atualizacao'] = $this->ultima_atualizacao;
+            $options['importacao_andamento'] = false;
+            update_option('pinedu_imovel_options', $options);
+            $ret = [
+                'success'=> true
+                , 'ultima_atualizacao'=> $this->ultima_atualizacao
+                , 'imoveis_importados' => $options['imoveis_importados']
+            ];
+            return $ret;
+        } catch ( Exception $e ) {
+            $ret = [
+                'success'=> false
+                , 'message'=> 'Ocorreu um erro durante o processamento: ' . $e->getMessage()
+            ];
+            return $ret;
+        }
+    }
+
 	private function call_remote_server( $url, $max = 0, $offset = 0, $clicados = array(), $ultima_atualizacao = null, $forcar = false ) {
 		$args = [ 'max' => $max, 'offset' => $offset, 'forcar' => $forcar ];
 		if ( $clicados ) {
@@ -115,10 +148,10 @@ class Pinedu_Imovel_Importar_Imoveis extends Pinedu_Importa_Libs {
 		if ( $ultima_atualizacao ) {
 			$args['ultimaAtualizacao'] = formataData_iso8601( $ultima_atualizacao );
 		}
-		if ( $forcar == true ) {
+/*		if ( $forcar === true ) {
 			$args['ultimaAtualizacao'] = '1980-01-01T00:00:00.000Z';
-		}
-        error_log( "Argumentos: " . print_r( $args, true ) );
+		}*/
+        error_log( "Argumentos ImportaImovel: " . print_r( $args, true ) );
 		$data = PineduRequest::get( $url, $args );
 
 		if ( ((bool)$data[ 'success' ]) != true ) {

@@ -19,21 +19,11 @@ class Pinedu_Imovel_Testar_Server {
 		return $data;
 	}
 	public function invoca_server( ) {
-        xdebug_break();
 		$url = $_POST['url_servidor'] ?? '';
 
 		$data = self::testar_server( $url, true );
 
 		if (isset($data['success']) && $data['success'] === true) {
-			$options = get_option('pinedu_imovel_options', []);
-			$options['url_servidor'] = $data['url_servidor'] ?? '';
-			$ultima_carga = $data['ultimaCarga'];
-			if (!empty($ultima_carga)) {
-				$options['ultima_atualizacao'] = $ultima_carga;
-			}
-			$options['url_servidor'] = $data['url_servidor'] ?? '';
-			update_option('pinedu_imovel_options', $options);
-
 			wp_send_json_success([
 				'message' => $data['message'] ?? 'Servidor OK'
 				, 'url_servidor' => $data['url_servidor']

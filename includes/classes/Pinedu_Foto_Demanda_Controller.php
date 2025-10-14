@@ -99,9 +99,10 @@ final class Pinedu_Foto_Demanda_Controller {
     }
     public static function the_post() {
         global $post;
+        $success = true;
         if (verificar_fotos_demanda() === true) {
             $batch = self::get_batch_importer();
-            $batch->importa_fotos_post( $post, self::$apagar_apos_processar );
+            $success = $batch->importa_fotos_post( $post, self::$apagar_apos_processar );
         }
         the_post();
     }

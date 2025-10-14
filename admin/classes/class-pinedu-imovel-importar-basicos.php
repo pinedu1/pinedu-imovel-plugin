@@ -79,6 +79,40 @@ class Pinedu_Imovel_Importar_Basicos {
 			return true;
 		}
 	}
+    public function importar_callback( $data ) {
+        try {
+            if ( isset( $data['success'] ) && $data['success'] === true ) {
+                // Trata Parametros da Empresa
+                $this->importa_parametros( $data );
+                // Trata Empresa
+                $this->importa_empresa( $data );
+                // Trata Loja
+                $this->importa_loja( $data );
+                // Trata Corretor
+                $this->importa_corretor( $data );
+                // Trata Tipo de Contrato [venda, locacao, lancamento]
+                $this->importa_contratos( $data );
+                // Trata Tipo de Imovel [apartamento, casa, sobrado]
+                $this->importa_tipo_imoveis( $data );
+                // Trata Cidades, Regiões e Bairros [Santo André > Centro > Jardim Eldorado]
+                $this->importa_cidades( $data );
+                // Trata Faixas de valores
+                $this->importa_faixa_valor( $data );
+                // Tipo de Dependencia
+                $this->importa_tipo_dependencia( $data );
+            } else {
+                wp_send_json_error( [
+                    'message' => $data['message'] ?? 'Formato do arquivo inválido ( Básicos )!'
+                ] );
+            }
+        } catch ( Exception $e ) {
+            // Log do erro ( opcional )
+            error_log( 'Erro durante a importação: ' . $e->getMessage( ) );
+            return false;
+        } finally {
+            return true;
+        }
+    }
 	private function importa_empresa( $data ) {
 		if ( !isset( $data['empresa'] ) || !is_array( $data['empresa'] ) || empty( $data['empresa'] ) ) {
 			wp_send_json_error( ['message' => 'Nó Empresa não encontrado ou vazio no JSON'] );
@@ -119,6 +153,7 @@ class Pinedu_Imovel_Importar_Basicos {
 		$options = get_option( 'pinedu_imovel_options', [] );
 		$options = is_array( $options ?? null ) ? $options : [];
 		$parametros = $data['parametroSistema'];
+        //error_log( 'Parametros: ' . print_r( $parametros, true ) );
 		$parametros = is_array( $parametros ?? null ) ? $parametros : [];
 		$options['contrato'] = $parametros['contrato'] ?? ''; // Ou outro valor padrão
 		unset( $options['contrato'] );
@@ -126,18 +161,20 @@ class Pinedu_Imovel_Importar_Basicos {
 			$options['contrato'] = $parametros['contrato'];
 		}
 		unset( $options['tipo_imovel'] );
-		if ( isset( $parametros['tipoImovel'] ) && ( $parametros['tipoImovel'] > 0 ) ) {
+		if ( isset( $parametros['tipoImovel'] ) && !empty( $parametros['tipoImovel'] ) ) {
 			$options['tipo_imovel'] = $parametros['tipoImovel'];
 		}
 		unset( $options['cidade'] );
-		if ( isset( $parametros['cidade'] ) && ( $parametros['cidade'] > 0 ) ) {
+		if ( isset( $parametros['cidade'] ) && !empty( $parametros['cidade'] ) ) {
 			$options['cidade'] = $parametros['cidade'];
 		}
 		unset( $options['regiao'] );
-		if ( isset( $parametros['regiao'] ) && ( $parametros['regiao'] > 0 ) ) {
+		if ( isset( $parametros['regiao'] ) && !empty( $parametros['regiao'] ) ) {
 			$options['regiao'] = $parametros['regiao'];
 		}
 		update_option( 'pinedu_imovel_options', $options );
+        $options = get_option( 'pinedu_imovel_options', [] );
+        //error_log( 'Options: ' . print_r( $options, true ) );
 	}
 	private function importa_cidades( $data ) {
 		if ( !isset( $data['cidades'] ) || !is_array( $data['cidades'] ) || empty( $data['cidades'] ) ) {

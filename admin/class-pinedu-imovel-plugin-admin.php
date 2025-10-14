@@ -127,8 +127,10 @@ class Pinedu_Imovel_Plugin_Admin {
         add_settings_field( 'importacao_andamento', 'Importacao em andamento', [$this, 'exibir_importacao_andamento'], 'pinedu-imovel', 'secao_integracao' );
         add_settings_section( 'secao_comportamento', 'Comportamento', [$this, 'exibir_secao_comportamento'], 'pinedu-imovel' );
         add_settings_field( 'fotos_demanda', 'Carregar fotos sob Demanda', [$this, 'exibir_fotos_demanda'], 'pinedu-imovel', 'secao_comportamento' );
+        add_settings_field( 'descricao_do_imovel', 'Usar Descrição do Imóvel', [$this, 'exibir_usar_descricao_do_imovel'], 'pinedu-imovel', 'secao_comportamento' );
         add_settings_section( 'secao_certificados', 'Certificados', [$this, 'exibir_secao_certificados'], 'pinedu-imovel' );
-		add_settings_field( 'chave_google_api', 'Chave Google API', [$this, 'exibir_chave_google_api'], 'pinedu-imovel', 'secao_certificados' );
+        add_settings_field( 'chave_google_api', 'Chave Google API', [$this, 'exibir_chave_google_api'], 'pinedu-imovel', 'secao_certificados' );
+        add_settings_field( 'chave_facebook_id', 'Chave Facebook ID', [$this, 'exibir_chave_facebook_id'], 'pinedu-imovel', 'secao_certificados' );
 		// Adicionar seções de configuração
 		add_settings_section( 'secao_email', 'Configurações de Email', [$this, 'exibir_secao_email'], 'pinedu-imovel' );
 		add_settings_field( 'nome_remetente', 'Nome Remetente', [$this, 'exibir_nome_remetente'], 'pinedu-imovel', 'secao_email' );
@@ -160,8 +162,8 @@ class Pinedu_Imovel_Plugin_Admin {
 				<ul>
 					<li><div id="ultima_atualizacao"><p><strong>Última atualização: </strong><?php echo esc_html( $ultima_atualizacao->format( 'd/m/Y, H:i:s' ) ); ?></p></div></li>
 					<li><div id="imoveis_importados"><p><strong>Imóveis importados: </strong><?php echo esc_html( $imoveis_importados ); ?></p></div></li>
-					<li><div id="tempo_utilizado"><p><strong>Tempo utilizado:  </strong><?php echo esc_html( $tempo_utilizado ); ?></p></div></li>
-					<li><div id="proxima_atualizacao"><p><strong>Próxima atualização: </strong><?php echo esc_html( $proxima_atualizacao->format( 'd/m/Y, H:i:s' ) ); ?></p></div></li>
+					<?php if (isset($tempo_utilizado)): ?><li><div id="tempo_utilizado"><p><strong>Tempo utilizado:  </strong><?php echo esc_html( $tempo_utilizado ); ?></p></div></li><?php endif; ?>
+                    <?php if (isset($proxima_atualizacao)): ?><li><div id="proxima_atualizacao"><p><strong>Próxima atualização: </strong><?php echo esc_html( $proxima_atualizacao->format( 'd/m/Y, H:i:s' ) ); ?></p></div></li><?php endif; ?>
 				</ul>
 			<?php endif; ?>
 		</div>
@@ -227,11 +229,26 @@ class Pinedu_Imovel_Plugin_Admin {
         $checked = checked( $fotos_demanda, 'on', false );
         echo '<input type="checkbox" name="pinedu_imovel_options[fotos_demanda]" ' . $checked . ' />';
     }
+    public function exibir_usar_descricao_do_imovel( ) {
+        $options = get_option( 'pinedu_imovel_options', [] );
+
+        $usar_descricao_do_imovel = false;
+        if ( isset( $options['usar_descricao_do_imovel'] ) ) {
+            $usar_descricao_do_imovel = $options['usar_descricao_do_imovel'];
+        }
+        $checked = checked( $usar_descricao_do_imovel, 'on', false );
+        echo '<input type="checkbox" name="pinedu_imovel_options[usar_descricao_do_imovel]" ' . $checked . ' />';
+        echo '<p class="description">Ou recriar a descrição com base nos dados so imóvel (IA - Somente nos metatags para AdSense)</p>';
+    }
 
 	public function exibir_chave_google_api( ) {
 		$options = get_option( 'pinedu_imovel_options', [] );
 		echo '<input type="text" placeholder="Chave do Google Api" name="pinedu_imovel_options[chave_google_api]" value="'.esc_attr( $options['chave_google_api']??'' ).'">';
 	}
+    public function exibir_chave_facebook_id( ) {
+        $options = get_option( 'pinedu_imovel_options', [] );
+        echo '<input type="text" placeholder="Chave Facebook ID" name="pinedu_imovel_options[facebook_app_id]" value="'.esc_attr( $options['facebook_app_id']??'' ).'">';
+    }
 	public function exibir_secao_email( ) {  }
 	public function exibir_nome_remetente( ) {
 		$options = get_option( 'pinedu_imovel_options', [] );

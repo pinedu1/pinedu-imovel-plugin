@@ -1,4 +1,5 @@
 <?php
+require_once plugin_dir_path( __FILE__ ) . '../rest/PineduReceiverRest.php';
 
 	/**
 	 * The public-facing functionality of the plugin.
@@ -340,7 +341,12 @@
 			}
 		}
 		public function force_single_imovel_template( $template ) {
-			global $wp_query;
+            global $wp_query;
+
+            // 1. Primeiro verifica as novas URLs de referência
+            $this->handle_referencia_redirects();
+
+            // 2. Mantém sua lógica original para consultas de pesquisa
 			if ( !empty($this->get_request_param('tipo_pesquisa_submit')) && $this->get_request_param('tipo_pesquisa_submit') === 'consulta' ) {
 				if ( ($wp_query->get('post_type') === 'imovel') && ($wp_query->post_count === 1) ) {
 					$new_template = locate_template(array('single-imovel.php', 'single.php') );
@@ -351,8 +357,81 @@
 			}
 			return $template;
 		}
+        /**
+         * Encontra imóvel pela referência (similar ao WP_Query)
+         */
+        private function find_imovel_by_referencia($referencia) {
+            $args = array(
+                'post_type' => 'imovel',
+                'posts_per_page' => 1,
+                'fields' => 'ids',
+                'meta_query' => array(
+                    array(
+                        'key' => 'referencia',
+                        'value' => $referencia,
+                        'compare' => '='
+                    )
+                )
+            );
+
+            $posts = get_posts($args);
+            return !empty($posts) ? $posts[0] : false;
+        }        /**
+         * Redireciona para o imóvel baseado na referência
+         */
+        private function redirect_to_imovel_by_referencia($referencia) {
+            $imovel_id = $this->find_imovel_by_referencia($referencia);
+
+            if ($imovel_id) {
+                wp_redirect(get_permalink($imovel_id), 301);
+                exit;
+            } else {
+                // Se não encontrar o imóvel, redireciona para o archive
+                wp_redirect(get_post_type_archive_link('imovel'), 302);
+                exit;
+            }
+        }
+        /**
+         * Manipula os redirects para URLs com referência
+         */
+        private function handle_referencia_redirects() {
+            // Verifica se já estamos em um redirect para evitar loop
+            if (did_action('template_redirect') > 1) {
+                return;
+            }
+
+            $referencia = $this->get_referencia_from_request();
+
+            if ($referencia) {
+                $this->redirect_to_imovel_by_referencia($referencia);
+            }
+        }
+        /**
+         * Extrai a referência das diferentes URL patterns
+         */
+        private function get_referencia_from_request() {
+            global $wp;
+            $path = trim($wp->request, '/');
+            // Pattern 1: /imoveis/15227
+            if (preg_match('#^imoveis/(\d+)/?$#', $path, $matches)) {
+                return $matches[1];
+            }
+            // Pattern 4: Query string ?referencia=15227
+            if (isset($_GET['referencia']) && is_numeric($_GET['referencia'])) {
+                return $_GET['referencia'];
+            }
+            // Pattern 5: Query string ?ref=15227
+            if (isset($_GET['ref']) && is_numeric($_GET['ref'])) {
+                return $_GET['ref'];
+            }
+            return null;
+        }
+
 		public function config_wp_mail( $phpmailer ) {
 			require_once plugin_dir_path( __FILE__ ) . '../includes/classes/MailConfig.php';
 			MailConfig::config_wp_mail( $phpmailer );
 		}
+        public function register_rest_endpoint() {
+            PineduReceiverRest::instala_rest_end_point();
+        }
 	}

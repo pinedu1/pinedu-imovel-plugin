@@ -162,10 +162,10 @@ class Corretor implements PosttypeInterface {
 			, 'all_items' => 'Todos os Corretores'
 			, 'parent_item' => 'Corretor Pai'
 			, 'parent_item_colon' => 'Corretor Pai Colon'
-			, 'edit_item' => 'Editar imóvel'
-			, 'update_item' => 'Atualizar imóvel'
-			, 'add_new_item' => 'Adicionar imóvel'
-			, 'new_item_name' => 'Novo imóvel'
+			, 'edit_item' => 'Editar Corretor'
+			, 'update_item' => 'Atualizar Corretor'
+			, 'add_new_item' => 'Adicionar Corretor'
+			, 'new_item_name' => 'Novo Corretor'
 			, 'add_or_remove_items' => 'Adicionar Remover Corretores'
 			, 'choose_from_most_used' => 'Escolher entre os Corretores mais usados'
 			, 'menu_name' => 'Corretor'
@@ -175,7 +175,7 @@ class Corretor implements PosttypeInterface {
 			'labels' => $labels
 			, 'public' => true
 			, 'exclude_from_search' => false
-			, 'description' => 'Filiais da Imobiliária'
+			, 'description' => 'Corretores da Imobiliária'
 			, 'capability_type' => 'post'
 			, 'hierarchical' => true
 			, 'query_var' => true

@@ -191,6 +191,9 @@ class Pinedu_Imovel_Plugin {
 		$this->loader->add_action( 'pre_get_posts', $plugin_public, 'register_search_posttype_imovel' );
 
 		$this->loader->add_filter('template_include', $plugin_public, 'force_single_imovel_template');
+
+        $this->loader->add_action( 'rest_api_init', $plugin_public , 'register_rest_endpoint' );
+
 	}
 
 	/**

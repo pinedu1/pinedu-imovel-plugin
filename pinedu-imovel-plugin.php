@@ -290,6 +290,30 @@ function get_tipo_dependencias_imovel( $post_id ) {
 	}
 	return $dependencias;
 }
+function get_meta_value( $post, $nome_meta = '' ) {
+    if ( empty( $nome_meta ) ) return false;
+    require_once plugin_dir_path( __FILE__ ) . 'admin/classes/class-pinedu-imovel-importa-tipo-dependencia.php';
+    $dependencias = [];
+    $tipo_dependencias = Pinedu_Imovel_Importa_Tipo_Dependencia::get_tipo_dependencias();
+
+    $meta = get_post_meta( $post->ID, '', true );
+    foreach ( [ 'CARACTERISTICAS', 'CONDOMINIO', 'EDIFICIO', 'INFRAEXTRUTURA' ] as $relativo ) {
+        $caracteristicas = $tipo_dependencias[ $relativo ];
+        foreach ( $caracteristicas as $caracteristica) {
+            $sigla = $caracteristica['sigla'];
+            if ( isset($meta[ $sigla ] ) ) {
+                if ( !isset($dependencias[ $relativo ])) {
+                    $dependencias[ $relativo ] = [];
+                }
+                $caracteristica['valor'] = $meta[$sigla][0];
+                if ( str_starts_with( normalizar( $caracteristica['nome'] ), normalizar( $nome_meta ) ) ) {
+                    return $caracteristica;
+                }
+            }
+        }
+    }
+    return false;
+}
 function corta_texto( $texto, $tamanho ): string {
     if (!is_string($texto)) {
         return '';
@@ -428,3 +452,46 @@ function formatCoordinatesToCircle(array $points): string {
     return $resultString;
 }
 
+function getEmpresa( $id = 1 ) {
+    $empresa = null;
+    $query = new \WP_Query( array(
+        'post_type' => 'empresa',
+        'post_status' => 'publish',
+        'posts_per_page' => 1,
+        'meta_query' => [
+            [
+                'key'     => 'id',
+                'value'   => $id,
+                'compare' => '='
+            ]
+        ]
+    ) );
+
+    if ($query->have_posts()) {
+        $empresa = $query->posts[0];
+    }
+    wp_reset_postdata();
+    return $empresa;
+}
+function getCorretor( $id ) {
+    if (empty($id)) return false;
+    $corretor = null;
+    $query = new \WP_Query( array(
+        'post_type' => 'corretor',
+        'post_status' => 'publish',
+        'posts_per_page' => 1,
+        'meta_query' => [
+            [
+                'key'     => 'id',
+                'value'   => $id,
+                'compare' => '='
+            ]
+        ]
+    ) );
+
+    if ($query->have_posts()) {
+        $corretor = $query->posts[0];
+    }
+    wp_reset_postdata();
+    return $corretor;
+}
