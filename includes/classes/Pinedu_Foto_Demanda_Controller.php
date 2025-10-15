@@ -106,4 +106,12 @@ final class Pinedu_Foto_Demanda_Controller {
         }
         the_post();
     }
+    public static function imagens_destaque( $wp_query ) {
+        $success = true;
+        if (verificar_fotos_demanda() === true) {
+            $batch = self::get_batch_importer();
+            $success = $batch->importa_fotos_post( $post, self::$apagar_apos_processar );
+        }
+        the_post();
+    }
 }

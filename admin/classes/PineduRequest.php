@@ -2,7 +2,7 @@
 
 class PineduRequest{
     private const ENDPOINT = '/wordpress/index';
-    private const TIMEOUT = 600;
+    private const TIMEOUT = 60;
 
     public function __construct( ) {
     }
@@ -55,6 +55,8 @@ class PineduRequest{
                 'password' => $password
             ])
         ];
+        //error_log('PineduRequest::post - payload: ' . print_r($payload, true));
+        //error_log('PineduRequest::post - $login_endpoint: ' . print_r($login_endpoint, true));
         $response = wp_remote_post($login_endpoint, $payload);
         //error_log('PineduRequest::post - response: ' . print_r( $response, true ) );
 
@@ -64,8 +66,9 @@ class PineduRequest{
         }
 
         $body = wp_remote_retrieve_body($response);
+        //error_log('Resposta de login 0: ' . print_r($body, true));
         $data = json_decode($body, true);
-
+        //error_log('Resposta de login 1: ' . print_r($data, true));
         if ( isset( $data['success'] ) && $data['success']) {
             $options['token'] = $data['token'];
             $options['token_expiration_date'] = $data['expiracaoToken'];
@@ -73,7 +76,7 @@ class PineduRequest{
             return true;
         }
 
-        error_log('Resposta de login não contém token ou data de expiração');
+        //error_log('Resposta de login não contém token ou data de expiração');
         return false;
     }
 

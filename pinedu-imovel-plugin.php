@@ -74,8 +74,8 @@ require plugin_dir_path( __FILE__ ) . 'includes/class-pinedu-imovel-plugin.php';
  * @since    1.0.0
  */
 function run_pinedu_imovel_plugin( ) {
-    require_once plugin_dir_path( __FILE__ ) . 'admin/classes/class-pinedu-foto-util.php';
-    require_once plugin_dir_path( __FILE__ ) . 'includes/classes/Pinedu_Foto_Demanda_Controller.php';
+    require_once plugin_dir_path( __FILE__ ) . './admin/classes/class-pinedu-foto-util.php';
+    require_once plugin_dir_path( __FILE__ ) . './includes/classes/Pinedu_Foto_Demanda_Controller.php';
 	$plugin = new Pinedu_Imovel_Plugin( );
 	$plugin->run( );
 
@@ -86,27 +86,27 @@ function normalizar($texto) {
     return strtoupper($texto);
 }
 function lista_contratos( ) {
-	require_once plugin_dir_path( __FILE__ ) . 'admin/classes/class-pinedu-imovel-importa-contrato.php';
+	require_once plugin_dir_path( __FILE__ ) . './admin/classes/class-pinedu-imovel-importa-contrato.php';
 	return Pinedu_Imovel_Importa_Contrato::list( );
 }
 function lista_tipo_imovel( ) {
-	require_once plugin_dir_path( __FILE__ ) . 'admin/classes/class-pinedu-imovel-importa-tipo-imovel.php';
+	require_once plugin_dir_path( __FILE__ ) . './admin/classes/class-pinedu-imovel-importa-tipo-imovel.php';
 	return Pinedu_Imovel_Importa_Tipo_Imovel::list( );
 }
 function lista_cidade( ) {
-	require_once plugin_dir_path( __FILE__ ) . 'admin/classes/class-pinedu-imovel-importa-cidade.php';
+	require_once plugin_dir_path( __FILE__ ) . './admin/classes/class-pinedu-imovel-importa-cidade.php';
 	return Pinedu_Imovel_Importa_Cidade::list( );
 }
 function lista_regiao( $cidade ) {
-	require_once plugin_dir_path( __FILE__ ) . 'admin/classes/class-pinedu-imovel-importa-regiao.php';
+	require_once plugin_dir_path( __FILE__ ) . './admin/classes/class-pinedu-imovel-importa-regiao.php';
 	return Pinedu_Imovel_Importa_Regiao::list( $cidade );
 }
 function lista_faixa_valor( $contrato ) {
-	require_once plugin_dir_path( __FILE__ ) . 'admin/classes/class-pinedu-imovel-importa-faixa-valor.php';
+	require_once plugin_dir_path( __FILE__ ) . './admin/classes/class-pinedu-imovel-importa-faixa-valor.php';
 	return Pinedu_Imovel_Importa_Faixa_Valor::list( $contrato );
 }
 function lista_faixa_valor_valores( $contrato ) {
-    require_once plugin_dir_path( __FILE__ ) . 'admin/classes/class-pinedu-imovel-importa-faixa-valor.php';
+    require_once plugin_dir_path( __FILE__ ) . './admin/classes/class-pinedu-imovel-importa-faixa-valor.php';
     if ( empty( $contrato ) ) {
         return [];
     }
@@ -150,24 +150,24 @@ function registra_visita_imovel( $post = 0 ) {
 	}
 }
 function getCookie() {
-	require_once plugin_dir_path( __FILE__ ) . 'includes/classes/class-pinedu-imovel-cookie.php';
+	require_once plugin_dir_path( __FILE__ ) . './includes/classes/class-pinedu-imovel-cookie.php';
 	return CookieUtil::getCookie();
 }
 function getCookieId() {
-	require_once plugin_dir_path( __FILE__ ) . 'includes/classes/class-pinedu-imovel-cookie.php';
+	require_once plugin_dir_path( __FILE__ ) . './includes/classes/class-pinedu-imovel-cookie.php';
 	return CookieUtil::getCookieId();
 }
 function updateCookie( $nome, $telefone, $email ) {
-	require_once plugin_dir_path( __FILE__ ) . 'includes/classes/class-pinedu-imovel-cookie.php';
+	require_once plugin_dir_path( __FILE__ ) . './includes/classes/class-pinedu-imovel-cookie.php';
 	return CookieUtil::update_cookie( $nome, $telefone, $email );
 }
 function criarCookie( ) {
-	require_once plugin_dir_path( __FILE__ ) . 'includes/classes/class-pinedu-imovel-cookie.php';
+	require_once plugin_dir_path( __FILE__ ) . './includes/classes/class-pinedu-imovel-cookie.php';
 	return CookieUtil::criaCookie( );
 }
 
 function enviarCliente( $nome, $telefone, $email, $mensagem, $cookieId, $referencia = null ) {
-	require_once plugin_dir_path( __FILE__ ) . 'admin/classes/class-pinedu-imovel-enviar-cliente.php';
+	require_once plugin_dir_path( __FILE__ ) . './admin/classes/class-pinedu-imovel-enviar-cliente.php';
 	$enviar = new Pinedu_Imovel_Enviar_Cliente( $nome, $telefone, $email, $mensagem, $cookieId, $referencia );
 	return $enviar->contato_cliente( );
 }
@@ -241,7 +241,7 @@ function formata_telefone( $telefone ) {
 	return $telefone_formatado;
 }
 function get_tipo_dependencias_imovel( $post_id ) {
-	require_once plugin_dir_path( __FILE__ ) . 'admin/classes/class-pinedu-imovel-importa-tipo-dependencia.php';
+	require_once plugin_dir_path( __FILE__ ) . './admin/classes/class-pinedu-imovel-importa-tipo-dependencia.php';
 	$caracteristica_icons = [ 'DOR' => 'fa fa-bed', 'SUI' => 'fa fa-shower', 'BAN' => 'fa fa-bath', 'GAR' => 'fa fa-car', 'COZ' => 'fa-solid fa-kitchen-set', 'PIS' => 'fa-solid fa-person-swimming', 'PISPRV' => 'fa-solid fa-person-swimming', 'SAL' => 'fa-solid fa-couch', 'ARS' => 'fa fa-brush', 'INTERFON' => 'fa fa-bell', 'ARCOND' => 'fa fa-snowflake', 'ARUTIL' => 'fa-solid fa-ruler-combined', 'ARCONS' => 'fa-solid fa-draw-polygon', 'ARTOT' => 'fa-solid fa-circle-nodes' ];
 	$dependencias = [];
 	$tipo_dependencias = Pinedu_Imovel_Importa_Tipo_Dependencia::get_tipo_dependencias();
@@ -292,7 +292,7 @@ function get_tipo_dependencias_imovel( $post_id ) {
 }
 function get_meta_value( $post, $nome_meta = '' ) {
     if ( empty( $nome_meta ) ) return false;
-    require_once plugin_dir_path( __FILE__ ) . 'admin/classes/class-pinedu-imovel-importa-tipo-dependencia.php';
+    require_once plugin_dir_path( __FILE__ ) . './admin/classes/class-pinedu-imovel-importa-tipo-dependencia.php';
     $dependencias = [];
     $tipo_dependencias = Pinedu_Imovel_Importa_Tipo_Dependencia::get_tipo_dependencias();
 
