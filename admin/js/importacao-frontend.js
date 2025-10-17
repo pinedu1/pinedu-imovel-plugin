@@ -617,7 +617,6 @@ function finalizarImportacaoFrontEnd(totalImoveis) {
     };
     doPost('FINALIZA_IMPORTACAO', args, success, error, before, null);
 }
-
 /**
  * Escuta o clique no botão
  */
