@@ -133,7 +133,13 @@ class Pinedu_Imovel_Importa_Foto_Batch extends Pinedu_Foto_Util {
                     if (is_development_mode()) {
                         error_log( 'Imagem_Meta_Post_id Vazia:' . $post->ID . ' / ' . print_r( $imagem_meta, true ) );
                     }
-                    continue;
+                    $imagem_meta = get_post_meta( $this->post_id, 'fotos', true );
+                    if ( !is_array( $imagem_meta ) || empty( $imagem_meta ) ) {
+                        if (is_development_mode()) {
+                            error_log( 'Imagem_Meta_Post_id Vazia_1:' . $post->ID . ' / ' . print_r( $imagem_meta, true ) );
+                        }
+                        continue;
+                    }
                 }
                 //error_log( 'Imagem_Meta' . print_r( $imagem_meta, true ) );
                 $foto = [

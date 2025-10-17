@@ -344,7 +344,7 @@ function get_the_post() {
     Pinedu_Foto_Demanda_Controller::the_post();
 }
 function baixar_fotos_destaque( $query, $apagar_destaque = true ) {
-    Pinedu_Foto_Demanda_Controller::imagens_destaque( $query );
+    Pinedu_Foto_Demanda_Controller::imagens_destaque( $query, $apagar_destaque );
 }
 
 function get_google_maps_key() {

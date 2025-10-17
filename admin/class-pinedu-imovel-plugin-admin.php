@@ -83,14 +83,27 @@ class Pinedu_Imovel_Plugin_Admin {
 	 * @since    1.0.0
 	 */
 	public function enqueue_scripts( ) {
-        wp_enqueue_script( 'importacao-frontend', plugin_dir_url(__FILE__) . 'js/importacao-log.js', array( 'jquery' ), $this->version, false );
+        wp_enqueue_script( 'importacao-frontend', plugin_dir_url(__FILE__) . 'js/importacao-frontend.js', array( 'jquery' ), $this->version, false );
 		wp_enqueue_script( $this->plugin_name, plugin_dir_url(__FILE__) . 'js/plugin-admin.js', array( 'jquery' ), $this->version, false );
         $options = get_option( 'pinedu_imovel_options', [] );
+        if (!isset($options['imoveis_importar_lote'])) {
+            $imoveis_importar_lote = 10;
+            $options['imoveis_importar_lote'] = $imoveis_importar_lote;
+            update_option( 'pinedu_imovel_options', $options );
+        }
+        if (!isset($options['imagem_destaque_importar_lote'])) {
+            $imoveis_importar_lote = 10;
+            $options['imagem_destaque_importar_lote'] = $imoveis_importar_lote;
+            update_option( 'pinedu_imovel_options', $options );
+        }
+        $imoveis_importar_lote = $options['imoveis_importar_lote'];
+        $imagem_destaque_importar_lote = $options['imagem_destaque_importar_lote'];
+
         wp_localize_script('importacao-frontend', 'PineduAjax', [
             'url' => admin_url('admin-ajax.php'),
             'ultimaAtualizacao' => isset($options['ultima_atualizacao'])? formataData_iso8601( $options['ultima_atualizacao'] ): null,
-            'max' => 10,
-            'maxDestaques' => 10,
+            'max' => $imoveis_importar_lote,
+            'maxDestaques' => $imagem_destaque_importar_lote,
         ]);
 	}
 	public function display_plugin_admin_page( ) {
@@ -113,6 +126,8 @@ class Pinedu_Imovel_Plugin_Admin {
         add_settings_section( 'secao_comportamento', 'Comportamento', [$this, 'exibir_secao_comportamento'], 'pinedu-imovel' );
         add_settings_field( 'fotos_demanda', 'Carregar fotos sob Demanda', [$this, 'exibir_fotos_demanda'], 'pinedu-imovel', 'secao_comportamento' );
         add_settings_field( 'descricao_do_imovel', 'Usar Descrição do Imóvel', [$this, 'exibir_usar_descricao_do_imovel'], 'pinedu-imovel', 'secao_comportamento' );
+        add_settings_field( 'imoveis_importar_lote', 'Lote de imóveis', [$this, 'exibir_imoveis_importar_lote'], 'pinedu-imovel', 'secao_comportamento' );
+        add_settings_field( 'imagem_destaque_importar_lote', 'Lote de Destaques', [$this, 'exibir_imagem_destaque_importar_lote'], 'pinedu-imovel', 'secao_comportamento' );
         // Adicionar seções de certificados
         add_settings_section( 'secao_certificados', 'Certificados', [$this, 'exibir_secao_certificados'], 'pinedu-imovel' );
         add_settings_field( 'chave_google_api', 'Chave Google API', [$this, 'exibir_chave_google_api'], 'pinedu-imovel', 'secao_certificados' );
@@ -228,7 +243,16 @@ class Pinedu_Imovel_Plugin_Admin {
         echo '<input type="checkbox" name="pinedu_imovel_options[usar_descricao_do_imovel]" ' . $checked . ' />';
         echo '<p class="description">Ou recriar a descrição com base nos dados so imóvel (IA - Somente nos metatags para AdSense)</p>';
     }
-
+    public function exibir_imoveis_importar_lote( ) {
+        $options = get_option( 'pinedu_imovel_options', [] );
+        echo '<input type="number" min="1" max="50" name="pinedu_imovel_options[imoveis_importar_lote]" value="'.( $options['imoveis_importar_lote']??10 ).'">';
+        echo '<p class="description">Tamanho por ROUND de importação (Hospedagem Compartilhada)</p>';
+    }
+    public function exibir_imagem_destaque_importar_lote( ) {
+        $options = get_option( 'pinedu_imovel_options', [] );
+        echo '<input type="number" min="1" max="50" name="pinedu_imovel_options[imagem_destaque_importar_lote]" value="'.( $options['imagem_destaque_importar_lote']??10 ).'">';
+        echo '<p class="description">Tamanho por ROUND de importação (Hospedagem Compartilhada)</p>';
+    }
 	public function exibir_chave_google_api( ) {
 		$options = get_option( 'pinedu_imovel_options', [] );
 		echo '<input type="text" placeholder="Chave do Google Api" name="pinedu_imovel_options[chave_google_api]" value="'.esc_attr( $options['chave_google_api']??'' ).'">';

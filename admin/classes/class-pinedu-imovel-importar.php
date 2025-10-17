@@ -1,7 +1,7 @@
 <?php
 
 class Pinedu_Imovel_Importar {
-    //const HOOK_IMPORTACAO = 'PINEDU_EXECUTAR_IMPORTACAO';
+    const HOOK_IMPORTACAO = 'PINEDU_EXECUTAR_IMPORTACAO';
 	const HOOK_PREIMPORT = 'pinedu_pre_import';
 	const HOOK_POSTIMPORT = 'pinedu_post_import';
 	//
@@ -122,7 +122,9 @@ class Pinedu_Imovel_Importar {
         $forcar = $_POST['forcar'];
 		do_action('pinedu_pre_import');
         $data = $this->testar_server();
-        error_log('$this->testar_server(): ' . print_r( $data, true ) );
+        if (is_wp_error( $data ) ) {
+            error_log('$this->testar_server(): ' . print_r($data, true));
+        }
 		if ( $data === true ) {
 			$this->basicos->invoca_server( $url_servidor, $forcar );
 			$this->imovel->invoca_server( $url_servidor, $forcar );;
@@ -158,7 +160,7 @@ class Pinedu_Imovel_Importar {
 	public function consulta_agendamento() {
 		return wp_next_scheduled( self::HOOK_IMPORTACAO );
 	}
-    private function parse_timestamp_scheduler($timestamp_utc, $target_timezone = 'America/Sao_Paulo') {
+    public function parse_timestamp_scheduler($timestamp_utc, $target_timezone = 'America/Sao_Paulo') {
         if (false === $timestamp_utc || !is_numeric($timestamp_utc)) {
             return false;
         }

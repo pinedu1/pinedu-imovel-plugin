@@ -44,16 +44,19 @@
         <div class="form-table">
             <ul>
                 <li>
-                    <button id="testar-servidor-btn" class="button secondary" <?php echo $importacao_andamento?'disabled':'' ?> onclick="return testarServidor(event);">Testar Servidor</button>
+                    <button id="testar-servidor-btn" class="button button-primary" <?php echo $importacao_andamento?'disabled':'' ?> onclick="return testarServidor(event);">Testar Servidor</button>
                 </li>
                 <li>
-                    <button id="importar-btn" class="button secondary" <?php echo $importacao_andamento?'disabled':'' ?> onclick="return importarImoveisNormal(event);">Importar imóveis agora</button>
+                    <button id="importar-btn" class="button secondary" style="display: none" <?php echo $importacao_andamento?'disabled':'' ?> onclick="return importarImoveisNormal(event);">Importar imóveis agora</button>
                 </li>
                 <li>
-                    <button id="importar-forcado-btn" class="button secondary" <?php echo $importacao_andamento?'disabled':'' ?> onclick="return importarImoveisForcado(event);">Forçar Importação</button>
+                    <button id="importar-forcado-btn" class="button secondary" style="display: none" <?php echo $importacao_andamento?'disabled':'' ?> onclick="return importarImoveisForcado(event);">Forçar Importação</button>
                 </li>
                 <li>
-                    <button id="btnTestarServidor" class="button button-primary">Testar Servidor</button>
+                    <button id="btnImportarFrontEnd" class="button button-primary" <?php echo $importacao_andamento?'disabled':'' ?>>Importar imóveis</button>
+                </li>
+                <li>
+                    <button id="btnImportarForcadoFrontEnd" class="button secondary" <?php echo $importacao_andamento?'disabled':'' ?>>Forçar Importação</button>
                 </li>
             </ul>
         </div>

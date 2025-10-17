@@ -51,6 +51,26 @@ class Pinedu_Imovel_Importar_Imoveis extends Pinedu_Importa_Libs {
 		return json_encode( $visitados );
 	}
     #[NoReturn]
+    public function preparar_imoveis_excluidos($url_servidor, $forcar = false ) {
+        $endpoint = '/wordpress/listaExcluidos';
+        $options = get_option('pinedu_imovel_options', []);
+
+        $ultima_atualizacao = new DateTime( 'now', new DateTimeZone('America/Sao_Paulo') );
+        if ( isset( $options['ultima_atualizacao'] ) ) {
+            $ultima_atualizacao = $options[ 'ultima_atualizacao' ];
+        }
+        $args = [ 'forcar' => $forcar ];
+        if ( $ultima_atualizacao ) {
+            $args['ultimaAtualizacao'] = formataData_iso8601( $ultima_atualizacao );
+        }
+        if (is_development_mode()) {
+            error_log("preparar_imoveis_excluidos: " . print_r($args, true));
+        }
+        $fullUrl = trailingslashit( $url_servidor ) . ltrim( $endpoint, '/' );
+        $data = PineduRequest::get( $fullUrl, $args );
+        return $data;
+    }
+    #[NoReturn]
     public function preparar_imoveis($url_servidor, $forcar = false ): void {
         $endpoint = '/wordpress/preparaImportacao';
         $options = get_option('pinedu_imovel_options', []);
@@ -81,7 +101,8 @@ class Pinedu_Imovel_Importar_Imoveis extends Pinedu_Importa_Libs {
         wp_die();
     }
     public function importa_imoveis_front_end( $url, $ultima_atualizacao, $clicks = [], $forcar = false, $offset = 0, $max = 0 ) {
-        $data = $this->importa_imoveis_particao( $url, $ultima_atualizacao, $clicks, $forcar, $offset, $max );
+        $ignorar_excluidos = true;
+        $data = $this->importa_imoveis_particao( $url, $ultima_atualizacao, $clicks, $forcar, $offset, $max, $ignorar_excluidos );
         if ($data === false) {
             wp_send_json([
                 'success' => false,
@@ -92,12 +113,12 @@ class Pinedu_Imovel_Importar_Imoveis extends Pinedu_Importa_Libs {
         wp_send_json( $data );
         wp_die();
     }
-    public function importa_imoveis_particao( $url, $ultima_atualizacao, $clicks = [], $forcar = false, $offset = 0, $max = 0 ) {
+    public function importa_imoveis_particao( $url, $ultima_atualizacao, $clicks = [], $forcar = false, $offset = 0, $max = 0, $ignorar_excluidos = false ) {
         $fullUrl = trailingslashit( $url ) . ltrim( self::ENDPOINT, '/' );
         $dados_retornar = [ 'success' => true, 'returned' => 0, 'total' => 0, 'excluidos' => [] ];
         $imoveis_importar = new Pinedu_Imovel_Importa_Imovel();
 
-        $data = $this->call_remote_server( $fullUrl, $max, $offset, $clicks, $ultima_atualizacao, $forcar );
+        $data = $this->call_remote_server( $fullUrl, $max, $offset, $clicks, $ultima_atualizacao, $forcar, $ignorar_excluidos );
         if (!$data) {
             return false;
         }
@@ -264,11 +285,14 @@ class Pinedu_Imovel_Importar_Imoveis extends Pinedu_Importa_Libs {
         }
     }
 
-	private function call_remote_server( $url, $max = 0, $offset = 0, $clicados = [], $ultima_atualizacao = null, $forcar = false ) {
+	private function call_remote_server( $url, $max = 0, $offset = 0, $clicados = [], $ultima_atualizacao = null, $forcar = false, $ignorar_excluidos = false ) {
 		$args = [ 'max' => $max, 'offset' => $offset, 'forcar' => $forcar ];
 		if ( $clicados ) {
 			$args['visitas'] = $clicados;
 		}
+        if ( isset($ignorar_excluidos) && ((bool)$ignorar_excluidos) === true ) {
+            $args['ignorarExcluidos'] = $ignorar_excluidos;
+        }
         if (is_development_mode()) {
             error_log("ultima_atualizacao: " . print_r($ultima_atualizacao, true));
         }
@@ -280,18 +304,14 @@ class Pinedu_Imovel_Importar_Imoveis extends Pinedu_Importa_Libs {
         $args['ultimaAtualizacao'] = $ultima_atualizacao;
 
         if (is_development_mode()) {
-            /*
-            if ( $forcar === true ) {
-                $args['ultimaAtualizacao'] = '1980-01-01T00:00:00.000Z';
-            }*/
-        }
-        if (is_development_mode()) {
-            error_log("Argumentos ImportaImovel: " . print_r($args, true));
+            error_log("Argumentos ImportaImovel_1: " . print_r($args, true));
         }
 		$data = PineduRequest::get( $url, $args );
 
 		if ( ((bool)$data[ 'success' ]) != true ) {
-			//error_log( "Imoveis success false ");
+            if (is_development_mode()) {
+                error_log( "Imoveis success false " . print_r($data, true));
+            }
 			wp_send_json_error( ['message' => $data[ 'message' ] ?? 'Formato do arquivo inválido (Imóveis)!'] );
 			return null;
 		}

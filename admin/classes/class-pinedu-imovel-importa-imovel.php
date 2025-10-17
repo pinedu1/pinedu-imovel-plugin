@@ -17,11 +17,14 @@ class Pinedu_Imovel_Importa_Imovel {
         }
 		$referencias = array();
 		foreach ( $array_referencias as $ref ) {
-			$referencias[] = $ref['referencia'];
+			$referencias[] = intval( $ref['referencia'] );
 		}
 		$post_ids = $this->busca_excluidos_from_referencia_array( $referencias );
         if (empty($post_ids)) {
             return true;
+        }
+        if (is_development_mode()){
+            error_log('Excluidos: ' . implode(', ', $post_ids));
         }
         $this->trata_excluidos_post_ids( $post_ids );
         return true;
@@ -59,7 +62,7 @@ class Pinedu_Imovel_Importa_Imovel {
     public function trata_excluidos_post_ids( $post_ids ) {
         if (!empty($post_ids)) {
             foreach ($post_ids as $post_id) {
-                $this->excluir( $post_id );
+                $this->excluir( intval( $post_id ) );
             }
         }
     }
@@ -123,12 +126,22 @@ class Pinedu_Imovel_Importa_Imovel {
 
 		return $post_id;
 	}
-	private function excluir( $post_id ) {
+    private function excluir( $post_id ) {
+        // Verifica o status do post. Retorna FALSE se o post não existe.
+        $status = get_post_status( $post_id );
+        // Se o status NÃO é falso (ou seja, o post existe) E o ID é um número
+        if ( $status !== false && is_numeric( $post_id ) ) {
+            $resultado = wp_delete_post( $post_id, true );
+            return $resultado !== false && $resultado !== null;
+        }
+        return false;
+    }
+/*	private function excluir( $post_id ) {
 		$post = get_post($post_id);
 		if (!is_null($post)) {
 			return false;
 		}
-
+        wp_delete_post($post_id, true);
 		$fotografias_post = get_post_meta( $post_id, 'fotografias', false );
 
 		$importa_taxonomias = new Pinedu_Imovel_Importa_Taxonomias( $post_id, array() );
@@ -142,7 +155,7 @@ class Pinedu_Imovel_Importa_Imovel {
 		$importa_fotos->excluir_fotografias( $fotografias_post );
 
 		wp_delete_post($post_id, true);
-	}
+	}*/
 	private function atualizar( $post_id, $imovel ) {
 		$post_data = array( 
 			'post_title'   => $this->resolve_slug( $imovel )

@@ -14,8 +14,9 @@ require_once plugin_dir_path( __FILE__ ) . './class-pinedu-imovel-importa-tipo-i
 require_once plugin_dir_path( __FILE__ ) . './class-pinedu-imovel-importa-cidade.php';
 require_once plugin_dir_path( __FILE__ ) . './class-pinedu-imovel-importa-faixa-valor.php';
 require_once plugin_dir_path( __FILE__ ) . './class-pinedu-imovel-importa-tipo-dependencia.php';
-
+require_once plugin_dir_path( __FILE__ ) . './PineduRequest.php';
 class PineduImportarFrontEnd {
+    private static ?Pinedu_Imovel_Importar $instancia_importar = null;
     const PREFIXO_ADMIN = 'wp_ajax_';
     const PREFIXO = 'wp_ajax_nopriv_';
     const HOOK_IMPORTACAO = 'PINEDU_EXECUTAR_IMPORTACAO';
@@ -23,8 +24,10 @@ class PineduImportarFrontEnd {
     const HOOK_PREPARAR_BASICOS = 'IMPORTA_FRONTEND_PREPARAR_BASICOS';
     const HOOK_PREPARAR_IMOVEIS = 'IMPORTA_FRONTEND_PREPARAR_IMOVEIS';
     const HOOK_IMPORTAR_IMOVEIS = 'IMPORTA_FRONTEND_IMPORTAR_IMOVEIS';
+    const HOOK_PREPARAR_EXCLUIR_IMOVEIS = 'PREPARAR_EXCLUIR_IMOVEIS';
     const HOOK_EXCLUIR_IMOVEIS = 'IMPORTA_FRONTEND_EXCLUIR_IMOVEIS';
     const HOOK_PREPARAR_IMAGEM_DESTAQUE = 'PREPARA_IMAGEM_DESTAQUE';
+    const HOOK_FINALIZAR_IMAGEM_DESTAQUE = 'FINALIZA_IMAGEM_DESTAQUE';
     const HOOK_IMPORTAR_IMAGEM_DESTAQUE = 'IMPORTA_IMAGEM_DESTAQUE';
     const HOOK_FINALIZAR_IMPORTACAO = 'FINALIZA_IMPORTACAO';
     const HOOK_IMPORTAR_CIDADE = 'IMPORTA_FRONTEND_IMPORTAR_CIDADE';
@@ -45,7 +48,9 @@ class PineduImportarFrontEnd {
         add_action( self::PREFIXO_ADMIN . self::HOOK_PREPARAR_IMOVEIS, [ __CLASS__, 'preparar_imoveis' ], 10 );
         add_action( self::PREFIXO_ADMIN . self::HOOK_IMPORTAR_IMOVEIS, [ __CLASS__, 'importar_imoveis' ], 10 );
         add_action( self::PREFIXO_ADMIN . self::HOOK_EXCLUIR_IMOVEIS, [ __CLASS__, 'excluir_imoveis' ], 10 );
+        add_action( self::PREFIXO_ADMIN . self::HOOK_PREPARAR_EXCLUIR_IMOVEIS, [ __CLASS__, 'preparar_excluir_imoveis' ], 10 );
         add_action( self::PREFIXO_ADMIN . self::HOOK_PREPARAR_IMAGEM_DESTAQUE, [ __CLASS__, 'preparar_imagem_destaque' ], 10 );
+        add_action( self::PREFIXO_ADMIN . self::HOOK_FINALIZAR_IMAGEM_DESTAQUE, [ __CLASS__, 'finalizar_imagem_destaque' ], 10 );
         add_action( self::PREFIXO_ADMIN . self::HOOK_IMPORTAR_IMAGEM_DESTAQUE, [ __CLASS__, 'importar_imagem_destaque' ], 10 );
         add_action( self::PREFIXO_ADMIN . self::HOOK_FINALIZAR_IMPORTACAO, [ __CLASS__, 'finalizar_importacao' ], 10 );
         add_action( self::PREFIXO_ADMIN . self::HOOK_IMPORTAR_CIDADE, [ __CLASS__, 'importar_cidade' ], 10 );
@@ -57,6 +62,13 @@ class PineduImportarFrontEnd {
         add_action( self::PREFIXO_ADMIN . self::HOOK_IMPORTAR_FAIXA_VALOR, [ __CLASS__, 'importar_faixa_valor' ], 10 );
         add_action( self::PREFIXO_ADMIN . self::HOOK_IMPORTAR_TIPO_DEPENDENCIA, [ __CLASS__, 'importar_tipo_dependencia' ], 10 );
     }
+    public static function getImportador(): Pinedu_Imovel_Importar {
+        if (self::$instancia_importar === null) {
+            self::$instancia_importar = new Pinedu_Imovel_Importar();
+        }
+        return self::$instancia_importar;
+    }
+
     public static function importar_empresa( ) {
         if ( is_development_mode( ) ) {
             error_log( 'PineduImportarFrontEnd:importar_empresa' );
@@ -269,10 +281,23 @@ class PineduImportarFrontEnd {
         $options[ 'importacao_andamento' ] = false;
         $options[ 'success' ] = true;
         update_option( 'pinedu_imovel_options', $options );
+        /* Enviar estes dados para o Servidor */
+        $endpoint = '/wordpress/postImport';
+        $url_servidor = $options[ 'url_servidor' ];
+        $fullUrl = trailingslashit( $url_servidor ) . ltrim( $endpoint, '/' );
+        $args = [
+            'imoveisImportados' => $imoveis_importados
+            , 'dataAtualizacao' => formataData_iso8601( $options[ 'ultima_atualizacao' ] )
+            , 'proximaAtualizacao' => formataData_iso8601( $options[ 'proxima_atualizacao' ] )
+            , 'token' => $options[ 'token' ]
+        ];
+        $request = new PineduRequest( );
+        $request->get( $fullUrl, $args );
         wp_send_json( $options );
         wp_die( );
     }
     public static function preparar_imagem_destaque( ) {
+        $meta_key_to_search = 'imagem_destaque';
         if ( is_development_mode( ) ) {
             error_log( 'PineduImportarFrontEnd:preparar_imagem_destaque' );
         }
@@ -282,9 +307,12 @@ class PineduImportarFrontEnd {
             'post_status' => 'any',
             'fields' => 'ids',
             'no_found_rows' => true,
-            'meta_query' => [
-                [ 'key' => 'imagem_destaque', 'value' => '', 'compare' => '!=' ],
-            ]
+            'meta_query'     => [
+                [
+                    'key'     => $meta_key_to_search,
+                    'compare' => 'EXISTS',
+                ],
+            ],
         ];
         $query = new WP_Query( $args );
         $count = $query->post_count;
@@ -295,7 +323,47 @@ class PineduImportarFrontEnd {
         ] );
         wp_die( );
     }
+    public static function finalizar_imagem_destaque( ) {
+        if ( is_development_mode( ) ) {
+            error_log( 'PineduImportarFrontEnd:preparar_imagem_destaque' );
+        }
+        $meta_key_to_delete = 'imagem_destaque';
+        $args = [
+            'post_type'      => 'imovel',
+            'posts_per_page' => -1, // Obter todos os posts de uma vez
+            'post_status'    => 'any',
+            'fields'         => 'ids', // Apenas IDs para otimizar a memória
+            'meta_query'     => [
+                [
+                    'key'     => $meta_key_to_delete,
+                    'compare' => 'EXISTS',
+                ],
+                [
+                    'key'     => '_thumbnail_id', // Chave interna do WordPress para a Imagem Destacada
+                    'compare' => 'EXISTS',        // Verifica se a meta _thumbnail_id existe no post
+                ],
+            ],
+        ];
+        $posts_com_meta = new WP_Query( $args );
+        $posts_ids = $posts_com_meta->posts;
+        $count = 0;
+        if ( ! empty( $posts_ids ) ) {
+            foreach ( $posts_ids as $post_id ) {
+                $deleted = delete_post_meta( $post_id, $meta_key_to_delete );
+                if ( $deleted ) {
+                    $count++;
+                }
+            }
+        }
+        wp_reset_postdata( );
+        wp_send_json( [
+            'success' => true,
+            'total' => $count,
+        ] );
+        wp_die( );
+    }
     public static function importar_imagem_destaque() {
+        $meta_key_to_search = 'imagem_destaque';
         $max = 50;
         $offset = 0;
         if ( isset( $_POST[ 'offset' ] ) ) {
@@ -312,34 +380,34 @@ class PineduImportarFrontEnd {
             'post_status'    => 'any',
             'posts_per_page' => $max,
             'offset'         => $offset,
+            'orderby'        => 'ID',
+            'order'          => 'DESC',
             'meta_query'     => [
                 [
-                    'key'     => 'imagem_destaque',
-                    'value'   => '',
-                    'compare' => '!=', // só pega quem tem valor diferente de vazio
+                    'key'     => $meta_key_to_search,
+                    'compare' => 'EXISTS',
                 ],
             ],
-            'orderby'        => 'date',
-            'order'          => 'DESC',
         ];
         if (is_development_mode()) {
             error_log( 'PineduImportarFrontEnd:importar_imagem_destaque:args:' . print_r( $args, true ) );
         }
         $query = new WP_Query( $args );
-        if (is_development_mode()) {
-            error_log( 'PineduImportarFrontEnd:importar_imagem_destaque:posts:' . print_r( $query->posts, true ) );
+        if ($query->have_posts()) {
+            baixar_fotos_destaque( $query, false );
         }
-        baixar_fotos_destaque( $query, true );
+        $count = $query->post_count;
         wp_reset_postdata( );
         wp_send_json( [
-            'success' => true,
-            'returned' => $query->post_count,
+            'success' => ($count > 0),
+            'returned' => $count,
         ] );
         wp_die( );
     }
     public static function testar_server( ) {
         $options = get_option( 'pinedu_imovel_options', [ ] );
         $options['fotos_demanda'] = 'on';
+        $options['importacao_andamento'] = true;
         update_option( 'pinedu_imovel_options', $options );
         if ( isset( $_POST[ 'url_servidor' ] ) ) {
             $url_servidor = sanitize_text_field( $_POST[ 'url_servidor' ] );
@@ -369,7 +437,6 @@ class PineduImportarFrontEnd {
         }
         if ( is_development_mode( ) ) {
             error_log( 'PineduImportarFrontEnd:importar_basicos' );
-            error_log( 'url_servidor:' . $url_servidor );
         }
         $importar = new Pinedu_Imovel_Importar_Basicos( $url_servidor );
         $importar->recupera_dados_json( $url_servidor, $forcar );
@@ -388,57 +455,104 @@ class PineduImportarFrontEnd {
             $forcar = filter_var( $forcar_string, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE );
         }
         if ( is_development_mode( ) ) {
-            error_log( 'PineduImportarFrontEnd:importar_basicos' );
+            error_log( 'PineduImportarFrontEnd:preparar_imoveis' );
             error_log( 'url_servidor:' . $url_servidor );
         }
         $importar = new Pinedu_Imovel_Importar_Imoveis( );
         $importar->preparar_imoveis( $url_servidor, $forcar );
     }
-    public static function excluir_imoveis( ) {
+    public static function preparar_excluir_imoveis( ) {
+        if ( is_development_mode( ) ) {
+            error_log( 'PineduImportarFrontEnd:preparar_excluir_imoveis' );
+        }
         if ( isset( $_POST[ 'url_servidor' ] ) ) {
             $url_servidor = sanitize_text_field( $_POST[ 'url_servidor' ] );
         } else {
             $options = get_option( 'pinedu_imovel_options', [ ] );
             $url_servidor = $options[ 'url_servidor' ] ?? '';
         }
-        if ( isset( $_POST[ 'excluidos' ] ) ) {
-            $excluidos_data = $_POST[ 'excluidos' ];
-            // Debug para ver o tipo e valor
-/*            if ( is_development_mode( ) ) {
-                error_log( 'Tipo de excluidos: ' . gettype( $excluidos_data ) );
-                error_log( 'Valor de excluidos: ' . print_r( $excluidos_data, true ) );
-            }*/
-            if ( is_array( $excluidos_data ) ) {
-                $excluidos = array_map( 'sanitize_text_field', $excluidos_data );
-            } elseif ( is_string( $excluidos_data ) ) {
-                // Se for string JSON, tenta decodificar
-                $decoded = json_decode( $excluidos_data, true );
-                if ( json_last_error( ) === JSON_ERROR_NONE && is_array( $decoded ) ) {
-                    $excluidos = array_map( 'sanitize_text_field', $decoded );
-                } else {
-                    // Se não for JSON, trata como string única
-                    $excluidos = array( sanitize_text_field( $excluidos_data ) );
-                }
-            } else {
-                $excluidos = array( );
+        $forcar = false;
+        if ( isset( $_POST[ 'forcar' ] ) ) {
+            $forcar_string = sanitize_text_field( $_POST[ 'forcar' ] ?? '' );
+            $forcar = filter_var( $forcar_string, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE );
+        }
+        $importar = new Pinedu_Imovel_Importar_Imoveis( );
+        $data = $importar->preparar_imoveis_excluidos( $url_servidor, $forcar );
+        $excluidos = [];
+        if ( $data['success'] === true ) {
+            $excluidos = $data['excluidos'];
+        }
+        if ( is_development_mode( ) ) {
+            error_log( 'PineduImportarFrontEnd:preparar_excluir_imoveis:excluidos:' . print_r( $excluidos, true ) );
+        }
+        $posts_ids = self::recupera_post_id_from_referencias( $excluidos );
+        if ( is_development_mode( ) ) {
+            error_log( 'PineduImportarFrontEnd:preparar_excluir_imoveis:posts_ids:' . print_r( $posts_ids, true ) );
+        }
+        wp_send_json( $posts_ids );
+        wp_die();
+    }
+    private static function recupera_post_id_from_referencias( $mapa_referencias ) {
+        $referencias_desejadas = [];
+        foreach ($mapa_referencias as $ref) {
+            $referencias_desejadas[] = intval($ref['referencia']);
+        }
+        if ( is_development_mode( ) ) {
+            error_log( 'PineduImportarFrontEnd:preparar_excluir_imoveis:referencias_desejadas:' . print_r( $referencias_desejadas, true ) );
+        }
+        $args = [
+            'post_type'      => 'imovel',
+            'fields'         => 'ids',
+            'orderby'        => 'ID',
+            'order'          => 'DESC',
+            'posts_per_page' => -1,
+            'meta_query'     => [
+                [
+                    'key'     => 'referencia',
+                    'value'   => $referencias_desejadas,
+                    'compare' => 'IN',
+                    //'type'    => 'NUMERIC',
+                ],
+            ],
+        ];
+
+        $query = new WP_Query( $args );
+        $post_ids = $query->posts;
+        $count = $query->post_count;
+        wp_reset_postdata( );
+        return ['ids' => $post_ids, 'total' => $count, 'success' => ($count>0)];
+    }
+    public static function excluir_imoveis( ) {
+        if ( is_development_mode( ) ) {
+            error_log( 'PineduImportarFrontEnd:excluir_imoveis' . print_r( $_POST[ 'excluidos' ], true ) );;
+        }
+        $excluidos = [];
+
+        if ( isset( $_POST['excluidos'] ) && is_string( $_POST['excluidos'] ) ) {
+            $excluidos_string = wp_unslash( $_POST['excluidos'] );
+            $decoded = json_decode( $excluidos_string, true );
+            if ( json_last_error() === JSON_ERROR_NONE && is_array( $decoded ) ) {
+                $excluidos = array_map( 'intval', $decoded );
             }
-        } else {
-            wp_send_json( 
-                [ 
-                    'success' => true,
-                    'message' => 'Não foram encontrados imóveis para excluir!'
-                ]
-        );
+        }
+        if (empty($excluidos)) {
+            wp_send_json([
+                'success' => false,
+                'message' => 'Nenhum imóvel para excluir!'
+            ]);
             wp_die( );
         }
+        if ( is_development_mode( ) ) {
+            error_log( 'PineduImportarFrontEnd:excluir_imoveis' . print_r( $excluidos, true ) );;
+        }
         $importa_Imovel = new Pinedu_Imovel_Importa_Imovel( );
-        $importa_Imovel->trata_excluidos_from_referecia_array( $excluidos );
+        $importa_Imovel->trata_excluidos_post_ids( $excluidos );
         wp_send_json( 
             [ 
                 'success' => true,
                 'message' => 'Imóveis fora de Contexto Excluídos com sucesso!'
             ]
-    );
+        );
         wp_die( );
     }
     public static function importar_imoveis( ) {
@@ -468,62 +582,25 @@ class PineduImportarFrontEnd {
             $forcar = filter_var( $forcar_string, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE );
         }
         if ( is_development_mode( ) ) {
-            error_log( 'PineduImportarFrontEnd:importar_basicos' );
+            error_log( 'PineduImportarFrontEnd:importar_imoveis' );
             error_log( 'url_servidor:' . $url_servidor );
         }
         $importar = new Pinedu_Imovel_Importar_Imoveis( );
         $importar->importa_imoveis_front_end( $url_servidor, $ultima_atualizacao, [ ], $forcar, $offset, $max );
     }
-/*
-    public static function importar_cidade( ) {}
-    public static function importar_empresa( ) {}
-    public static function importar_loja( ) {}
-    public static function importar_corretor( ) {}
-    public static function importar_contrato( ) {}
-    public static function importar_tipo_imovel( ) {}
-    public static function importar_faixa_valor( ) {}
-    public static function importar_tipo_dependencia( ) {}
-*/
     public static function agendar_importacao( $data_hora, $horas ) {
-        if ( $horas <= 0 ) $horas = 1;
-        $timestamp = wp_next_scheduled( self::HOOK_IMPORTACAO );
-        if ( !wp_next_scheduled( self::HOOK_IMPORTACAO ) ) {
-            wp_schedule_event( ( ( $data_hora?? time( ) ) + ( 3600 * ( $horas?? 1 ) ) ), 'hourly', self::HOOK_IMPORTACAO );
-        }
-        add_action( self::HOOK_IMPORTACAO, [ __CLASS__, 'invoca_importacao' ] );
+        self::getImportador()->agendar_importacao( $data_hora, $horas );
     }
-    public static function exclui_agendamento_completo( ) {
-        $timestamp = wp_next_scheduled( self::HOOK_IMPORTACAO );
-        if ( $timestamp ) {
-            wp_unschedule_event( $timestamp, self::HOOK_IMPORTACAO );
-        }
-        remove_action( self::HOOK_IMPORTACAO, [ __CLASS__, 'invoca_importacao' ] );
+    public static function exclui_agendamento_completo() {
+        self::getImportador()->exclui_agendamento_completo();
     }
-    public static function consulta_agendamento( ) {
-        $timestamp = wp_next_scheduled( self::HOOK_IMPORTACAO );
-        return $timestamp;
+    public static function consulta_agendamento() {
+        self::getImportador()->consulta_agendamento();
     }
     public static function parse_timestamp_scheduler( $timestamp_utc, $target_timezone = 'America/Sao_Paulo' ) {
-        if ( false === $timestamp_utc || !is_numeric( $timestamp_utc ) ) {
-            return false;
-        }
-        try {
-            $tz = new DateTimeZone( $target_timezone );
-        } catch ( Exception $e ) {
-            $tz = new DateTimeZone( 'UTC' );
-        }
-        $datetime_obj = new DateTime( "@$timestamp_utc", new DateTimeZone( 'UTC' ) );
-        $datetime_obj->setTimezone( $tz );
-        return $datetime_obj;
+        self::getImportador()->parse_timestamp_scheduler( $timestamp_utc, $target_timezone );
     }
-    public static function get_agendamento_info( ) {
-        $timestamp = self::consulta_agendamento( );
-        if ( $timestamp === false ) {
-            return "Nenhum agendamento ativo";
-        }
-        return sprintf( 
-            "Próxima execução em: %s ( %s )",
-            parse_timestamp_scheduler( $timestamp )->format( 'd/m/Y H:i:s' ),
-    );
+    public static function get_agendamento_info( ):string {
+        return self::getImportador()->get_agendamento_info( );
     }
 }
