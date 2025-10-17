@@ -209,7 +209,7 @@ function formata_endereco( $endereco, $numero, $complemento, $bairro, $cidade, $
 		}
 	}
 	if ( ! empty( $cep ) ) {
-		$end .= ' - Cep: ' . pinedu_formata_cep( $cep ) ;
+		$end .= ' - Cep: ' . formata_cep( $cep ) ;
 	}
 	return $end;
 }
