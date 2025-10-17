@@ -3,8 +3,9 @@
 	class MailConfig {
 		public static function config_options_mail( ) {
 			$options = get_option( 'pinedu_imovel_options', []);
-			$options['url_servidor'] = 'https://haddad.haddadimoveis.com.br/sisprof';
-                $options['nome_remetente'] = 'Pinedu Software';
+            $options['url_servidor'] = 'https://haddad.intranet.pndimo.com.br/sisprof';
+            //$options['url_servidor'] = 'https://haddad.haddadimoveis.com.br/sisprof';
+            $options['nome_remetente'] = 'Pinedu Software';
 			$options['email_remetente'] = 'eduardo@pinedu.com.br';
 			$options['usuario'] = 'no-reply@pinedu.com.br';
 			$options['password'] = '3hAv8nOX@R&m#72Y';

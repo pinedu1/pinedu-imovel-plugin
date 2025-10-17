@@ -11,34 +11,58 @@ class Pinedu_Imovel_Importa_Imovel {
 	public function setImoveisImportados( int $imoveis_importados ): void {
 		$this->imoveis_importados = $imoveis_importados;
 	}
-	public function trata_excluidos( $array_referencias ) {
+	public function trata_excluidos( $array_referencias ): bool {
+        if (empty($array_referencias)) {
+            return true;
+        }
 		$referencias = array();
 		foreach ( $array_referencias as $ref ) {
 			$referencias[] = $ref['referencia'];
 		}
-		$args = array(
-			'post_type'      => 'imovel',
-			'posts_per_page' => -1,
-			'fields'         => 'ids',
-			'meta_query'     => array(
-				array(
-					'key'     => 'referencia',
-					'value'   => $referencias,
-					'compare' => 'IN',
-				),
-			),
-		);
-
-		$query = new WP_Query($args);
-		$post_ids = $query->posts;
-		if (!empty($post_ids)) {
-			foreach ($post_ids as $post_id) {
-				$this->excluir( $post_id );
-			}
-		}
-		wp_reset_postdata();
-
+		$post_ids = $this->busca_excluidos_from_referencia_array( $referencias );
+        if (empty($post_ids)) {
+            return true;
+        }
+        $this->trata_excluidos_post_ids( $post_ids );
+        return true;
 	}
+    public function trata_excluidos_from_referecia_array( $array_referencias ): bool {
+        if (empty($array_referencias)) {
+            return true;
+        }
+        $post_ids = $this->busca_excluidos_from_referencia_array( $array_referencias );
+        if (empty($post_ids)) {
+            return true;
+        }
+        $this->trata_excluidos_post_ids( $post_ids );
+        return true;
+    }
+    public function busca_excluidos_from_referencia_array( $array_referencias ): array {
+        $args = array(
+            'post_type'      => 'imovel',
+            'posts_per_page' => -1,
+            'fields'         => 'ids',
+            'meta_query'     => array(
+                array(
+                    'key'     => 'referencia',
+                    'value'   => $array_referencias,
+                    'compare' => 'IN',
+                ),
+            ),
+        );
+        $query = new WP_Query($args);
+        $post_ids = $query->posts;
+        wp_reset_postdata();
+        return $post_ids;
+    }
+
+    public function trata_excluidos_post_ids( $post_ids ) {
+        if (!empty($post_ids)) {
+            foreach ($post_ids as $post_id) {
+                $this->excluir( $post_id );
+            }
+        }
+    }
 	public function importa_imoveis( $imoveis ) {
 		if ( ! post_type_exists( 'imovel' ) ) {
 			wp_send_json_error( ['message' => 'Post Type Imóvel não existe!.'] );
@@ -88,9 +112,14 @@ class Pinedu_Imovel_Importa_Imovel {
 		$importa_metadados = new Pinedu_Imovel_Importa_Metadados( $post_id, $imovel );
 		$importa_metadados->salvar( );
 
-		$importa_fotos = new Pinedu_Imovel_Importa_Foto( $post_id, $imovel );
-		$importa_fotos->salva_imagem_destaque();
-		$importa_fotos->salvar_fotografias();
+        $importar_fotos = true;
+        $options = get_option( 'pinedu_imovel_options', [] );
+        if ( isset( $options['fotos_demanda'] ) && $options['fotos_demanda'] === 'on' ) {
+            $importar_fotos = false;
+        }
+        $importa_fotos = new Pinedu_Imovel_Importa_Foto($post_id, $imovel);
+        $importa_fotos->salva_imagem_destaque();
+        $importa_fotos->salvar_fotografias();
 
 		return $post_id;
 	}
@@ -423,7 +452,7 @@ class Pinedu_Imovel_Importa_Taxonomias {
 	public function salvar( ) {
 		//
 		$importa_contratos = new Pinedu_Imovel_Importa_Contratos( $this->post_id, $this->imovel );
-		$importa_contratos->atualizar( );
+		$importa_contratos->salvar( );
 		//
 		if ( isset( $this->imovel['tipoImovel_id'] ) ) {
 			$tipo_imovel_id = (string)$this->imovel['tipoImovel_id'];

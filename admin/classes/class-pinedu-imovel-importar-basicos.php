@@ -31,15 +31,23 @@ class Pinedu_Imovel_Importar_Basicos {
 		$this->faixa_valor = new Pinedu_Imovel_Importa_Faixa_Valor( );
 		$this->tipo_dependencia = new Pinedu_Imovel_Importa_Tipo_Dependencia( );
 	}
+    public function recupera_dados_json( $url, $forcar = false ) {
+        wp_send_json( $this->recupera_dados( $url, $forcar ) );
+        wp_die();
+    }
+    public function recupera_dados( $url, $forcar = false ) {
+        $fullUrl = trailingslashit( $url ) . ltrim( self::ENDPOINT, '/' );
+        $data = PineduRequest::post( $fullUrl, ['forcar' => $forcar] );
+        if ( json_last_error( ) !== JSON_ERROR_NONE ) {
+            wp_send_json_error( ['message' => 'Erro ao decodificar JSON: ' . json_last_error_msg( )] );
+            return false;
+        }
+        return $data;
+    }
 	public function invoca_server( $url, $forcar = false ) {
 		try {
-			$fullUrl = trailingslashit( $url ) . ltrim( self::ENDPOINT, '/' );
-			$data = PineduRequest::post( $fullUrl, ['forcar' => $forcar] );
-			if ( json_last_error( ) !== JSON_ERROR_NONE ) {
-				wp_send_json_error( ['message' => 'Erro ao decodificar JSON: ' . json_last_error_msg( )] );
-				return false;
-			}
-			if ( isset( $data['success'] ) && $data['success'] === true ) {
+			$data = $this->recupera_dados( $url, $forcar );
+			if ( $data !== false && isset( $data['success'] ) && $data['success'] === true ) {
 				// Trata Parametros da Empresa
 				$this->importa_parametros( $data );
 				// Trata Empresa

@@ -15,7 +15,7 @@
  * @wordpress-plugin
  * Plugin Name:       Pinedu Imoveis
  * Plugin URI:        https://wordpress-plugin/pinedu.com.br
- * Description:       Plugin para Sites de Imobliárias baseado no CRM Pinedu-Imóveis ( pndImo )
+ * Description:       Plugin para Sites de Imobiliárias baseado no CRM Pinedu-Imóveis ( pndImo )
  * Version:           1.0.0
  * Author:            Eduardo Pinheiro da Silva
  * Author URI:        https://www.pinedu.com.br/
@@ -78,7 +78,6 @@ function run_pinedu_imovel_plugin( ) {
     require_once plugin_dir_path( __FILE__ ) . './includes/classes/Pinedu_Foto_Demanda_Controller.php';
 	$plugin = new Pinedu_Imovel_Plugin( );
 	$plugin->run( );
-
 }
 run_pinedu_imovel_plugin( );
 function normalizar($texto) {
@@ -336,7 +335,7 @@ function formata_valor($valor, $decimais = 0, $moeda = ''): string {
 }
 function verificar_fotos_demanda(): bool {
     $options = get_option( 'pinedu_imovel_options', [] );
-    if ( isset( $options['fotos_demanda'] ) ) {
+    if ( isset( $options['fotos_demanda'] ) && $options['fotos_demanda'] === 'on' ) {
         return true;
     }
     return false;
@@ -344,6 +343,10 @@ function verificar_fotos_demanda(): bool {
 function get_the_post() {
     Pinedu_Foto_Demanda_Controller::the_post();
 }
+function baixar_fotos_destaque( $query, $apagar_destaque = true ) {
+    Pinedu_Foto_Demanda_Controller::imagens_destaque( $query );
+}
+
 function get_google_maps_key() {
     $options = get_option( 'pinedu_imovel_options', [] );
     if ( isset( $options[ 'chave_google_api' ] ) ) {
@@ -494,4 +497,10 @@ function getCorretor( $id ) {
     }
     wp_reset_postdata();
     return $corretor;
+}
+function is_development_mode() {
+    if ( wp_get_environment_type() === 'development' ) {
+        return true;
+    }
+    return false;
 }

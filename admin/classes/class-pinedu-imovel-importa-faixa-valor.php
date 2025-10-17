@@ -11,7 +11,7 @@ class Pinedu_Imovel_Importa_Faixa_Valor extends Pinedu_Importa_Taxonomia_Base {
 			return;
 		}
 		foreach ( $faixas as $faixa ) {
-			$valor_inicial = $faixa['valorInicial'];
+            $valor_inicial = $faixa['valorInicial'];
 			$valor_final = $faixa['valorFinal'];
 			$tipo_contrato = $faixa['tipoContrato'];
 			$key = $tipo_contrato . '-' . $valor_inicial . '-' . $valor_final;

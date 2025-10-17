@@ -1,7 +1,7 @@
 <?php
 
 class Pinedu_Imovel_Importar {
-	const HOOK_IMPORTACAO = 'pinedu_executar_importacao';
+    //const HOOK_IMPORTACAO = 'PINEDU_EXECUTAR_IMPORTACAO';
 	const HOOK_PREIMPORT = 'pinedu_pre_import';
 	const HOOK_POSTIMPORT = 'pinedu_post_import';
 	//
@@ -19,7 +19,6 @@ class Pinedu_Imovel_Importar {
 		add_action( 'wp_ajax_pinedu_importar', [$this, 'invoca_importacao'] );
 		add_action(self::HOOK_PREIMPORT, [$this, 'pre_import']);
 		add_action(self::HOOK_POSTIMPORT, [$this, 'post_import'], 10, 1);
-		add_action(self::HOOK_IMPORTACAO, [$this, 'invoca_importacao']);
 
 		$this->basicos = new Pinedu_Imovel_Importar_Basicos();
 		$this->imovel = new Pinedu_Imovel_Importar_Imoveis();
@@ -67,11 +66,12 @@ class Pinedu_Imovel_Importar {
          * As fotografias serão importadas via HOOK THE_POST
          */
         $importar_fotos = new Pinedu_Imovel_Importa_Foto_Batch( );
-        error_log( '!!! Importar Destaques !!!' );
-        $importar_fotos->salva_imagens_destaque();
         if ( verificar_fotos_demanda() !== true ) {
+/*            error_log( '!!! Importar Destaques !!!' );
+            $importar_fotos->salva_imagens_destaque();
             error_log( '!!! Importar Fotos !!!' );
             $importar_fotos->salva_imagens_fotos();
+*/
         }
         error_log( '!!! Terminou importação !!!' );
 	}

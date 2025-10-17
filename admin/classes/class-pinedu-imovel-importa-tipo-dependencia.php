@@ -83,7 +83,6 @@ class Pinedu_Imovel_Importa_Tipo_Dependencia extends Pinedu_Importa_Taxonomia_Ba
 	 */
 	public static function get_tipo_dependencias() {
 		$tipo_dependencias = self::list();
-        error_log('Tipo de Dependencias: ' . print_r($tipo_dependencias, true));
 		$edificio = [];
 		$condominio = [];
 		$caracteristicas = [];

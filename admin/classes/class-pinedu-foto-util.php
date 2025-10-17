@@ -120,7 +120,9 @@ class Pinedu_Imovel_Importa_Foto_Batch extends Pinedu_Foto_Util {
     }
     public function salva_imagens_destaque_query( $query, $apagar_destaque = true ) {
         if ( ! $query->have_posts( ) ) {
-            error_log( 'Conjunto de Destaques Vazio:');
+            if (is_development_mode()) {
+                error_log('Conjunto de Destaques Vazio:');
+            }
             return true;
         }
         if ( $query->have_posts() ) {
@@ -128,7 +130,9 @@ class Pinedu_Imovel_Importa_Foto_Batch extends Pinedu_Foto_Util {
                 $this->post_id = $post->ID;
                 $imagem_meta = get_post_meta( $this->post_id, 'imagem_destaque', true );
                 if ( !is_array( $imagem_meta ) || empty( $imagem_meta ) ) {
-                    error_log( 'Imagem_Meta_Post_id Vazia:' . $post->ID . ' / ' . print_r( $imagem_meta, true ) );
+                    if (is_development_mode()) {
+                        error_log( 'Imagem_Meta_Post_id Vazia:' . $post->ID . ' / ' . print_r( $imagem_meta, true ) );
+                    }
                     continue;
                 }
                 //error_log( 'Imagem_Meta' . print_r( $imagem_meta, true ) );
@@ -267,7 +271,9 @@ class Pinedu_Imovel_Importa_Foto_Batch extends Pinedu_Foto_Util {
             $valor = [ 'nome' => $nome, 'descricao' => $descricao, 'ordem' => $ordem, 'fachada' => $fachada, 'foto_id' => $foto_id, 'id' => $attachment_id];
             $pm = add_post_meta( $this->post_id, 'fotografias', $valor, false );
             $x=$pm;
-            error_log('Foto: ' . $foto[ 'nome' ] . ' - ' . print_r( $pm, true) );
+            if (is_development_mode()) {
+                error_log('Foto: ' . $foto['nome'] . ' - ' . print_r($pm, true));
+            }
             return true;
         }
         return false;
@@ -308,17 +314,23 @@ class Pinedu_Imovel_Importa_Foto extends Pinedu_Foto_Util {
     private function salva_destaque_term( $imagem_destaque ) {
         $meta_key_slug = 'imagem_destaque';
         if ( empty( $this->post_id ) || ! is_numeric( $this->post_id ) ) {
-            error_log( 'Erro: ID do Post inválido ou ausente em salva_destaque_term.' );
+            if (is_development_mode()) {
+                error_log('Erro: ID do Post inválido ou ausente em salva_destaque_term.');
+            }
             return false;
         }
         if ( ! is_array( $imagem_destaque ) || empty( $imagem_destaque['big'] ) || empty( $imagem_destaque['id'] ) ) {
-            error_log( 'Erro: Dados de destaque (array) inválidos, URL principal (big) ou ID (id) ausentes.' );
+            if (is_development_mode()) {
+                error_log('Erro: Dados de destaque (array) inválidos, URL principal (big) ou ID (id) ausentes.');
+            }
             return false;
         }
         $imagem_url_sanitizada = esc_url_raw( $imagem_destaque['big'] );
         $imagem_id_sanitizado  = sanitize_key( $imagem_destaque['id'] );
         if ( empty( $imagem_url_sanitizada ) || empty( $imagem_id_sanitizado ) ) {
-            error_log( 'Erro: URL ou ID da imagem inválidos após a sanitização.' );
+            if (is_development_mode()) {
+                error_log('Erro: URL ou ID da imagem inválidos após a sanitização.');
+            }
             return false;
         }
         $dados_para_salvar = array(
@@ -630,8 +642,14 @@ abstract class Pinedu_Foto_Util {
 		$upload = wp_upload_bits( basename( $image_path ), null, file_get_contents( $image_path ) );
 		// Verifica se houve erro no upload
 		if ( $upload[ 'error' ] ) {
-            error_log( 'Erro ao fazer upload da imagem: ' . $upload[ 'error' ] );
-			return new WP_Error( 'upload_error', $upload[ 'error' ]->get_error_message( ) );
+            if (is_development_mode()) {
+                error_log('Erro ao fazer upload da imagem: ' . $upload['error']);
+            }
+            if (is_string($upload['error'])) {
+                return new WP_Error('upload_error', $upload['error']);
+            } else {
+                return new WP_Error('upload_error', $upload['error']->get_error_message());
+            }
 		}
 		$filename = $upload[ 'file' ];
 		// Prepara os dados do attachment

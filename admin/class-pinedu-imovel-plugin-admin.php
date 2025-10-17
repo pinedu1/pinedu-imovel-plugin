@@ -1,6 +1,7 @@
 <?php
-require_once plugin_dir_path( __FILE__ ) . 'classes/class-pinedu-imovel-testar-server.php';
-require_once plugin_dir_path( __FILE__ ) . 'classes/class-pinedu-imovel-importar.php';
+require_once plugin_dir_path( __FILE__ ) . './classes/class-pinedu-imovel-testar-server.php';
+require_once plugin_dir_path( __FILE__ ) . './classes/class-pinedu-imovel-importar.php';
+require_once plugin_dir_path( __FILE__ ) . './classes/PineduImportarFrontEnd.php';
 
 /**
  * The admin-specific functionality of the plugin.
@@ -62,6 +63,8 @@ class Pinedu_Imovel_Plugin_Admin {
 
 		$this->testar_server = new Pinedu_Imovel_Testar_Server( );
 		$this->importar = new Pinedu_Imovel_Importar( );
+
+        PineduImportarFrontEnd::init();
 	}
 
 	/**
@@ -70,21 +73,8 @@ class Pinedu_Imovel_Plugin_Admin {
 	 * @since    1.0.0
 	 */
 	public function enqueue_styles( ) {
-
-		/**
-		 * This function is provided for demonstration purposes only.
-		 *
-		 * An instance of this class should be passed to the run( ) function
-		 * defined in Pinedu_Imovel_Plugin_Loader as all of the hooks are defined
-		 * in that particular class.
-		 *
-		 * The Pinedu_Imovel_Plugin_Loader will then create the relationship
-		 * between the defined hooks and the functions defined in this
-		 * class.
-		 */
-
-		wp_enqueue_style( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'css/pinedu-imovel-plugin-admin.css', array( ), $this->version, 'all' );
-
+        wp_enqueue_style( $this->plugin_name, plugin_dir_url(__FILE__) . 'css/plugin-admin.css', array( ), $this->version, 'all' );
+        wp_enqueue_style( 'importacao-log', plugin_dir_url(__FILE__) . 'css/importacao.css', array( ), $this->version, 'all' );
 	}
 
 	/**
@@ -93,21 +83,15 @@ class Pinedu_Imovel_Plugin_Admin {
 	 * @since    1.0.0
 	 */
 	public function enqueue_scripts( ) {
-
-		/**
-		 * This function is provided for demonstration purposes only.
-		 *
-		 * An instance of this class should be passed to the run( ) function
-		 * defined in Pinedu_Imovel_Plugin_Loader as all of the hooks are defined
-		 * in that particular class.
-		 *
-		 * The Pinedu_Imovel_Plugin_Loader will then create the relationship
-		 * between the defined hooks and the functions defined in this
-		 * class.
-		 */
-
-		wp_enqueue_script( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'js/pinedu-imovel-plugin-admin.js', array( 'jquery' ), $this->version, false );
-
+        wp_enqueue_script( 'importacao-frontend', plugin_dir_url(__FILE__) . 'js/importacao-log.js', array( 'jquery' ), $this->version, false );
+		wp_enqueue_script( $this->plugin_name, plugin_dir_url(__FILE__) . 'js/plugin-admin.js', array( 'jquery' ), $this->version, false );
+        $options = get_option( 'pinedu_imovel_options', [] );
+        wp_localize_script('importacao-frontend', 'PineduAjax', [
+            'url' => admin_url('admin-ajax.php'),
+            'ultimaAtualizacao' => isset($options['ultima_atualizacao'])? formataData_iso8601( $options['ultima_atualizacao'] ): null,
+            'max' => 10,
+            'maxDestaques' => 10,
+        ]);
 	}
 	public function display_plugin_admin_page( ) {
 		include_once plugin_dir_path( __FILE__ ) . 'partials/pinedu-imovel-plugin-admin-display.php';
@@ -125,9 +109,11 @@ class Pinedu_Imovel_Plugin_Admin {
         add_settings_field( 'token_bearer', 'Token', [$this, 'exibir_token_bearer'], 'pinedu-imovel', 'secao_integracao' );
         add_settings_field( 'token_expiration_date', 'Validade do Token', [$this, 'exibir_token_expiration_date'], 'pinedu-imovel', 'secao_integracao' );
         add_settings_field( 'importacao_andamento', 'Importacao em andamento', [$this, 'exibir_importacao_andamento'], 'pinedu-imovel', 'secao_integracao' );
+        // Adicionar seções de comportamento
         add_settings_section( 'secao_comportamento', 'Comportamento', [$this, 'exibir_secao_comportamento'], 'pinedu-imovel' );
         add_settings_field( 'fotos_demanda', 'Carregar fotos sob Demanda', [$this, 'exibir_fotos_demanda'], 'pinedu-imovel', 'secao_comportamento' );
         add_settings_field( 'descricao_do_imovel', 'Usar Descrição do Imóvel', [$this, 'exibir_usar_descricao_do_imovel'], 'pinedu-imovel', 'secao_comportamento' );
+        // Adicionar seções de certificados
         add_settings_section( 'secao_certificados', 'Certificados', [$this, 'exibir_secao_certificados'], 'pinedu-imovel' );
         add_settings_field( 'chave_google_api', 'Chave Google API', [$this, 'exibir_chave_google_api'], 'pinedu-imovel', 'secao_certificados' );
         add_settings_field( 'chave_facebook_id', 'Chave Facebook ID', [$this, 'exibir_chave_facebook_id'], 'pinedu-imovel', 'secao_certificados' );
@@ -171,8 +157,10 @@ class Pinedu_Imovel_Plugin_Admin {
 		<?php
 	}
     public function exibir_secao_comportamento( ) {
-        $options = get_option( 'pinedu_imovel_options', [] );
-        error_log( "Opções: " . print_r( $options, true ) );
+        if (false && is_development_mode()) {
+            $options = get_option( 'pinedu_imovel_options', [] );
+            error_log( "Opções: " . print_r( $options, true ) );
+        }
     }
     public function exibir_secao_certificados( ) {
     }

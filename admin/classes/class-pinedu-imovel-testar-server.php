@@ -13,9 +13,13 @@ class Pinedu_Imovel_Testar_Server {
 	 */
 	public static function testar_server( $url, $isHook = false ) {
 		$fullUrl = trailingslashit($url) . ltrim(self::ENDPOINT, '/');
-        error_log('testar_server:url: ' . print_r( $fullUrl, true ) );
+        if ( is_development_mode() ) {
+            error_log('testar_server:url: ' . print_r($fullUrl, true));
+        }
         $data = PineduRequest::post( $fullUrl );
-        error_log('testar_server:data: ' . print_r( $data, true ) );
+        if ( is_development_mode() ) {
+            error_log('testar_server:data: ' . print_r($data, true));
+        }
 		return $data;
 	}
 	public function invoca_server( ) {
