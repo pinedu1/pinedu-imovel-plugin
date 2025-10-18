@@ -22,13 +22,15 @@ function doPost(action, argumentos, callbackSuccess, callbackError, callbackPre,
             return response.json();
         })
         .then(data => {
-            // 2. SEGUNDO THEN: O dado já é um objeto JS
-            console.log('✅ Resposta do servidor:', data);
-
-            // MELHOR LUGAR PARA O CALLBACK DE SUCESSO:
             if (typeof callbackSuccess === 'function') {
                 // Agora, callbackSuccess recebe o objeto 'data' final e pronto para uso
-                callbackSuccess(data);
+                if ( parseInt( PineduAjax.atrasarRequisicao ) > 0 ) {
+                    setTimeout(() => {
+                        callbackSuccess(data);
+                    }, ( parseInt( PineduAjax.atrasarRequisicao ) * 1000) );
+                } else {
+                    callbackSuccess(data);
+                }
             }
             // Você não precisa de um 'return' aqui a menos que queira encadear mais Promises
         })

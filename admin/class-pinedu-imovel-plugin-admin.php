@@ -96,14 +96,22 @@ class Pinedu_Imovel_Plugin_Admin {
             $options['imagem_destaque_importar_lote'] = $imoveis_importar_lote;
             update_option( 'pinedu_imovel_options', $options );
         }
+        if (!isset($options['atrasar_requisicao'])) {
+            $atrasar_requisicao = 0;
+            $options['atrasar_requisicao'] = $atrasar_requisicao;
+            update_option( 'pinedu_imovel_options', $options );
+        }
+
         $imoveis_importar_lote = $options['imoveis_importar_lote'];
         $imagem_destaque_importar_lote = $options['imagem_destaque_importar_lote'];
+        $atrasar_requisicao = $options['atrasar_requisicao'];
 
         wp_localize_script('importacao-frontend', 'PineduAjax', [
             'url' => admin_url('admin-ajax.php'),
             'ultimaAtualizacao' => isset($options['ultima_atualizacao'])? formataData_iso8601( $options['ultima_atualizacao'] ): null,
-            'max' => $imoveis_importar_lote,
-            'maxDestaques' => $imagem_destaque_importar_lote,
+            'max' => intval($imoveis_importar_lote),
+            'maxDestaques' => intval($imagem_destaque_importar_lote),
+            'atrasarRequisicao' => intval($atrasar_requisicao),
         ]);
 	}
 	public function display_plugin_admin_page( ) {
@@ -128,6 +136,7 @@ class Pinedu_Imovel_Plugin_Admin {
         add_settings_field( 'descricao_do_imovel', 'Usar Descrição do Imóvel', [$this, 'exibir_usar_descricao_do_imovel'], 'pinedu-imovel', 'secao_comportamento' );
         add_settings_field( 'imoveis_importar_lote', 'Lote de imóveis', [$this, 'exibir_imoveis_importar_lote'], 'pinedu-imovel', 'secao_comportamento' );
         add_settings_field( 'imagem_destaque_importar_lote', 'Lote de Destaques', [$this, 'exibir_imagem_destaque_importar_lote'], 'pinedu-imovel', 'secao_comportamento' );
+        add_settings_field( 'atrasar_requisicao_segundos', 'Atrasar Requisição', [$this, 'exibir_atrasar_requisicao_segundos'], 'pinedu-imovel', 'secao_comportamento' );
         // Adicionar seções de certificados
         add_settings_section( 'secao_certificados', 'Certificados', [$this, 'exibir_secao_certificados'], 'pinedu-imovel' );
         add_settings_field( 'chave_google_api', 'Chave Google API', [$this, 'exibir_chave_google_api'], 'pinedu-imovel', 'secao_certificados' );
@@ -253,6 +262,12 @@ class Pinedu_Imovel_Plugin_Admin {
         echo '<input type="number" min="1" max="50" name="pinedu_imovel_options[imagem_destaque_importar_lote]" value="'.( $options['imagem_destaque_importar_lote']??10 ).'">';
         echo '<p class="description">Tamanho por ROUND de importação (Hospedagem Compartilhada)</p>';
     }
+    public function exibir_atrasar_requisicao_segundos( ) {
+        $options = get_option( 'pinedu_imovel_options', [] );
+        echo '<input type="number" min="0" max="10" name="pinedu_imovel_options[atrasar_requisicao]" value="'.( $options['atrasar_requisicao']??0 ).'">';
+        echo '<p class="description">Atrasar requisição [0=off] (Hospedagem Compartilhada)</p>';
+    }
+
 	public function exibir_chave_google_api( ) {
 		$options = get_option( 'pinedu_imovel_options', [] );
 		echo '<input type="text" placeholder="Chave do Google Api" name="pinedu_imovel_options[chave_google_api]" value="'.esc_attr( $options['chave_google_api']??'' ).'">';
