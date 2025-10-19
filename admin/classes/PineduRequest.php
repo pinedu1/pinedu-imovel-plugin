@@ -94,6 +94,9 @@ class PineduRequest{
     public static function get( $url, $argumentos = [], $isHook = false ) {
         // Verifica e renova token se necessário
         if (!self::ensure_valid_token()) {
+            if (is_development_mode()) {
+                error_log('PineduRequest->get: Falha ao renovar token de autentica' . ' , url: ' . $url . ', args' . print_r($argumentos, true) . ' usHook: ' . $isHook);
+            }
             if ($isHook) {
                 wp_send_json_error(['message' => 'Falha ao renovar token de autenticação']);
             }
@@ -123,7 +126,9 @@ class PineduRequest{
     public static function getFile( $url, $file_name, $argumentos = [] ) {
         // Verifica e renova token se necessário
         if (!self::ensure_valid_token()) {
-            wp_send_json_error(['message' => 'Falha ao renovar token de autenticação']);
+            if (is_development_mode()) {
+                error_log('PineduRequest->getFile: Falha ao renovar token de autentica' . ' , url: ' . $url . ', args' . print_r($argumentos, true));
+            }
             return null;
         }
 
@@ -141,7 +146,6 @@ class PineduRequest{
         $my_url = self::monta_get_url( $url, $args );
         $response = wp_remote_get( $my_url, $headers );
         if ( is_wp_error( $response ) ) {
-            wp_send_json_error( ['message' => 'Erro de conexão com o servidor'] );
             return null;
         }
 
@@ -151,6 +155,9 @@ class PineduRequest{
     public static function post( $url, $argumentos = [], $isHook = false ) {
         // Verifica e renova token se necessário
         if (!self::ensure_valid_token()) {
+            if (is_development_mode()) {
+                error_log('PineduRequest->post: Falha ao renovar token de autentica' . ' , url: ' . $url . ', args' . print_r($argumentos, true) . ' usHook: ' . $isHook);
+            }
             if ($isHook) {
                 wp_send_json_error(['message' => 'Falha ao renovar token de autenticação']);
             }

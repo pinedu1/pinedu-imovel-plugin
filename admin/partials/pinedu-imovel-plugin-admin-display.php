@@ -58,6 +58,9 @@
                 <li>
                     <button id="btnImportarForcadoFrontEnd" class="button secondary" <?php echo $importacao_andamento?'disabled':'' ?>>Forçar Importação</button>
                 </li>
+                <li>
+                    <button id="btnRetificarDestaqueFrontEnd" class="button secondary" <?php echo $importacao_andamento?'disabled':'' ?>>Retificar Destaques</button>
+                </li>
             </ul>
         </div>
     </form>

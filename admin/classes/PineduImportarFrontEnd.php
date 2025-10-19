@@ -29,6 +29,7 @@ class PineduImportarFrontEnd {
     const HOOK_PREPARAR_IMAGEM_DESTAQUE = 'PREPARA_IMAGEM_DESTAQUE';
     const HOOK_FINALIZAR_IMAGEM_DESTAQUE = 'FINALIZA_IMAGEM_DESTAQUE';
     const HOOK_IMPORTAR_IMAGEM_DESTAQUE = 'IMPORTA_IMAGEM_DESTAQUE';
+    const HOOK_RETIFICAR_IMAGEM_DESTAQUE = 'RETIFICA_IMAGEM_DESTAQUE';
     const HOOK_FINALIZAR_IMPORTACAO = 'FINALIZA_IMPORTACAO';
     const HOOK_IMPORTAR_CIDADE = 'IMPORTA_FRONTEND_IMPORTAR_CIDADE';
     const HOOK_IMPORTAR_EMPRESA = 'IMPORTA_FRONTEND_IMPORTAR_EMPRESA';
@@ -52,6 +53,7 @@ class PineduImportarFrontEnd {
         add_action( self::PREFIXO_ADMIN . self::HOOK_PREPARAR_IMAGEM_DESTAQUE, [ __CLASS__, 'preparar_imagem_destaque' ], 10 );
         add_action( self::PREFIXO_ADMIN . self::HOOK_FINALIZAR_IMAGEM_DESTAQUE, [ __CLASS__, 'finalizar_imagem_destaque' ], 10 );
         add_action( self::PREFIXO_ADMIN . self::HOOK_IMPORTAR_IMAGEM_DESTAQUE, [ __CLASS__, 'importar_imagem_destaque' ], 10 );
+        add_action( self::PREFIXO_ADMIN . self::HOOK_RETIFICAR_IMAGEM_DESTAQUE, [ __CLASS__, 'retificar_imagem_destaque' ], 10 );
         add_action( self::PREFIXO_ADMIN . self::HOOK_FINALIZAR_IMPORTACAO, [ __CLASS__, 'finalizar_importacao' ], 10 );
         add_action( self::PREFIXO_ADMIN . self::HOOK_IMPORTAR_CIDADE, [ __CLASS__, 'importar_cidade' ], 10 );
         add_action( self::PREFIXO_ADMIN . self::HOOK_IMPORTAR_EMPRESA, [ __CLASS__, 'importar_empresa' ], 10 );
@@ -323,6 +325,64 @@ class PineduImportarFrontEnd {
         ] );
         wp_die( );
     }
+    public static function retificar_imagem_destaque( ) {
+        $meta_key_to_search = 'imagem_destaque';
+        if ( is_development_mode( ) ) {
+            error_log( 'PineduImportarFrontEnd:retificar_imagem_destaque' );
+        }
+        $meta_key_destaque = 'imagem_destaque';
+        $args = [
+            'post_type'      => 'imovel',
+            'posts_per_page' => -1, // Obter todos os posts de uma vez
+            'post_status'    => 'any',
+            'fields'         => 'ids', // Apenas IDs para otimizar a memória
+            'meta_query'     => [
+                'relation' => 'AND', // Garante que ambas as condições de NÃO EXISTÊNCIA e a de EXISTÊNCIA sejam verificadas
+                [
+                    'key'     => $meta_key_destaque,
+                    'compare' => 'NOT EXISTS', // NÃO existe 'imagem_destaque'
+                ],
+                [
+                    'key'     => '_thumbnail_id', // Chave interna do WordPress para a Imagem Destacada
+                    'compare' => 'NOT EXISTS',    // NÃO existe a meta _thumbnail_id
+                ],
+                [
+                    'key'     => 'fotos', // Chave para a meta que deve EXISTIR
+                    'compare' => 'EXISTS',        // Verifica se a meta 'fotos' existe no post
+                ],
+            ],
+        ];
+        $posts = new WP_Query( $args );
+        $posts_ids = $posts->posts;
+        $count = $posts->post_count;
+        if ( ! empty( $posts_ids ) ) {
+            foreach ( $posts_ids as $post_id ) {
+                $foto = get_post_meta( $post_id, 'fotos', true );
+                if ( ! empty( $foto ) && is_array( $foto ) ) {
+                    $dados_para_salvar = array(
+                        'id'          => $foto['id'],
+                        'url'         => $foto['url'],
+                        'alt_text'    => $foto['nome'],
+                        'title'       => $foto['nome'],
+                        'description' => $foto['descricao'],
+                        'label'       => $foto['nome'],
+                    );
+                    $meta_id = add_post_meta(
+                        $post_id,
+                        $meta_key_destaque,
+                        $dados_para_salvar,
+                        true
+                    );
+                }
+            }
+        }
+        wp_reset_postdata( );
+        wp_send_json( [
+            'success' => true,
+            'total' => $count,
+        ] );
+        wp_die( );
+    }
     public static function finalizar_imagem_destaque( ) {
         if ( is_development_mode( ) ) {
             error_log( 'PineduImportarFrontEnd:preparar_imagem_destaque' );
@@ -383,9 +443,14 @@ class PineduImportarFrontEnd {
             'orderby'        => 'ID',
             'order'          => 'DESC',
             'meta_query'     => [
+                'relation' => 'AND', // Garante que ambas as condições de NÃO EXISTÊNCIA e a de EXISTÊNCIA sejam verificadas
                 [
                     'key'     => $meta_key_to_search,
                     'compare' => 'EXISTS',
+                ],
+                [
+                    'key'     => '_thumbnail_id',
+                    'compare' => 'NOT EXISTS',
                 ],
             ],
         ];
@@ -393,8 +458,9 @@ class PineduImportarFrontEnd {
             error_log( 'PineduImportarFrontEnd:importar_imagem_destaque:args:' . print_r( $args, true ) );
         }
         $query = new WP_Query( $args );
+        $result = true;
         if ($query->have_posts()) {
-            baixar_fotos_destaque( $query, false );
+            $result = baixar_fotos_destaque( $query, false );
         }
         $count = $query->post_count;
         wp_reset_postdata( );

@@ -128,6 +128,9 @@ class Pinedu_Imovel_Importa_Foto_Batch extends Pinedu_Foto_Util {
         if ( $query->have_posts() ) {
             foreach ( $query->posts as $post ) {
                 $this->post_id = $post->ID;
+                if ( has_post_thumbnail( $post->ID ) ) {
+                    continue;
+                }
                 $imagem_meta = get_post_meta( $this->post_id, 'imagem_destaque', true );
                 if ( !is_array( $imagem_meta ) || empty( $imagem_meta ) ) {
                     if (is_development_mode()) {
@@ -228,12 +231,19 @@ class Pinedu_Imovel_Importa_Foto_Batch extends Pinedu_Foto_Util {
     private function delete_destaque_term( $post_id ) {
         $meta_key_slug = 'imagem_destaque';
         if ( empty( $post_id ) || ! is_numeric( $post_id ) ) {
-            error_log( 'Erro: ID do Post inválido ou ausente em delete_destaque_term.' );
+            if (is_development_mode()) {
+                error_log('Erro: ID do Post inválido ou ausente em delete_destaque_term.');
+            }
             return false;
         }
         $existe_meta = get_post_meta( $post_id, $meta_key_slug, true );
+        if (is_development_mode()) {
+            error_log('Existe Meta: ' . print_r($existe_meta, true) . ', post-id' . $post_id);
+        }
         if ( empty( $existe_meta ) ) {
-            error_log( 'Aviso: Meta campo fixo "' . $meta_key_slug . '" não existe no post. Exclusão não necessária.' );
+            if (is_development_mode()) {
+                error_log('Aviso: Meta campo fixo "' . $meta_key_slug . '" não existe no post. Exclusão não necessária., post-id' . $post_id);
+            }
             return false;
         }
         $resultado = delete_post_meta(
@@ -243,8 +253,7 @@ class Pinedu_Imovel_Importa_Foto_Batch extends Pinedu_Foto_Util {
         if ( $resultado === true ) {
             return true;
         }
-        error_log( 'Erro DB: Falha na exclusão do meta campo "' . $meta_key_slug .
-            '" (Post ID: ' . $this->post_id . ').' );
+        error_log( 'Erro DB: Falha na exclusão do meta campo "' . $meta_key_slug . '" (Post ID: ' . $this->post_id . ').' );
         return false;
     }
 

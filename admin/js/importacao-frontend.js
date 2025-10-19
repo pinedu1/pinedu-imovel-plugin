@@ -502,7 +502,7 @@ function importarImoveisFrontEnd(max, offset, total, progresso, retornados) {
     doPost('IMPORTA_FRONTEND_IMPORTAR_IMOVEIS', args, success, error, before, null);
 }
 
-function prepararImportarImagemDestaque(totalImoveis) {
+function prepararImportarImagemDestaque(totalImoveis, isRetificar = false) {
     console.log('prepararImportarImagemDestaque');
     var before = function () {
         alteraInfo('Imagem de Destaque...');
@@ -518,9 +518,16 @@ function prepararImportarImagemDestaque(totalImoveis) {
             alteraMessage(message);
             alteraProgresso(progresso);
             if (data.hasOwnProperty('total') && (data.total > 0)) {
-                importarImagemDestaque(totalImoveis, 0, data.total, 0, 0);
+                if ( isRetificar === true ) {
+                    totalImoveis = 0
+                }
+                importarImagemDestaque(totalImoveis, 0, data.total, 0, 0, isRetificar);
             } else {
-                finalizarImportacaoFrontEnd(totalImoveis);
+                if ( isRetificar === true ) {
+                    exibeFechar();
+                } else {
+                    finalizarImportacaoFrontEnd(totalImoveis);
+                }
             }
         } else {
             alteraInfo('Erro!');
@@ -534,7 +541,7 @@ function prepararImportarImagemDestaque(totalImoveis) {
 
 }
 
-function importarImagemDestaque(totalImoveis, offset, totalDestaques, progresso, retornados) {
+function importarImagemDestaque(totalImoveis, offset, totalDestaques, progresso, retornados, isRetificar = false) {
     console.log('importarImagemDestaque');
     var before = function () {
         const info = 'Sucesso!';
@@ -555,12 +562,12 @@ function importarImagemDestaque(totalImoveis, offset, totalDestaques, progresso,
             alteraMessage(message);
             alteraProgresso(progresso, parseInt(retornados) + '/' + parseInt(totalDestaques));
             if ((data.returned > 0) && (retornados < totalDestaques)) {
-                importarImagemDestaque(totalImoveis, parseInt(offset), parseInt(totalDestaques), progresso, retornados);
+                importarImagemDestaque(totalImoveis, parseInt(offset), parseInt(totalDestaques), progresso, retornados, isRetificar);
             } else {
-                finalizarImportacaoDestaques(totalImoveis);
+                finalizarImportacaoDestaques(totalImoveis, isRetificar);
             }
         } else {
-            finalizarImportacaoDestaques(totalImoveis);
+            finalizarImportacaoDestaques(totalImoveis, isRetificar);
         }
     }
     , error = errorDoPost;
@@ -571,7 +578,7 @@ function importarImagemDestaque(totalImoveis, offset, totalDestaques, progresso,
     doPost('IMPORTA_IMAGEM_DESTAQUE', args, success, error, before, null);
 }
 
-function finalizarImportacaoDestaques(totalImoveis) {
+function finalizarImportacaoDestaques(totalImoveis, isRetificar = false) {
     console.log('finalizarImportacaoDestaques');
 
     var before = function () {
@@ -585,7 +592,11 @@ function finalizarImportacaoDestaques(totalImoveis) {
         alteraInfo(info);
         alteraMessage(message);
         alteraProgresso(100);
-        finalizarImportacaoFrontEnd(totalImoveis)
+        if (isRetificar === true) {
+            exibeFechar();
+        } else {
+            finalizarImportacaoFrontEnd(totalImoveis)
+        }
     }
     , error = errorDoPost;
     doPost('FINALIZA_IMAGEM_DESTAQUE', {}, success, error, before, null);
@@ -622,10 +633,42 @@ function finalizarImportacaoFrontEnd(totalImoveis) {
 /**
  * Escuta o clique no botão
  */
+function retificarDestaque() {
+    var before = function () {
+        escondeFechar();
+        inicializaOverlay();
+        alteraInfo('Iniciando!');
+        alteraMessage('Retificando Imagens de destaque. Aguarde!');
+        alteraProgresso(0);
+    }
+    , success = function (data) {
+        const info = 'Sucesso!';
+        const message = 'Operação realizada com sucesso!';
+        if (data.success === true) {
+            alteraInfo(info);
+            alteraMessage(message);
+            alteraProgresso(100);
+            prepararImportarImagemDestaque(0, true);
+        } else {
+            alteraInfo('Erro!');
+            alteraMessage(data.message);
+            alteraProgresso(0);
+        }
+    }
+    , error = errorDoPost;
+    doPost('RETIFICA_IMAGEM_DESTAQUE', {}, success, error, before, null);
+}
 document.addEventListener('DOMContentLoaded', function () {
     const btnImportarForcado = document.getElementById('btnImportarForcadoFrontEnd');
     const btnImportar = document.getElementById('btnImportarFrontEnd');
     const btnFechar = document.getElementById('btnFechar');
+    const btnRetificar = document.getElementById('btnRetificarDestaqueFrontEnd');
+    if (btnRetificar) {
+        btnRetificar.addEventListener('click', function (e) {
+            e.preventDefault();
+            retificarDestaque();
+        });
+    }
     if (btnImportar) {
         document.forcar = false;
         btnImportar.addEventListener('click', function (e) {

@@ -107,9 +107,14 @@ final class Pinedu_Foto_Demanda_Controller {
         the_post();
     }
     public static function imagens_destaque( $query, $apagar_destaque = true ) {
+        if (is_development_mode()) {
+            error_log('Foto_Demanda_Controller:imagens_destaque: apagar_destaque: ' . $apagar_destaque);
+        }
+        $result = true;
         if (verificar_fotos_demanda() === true) {
             $batch = self::get_batch_importer();
-            $batch->salva_imagens_destaque_query( $query, $apagar_destaque );
+            $result = $batch->salva_imagens_destaque_query( $query, $apagar_destaque );
         }
+        return $result;
     }
 }
