@@ -521,7 +521,7 @@ function prepararImportarImagemDestaque(totalImoveis, isRetificar = false) {
                 if ( isRetificar === true ) {
                     totalImoveis = 0
                 }
-                importarImagemDestaque(totalImoveis, 0, data.total, 0, 0, isRetificar);
+                importarImagemDestaque(totalImoveis, data.ids, 0, data.total, 0, 0, isRetificar);
             } else {
                 if ( isRetificar === true ) {
                     exibeFechar();
@@ -541,7 +541,7 @@ function prepararImportarImagemDestaque(totalImoveis, isRetificar = false) {
 
 }
 
-function importarImagemDestaque(totalImoveis, offset, totalDestaques, progresso, retornados, isRetificar = false) {
+function importarImagemDestaque(totalImoveis, ids, offset, totalDestaques, progresso, retornados, isRetificar = false) {
     console.log('importarImagemDestaque');
     var before = function () {
         const info = 'Sucesso!';
@@ -562,7 +562,7 @@ function importarImagemDestaque(totalImoveis, offset, totalDestaques, progresso,
             alteraMessage(message);
             alteraProgresso(progresso, parseInt(retornados) + '/' + parseInt(totalDestaques));
             if ((data.returned > 0) && (retornados < totalDestaques)) {
-                importarImagemDestaque(totalImoveis, parseInt(offset), parseInt(totalDestaques), progresso, retornados, isRetificar);
+                importarImagemDestaque(totalImoveis, ids, parseInt(offset), parseInt(totalDestaques), progresso, retornados, isRetificar);
             } else {
                 finalizarImportacaoDestaques(totalImoveis, isRetificar);
             }
@@ -573,6 +573,7 @@ function importarImagemDestaque(totalImoveis, offset, totalDestaques, progresso,
     , error = errorDoPost;
     const args = {
         offset: offset
+        , ids: JSON.stringify(ids)
         , max: PineduAjax.maxDestaques
     };
     doPost('IMPORTA_IMAGEM_DESTAQUE', args, success, error, before, null);

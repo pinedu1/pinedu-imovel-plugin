@@ -308,19 +308,25 @@ class PineduImportarFrontEnd {
             'posts_per_page' => -1,
             'post_status' => 'any',
             'fields' => 'ids',
-            'no_found_rows' => true,
             'meta_query'     => [
+                'relation' => 'AND',
                 [
                     'key'     => $meta_key_to_search,
                     'compare' => 'EXISTS',
                 ],
+                [
+                    'key'     => '_thumbnail_id',
+                    'compare' => 'NOT EXISTS',
+                ],
             ],
         ];
         $query = new WP_Query( $args );
+        $post_ids = $query->posts;
         $count = $query->post_count;
         wp_reset_postdata( );
         wp_send_json( [ 
             'success' => true,
+            'ids' => $post_ids,
             'total' => $count,
         ] );
         wp_die( );
@@ -432,10 +438,36 @@ class PineduImportarFrontEnd {
         if ( isset( $_POST[ 'max' ] ) ) {
             $max = intval( $_POST[ 'max' ] );
         }
+        $ids = [];
+
+        if ( isset( $_POST['ids'] ) && is_string( $_POST['ids'] ) ) {
+            $ids_string = wp_unslash( $_POST['ids'] );
+            $decoded = json_decode( $ids_string, true );
+            if ( json_last_error() === JSON_ERROR_NONE && is_array( $decoded ) ) {
+                $ids = array_map( 'intval', $decoded );
+            }
+        }
+        if (empty($ids)) {
+            wp_send_json([
+                'success' => false,
+                'message' => 'Nenhum imóvel para excluir!'
+            ]);
+            wp_die( );
+        }
+
         if ( is_development_mode( ) ) {
             error_log( 'PineduImportarFrontEnd:importar_imagem_destaque' );
         }
         $args = [
+            'post_type'      => 'imovel',
+            'post_status'    => 'any',
+            'posts_per_page' => $max,
+            'offset'         => $offset,
+            'orderby'        => 'ID',
+            'order'          => 'DESC',
+            'post__in'       => $ids,
+        ];
+        /*        $args = [
             'post_type'      => 'imovel',
             'post_status'    => 'any',
             'posts_per_page' => $max,
@@ -453,7 +485,7 @@ class PineduImportarFrontEnd {
                     'compare' => 'NOT EXISTS',
                 ],
             ],
-        ];
+        ];*/
         if (is_development_mode()) {
             error_log( 'PineduImportarFrontEnd:importar_imagem_destaque:args:' . print_r( $args, true ) );
         }
