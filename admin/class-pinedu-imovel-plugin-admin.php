@@ -112,6 +112,7 @@ class Pinedu_Imovel_Plugin_Admin {
             'max' => intval($imoveis_importar_lote),
             'maxDestaques' => intval($imagem_destaque_importar_lote),
             'atrasarRequisicao' => intval($atrasar_requisicao),
+            'environment' => is_development_mode() ? 'development' : 'production',
         ]);
 	}
 	public function display_plugin_admin_page( ) {

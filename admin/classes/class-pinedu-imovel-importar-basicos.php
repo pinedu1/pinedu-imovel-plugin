@@ -158,32 +158,27 @@ class Pinedu_Imovel_Importar_Basicos {
 		return $this->tipo_imovel->importa_tipo_imoveis( $data['tipoImoveis'] );
 	}
 	private function importa_parametros( $data ) {
-		$options = get_option( 'pinedu_imovel_options', [] );
-		$options = is_array( $options ?? null ) ? $options : [];
-		$parametros = $data['parametroSistema'];
-        //error_log( 'Parametros: ' . print_r( $parametros, true ) );
-		$parametros = is_array( $parametros ?? null ) ? $parametros : [];
-		$options['contrato'] = $parametros['contrato'] ?? ''; // Ou outro valor padrão
-		unset( $options['contrato'] );
-		if ( isset( $parametros['contrato'] ) && ( $parametros['contrato'] > 0 ) ) {
-			$options['contrato'] = $parametros['contrato'];
-		}
-		unset( $options['tipo_imovel'] );
-		if ( isset( $parametros['tipoImovel'] ) && !empty( $parametros['tipoImovel'] ) ) {
-			$options['tipo_imovel'] = $parametros['tipoImovel'];
-		}
-		unset( $options['cidade'] );
-		if ( isset( $parametros['cidade'] ) && !empty( $parametros['cidade'] ) ) {
-			$options['cidade'] = $parametros['cidade'];
-		}
-		unset( $options['regiao'] );
-		if ( isset( $parametros['regiao'] ) && !empty( $parametros['regiao'] ) ) {
-			$options['regiao'] = $parametros['regiao'];
-		}
-		update_option( 'pinedu_imovel_options', $options );
-        $options = get_option( 'pinedu_imovel_options', [] );
-        //error_log( 'Options: ' . print_r( $options, true ) );
+        if ( isset( $data['parametroSistema'] ) ) {
+            $this->importa_parametros_data( $data['parametroSistema'] );
+        }
 	}
+    public function importa_parametros_data( $parametros ) {
+        $options = get_option( 'pinedu_imovel_options', [] );
+        if ( isset( $parametros['contrato'] ) && ( $parametros['contrato'] > 0 ) ) {
+            $options['contrato'] = $parametros['contrato'];
+        }
+        if ( isset( $parametros['tipoImovel'] ) && ! empty( $parametros['tipoImovel'] ) ) {
+            $options['tipo_imovel'] = $parametros['tipoImovel'];
+        }
+        if ( isset( $parametros['cidade'] ) && ! empty( $parametros['cidade'] ) ) {
+            $options['cidade'] = $parametros['cidade'];
+        }
+        if ( isset( $parametros['regiao'] ) && ! empty( $parametros['regiao'] ) ) {
+            $options['regiao'] = $parametros['regiao'];
+        }
+        update_option( 'pinedu_imovel_options', $options );
+    }
+
 	private function importa_cidades( $data ) {
 		if ( !isset( $data['cidades'] ) || !is_array( $data['cidades'] ) || empty( $data['cidades'] ) ) {
 			wp_send_json_error( ['message' => 'Nó cidades não encontrado ou vazio no JSON'] );

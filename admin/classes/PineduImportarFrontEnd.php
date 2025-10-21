@@ -33,6 +33,7 @@ class PineduImportarFrontEnd {
     const HOOK_FINALIZAR_IMPORTACAO = 'FINALIZA_IMPORTACAO';
     const HOOK_IMPORTAR_CIDADE = 'IMPORTA_FRONTEND_IMPORTAR_CIDADE';
     const HOOK_IMPORTAR_EMPRESA = 'IMPORTA_FRONTEND_IMPORTAR_EMPRESA';
+    CONST HOOK_IMPORTAR_PARAMETRO_EMPRESA = 'IMPORTA_PARAMETRO_EMPRESA';
     const HOOK_IMPORTAR_LOJA = 'IMPORTA_FRONTEND_IMPORTAR_LOJA';
     const HOOK_IMPORTAR_CORRETOR = 'IMPORTA_FRONTEND_IMPORTAR_CORRETOR';
     const HOOK_IMPORTAR_CONTRATO = 'IMPORTA_FRONTEND_IMPORTAR_CONTRATO';
@@ -57,6 +58,7 @@ class PineduImportarFrontEnd {
         add_action( self::PREFIXO_ADMIN . self::HOOK_FINALIZAR_IMPORTACAO, [ __CLASS__, 'finalizar_importacao' ], 10 );
         add_action( self::PREFIXO_ADMIN . self::HOOK_IMPORTAR_CIDADE, [ __CLASS__, 'importar_cidade' ], 10 );
         add_action( self::PREFIXO_ADMIN . self::HOOK_IMPORTAR_EMPRESA, [ __CLASS__, 'importar_empresa' ], 10 );
+        add_action( self::PREFIXO_ADMIN . self::HOOK_IMPORTAR_PARAMETRO_EMPRESA, [ __CLASS__, 'importar_parametros_empresa' ], 10 );
         add_action( self::PREFIXO_ADMIN . self::HOOK_IMPORTAR_LOJA, [ __CLASS__, 'importar_lojas'], 10 );
         add_action( self::PREFIXO_ADMIN . self::HOOK_IMPORTAR_CORRETOR, [ __CLASS__, 'importar_corretor' ], 10 );
         add_action( self::PREFIXO_ADMIN . self::HOOK_IMPORTAR_CONTRATO, [ __CLASS__, 'importar_contrato' ], 10 );
@@ -88,9 +90,40 @@ class PineduImportarFrontEnd {
         }
         $empresa_importa = new Pinedu_Imovel_Importa_Empresa( );
         $empresa_importa->importa( $empresa );
+
         wp_send_json( [
             'success' => true,
             'message' => 'Dados Empresa importados com Sucesso!'
+        ] );
+        wp_die();
+    }
+    public static function importar_parametros_empresa( ) {
+        if ( is_development_mode( ) ) {
+            error_log( 'PineduImportarFrontEnd:importar_parametros_empresa' );
+        }
+        $parametros_json = $_POST['parametros'] ?? null;
+        $parametros_json = stripslashes($parametros_json);
+        if ($parametros_json) {
+            $parametros = json_decode($parametros_json, true); // agora é array associativo
+        } else {
+            $parametros = null;
+        }
+        if ( $parametros === null ) {
+            wp_send_json_error( ['success' => false, 'message' => 'Nó Empresa não encontrado ou vazio no JSON'] );
+            wp_die();
+        }
+        if ( is_development_mode( ) ) {
+            error_log( 'PineduImportarFrontEnd:importar_parametros_empresa: ' .print_r( $parametros, true) );
+        }
+        $parametros_importa = new Pinedu_Imovel_Importar_Basicos();
+        $parametros_importa->importa_parametros_data( $parametros );
+        $options = get_option( 'pinedu_imovel_options', [ ] );
+        if ( is_development_mode( ) ) {
+            error_log( 'PineduImportarFrontEnd:importar_parametros_empresa_1' .print_r( $options, true) );
+        }
+        wp_send_json( [
+            'success' => true,
+            'message' => 'Parametros da Empresa importados com Sucesso!'
         ] );
         wp_die();
     }
@@ -467,28 +500,6 @@ class PineduImportarFrontEnd {
             'order'          => 'DESC',
             'post__in'       => $ids,
         ];
-        /*        $args = [
-            'post_type'      => 'imovel',
-            'post_status'    => 'any',
-            'posts_per_page' => $max,
-            'offset'         => $offset,
-            'orderby'        => 'ID',
-            'order'          => 'DESC',
-            'meta_query'     => [
-                'relation' => 'AND', // Garante que ambas as condições de NÃO EXISTÊNCIA e a de EXISTÊNCIA sejam verificadas
-                [
-                    'key'     => $meta_key_to_search,
-                    'compare' => 'EXISTS',
-                ],
-                [
-                    'key'     => '_thumbnail_id',
-                    'compare' => 'NOT EXISTS',
-                ],
-            ],
-        ];*/
-        if (is_development_mode()) {
-            error_log( 'PineduImportarFrontEnd:importar_imagem_destaque:args:' . print_r( $args, true ) );
-        }
         $query = new WP_Query( $args );
         $result = true;
         if ($query->have_posts()) {
@@ -622,7 +633,7 @@ class PineduImportarFrontEnd {
     }
     public static function excluir_imoveis( ) {
         if ( is_development_mode( ) ) {
-            error_log( 'PineduImportarFrontEnd:excluir_imoveis' . print_r( $_POST[ 'excluidos' ], true ) );;
+            error_log( 'PineduImportarFrontEnd:excluir_imoveis');
         }
         $excluidos = [];
 
