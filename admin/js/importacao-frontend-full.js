@@ -579,7 +579,7 @@ function recuperaPostsExcluir( referenciasExcluir ) {
         if (data.success === true) {
             alteraInfo(info);
             alteraMessage(message);
-            alteraProgresso(progresso);
+            alteraProgresso(100);
             excluirImoveis( data.ids );
         } else {
             prepararImportarImoveis( {} );
