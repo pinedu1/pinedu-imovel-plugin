@@ -95,7 +95,7 @@ class Pinedu_Imovel_Importar_Imoveis extends Pinedu_Importa_Libs {
         $fullUrl = trailingslashit( $url_servidor ) . ltrim( $endpoint, '/' );
         $data = PineduRequest::get( $fullUrl, $args );
         if (is_development_mode()) {
-            error_log("Retorno Prepara IMoveis: " . print_r($data, true));
+            error_log("Retorno Prepara Imoveis: " . print_r($data, true));
         }
         wp_send_json($data);
         wp_die();
@@ -136,6 +136,23 @@ class Pinedu_Imovel_Importar_Imoveis extends Pinedu_Importa_Libs {
             $imoveis_importar->importa_imoveis( $data['imoveis'] );
         }
         return $dados_retornar;
+    }
+    public function importa_imoveis_particao_json( $imoveis = [] ) {
+        $imoveis_importar = new Pinedu_Imovel_Importa_Imovel();
+        if ( isset($imoveis) && !empty( $imoveis ) ) {
+            $imoveis_importar->importa_imoveis( $imoveis );
+            wp_send_json([
+                'success' => true,
+                'message' => count($imoveis) . ' imóveis importados com sucesso!'
+            ]);
+            wp_die( );
+            return;
+        }
+        wp_send_json([
+            'success' => false,
+            'message' => 'Nenhum imóvel para importar!'
+        ]);
+        wp_die( );
     }
 	public function invoca_server( $url, $forcar = false) {
 		try {

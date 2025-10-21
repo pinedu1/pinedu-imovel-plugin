@@ -72,7 +72,6 @@ class Pinedu_Imovel_Importa_Imovel {
 			return;
 		}
 		foreach ( $imoveis as $imovel ) {
-			//error_log( $imovel['referencia'] );
 			$this->importa_imovel( $imovel );
 		}
 	}

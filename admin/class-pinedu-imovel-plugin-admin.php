@@ -83,36 +83,85 @@ class Pinedu_Imovel_Plugin_Admin {
 	 * @since    1.0.0
 	 */
 	public function enqueue_scripts( ) {
-        wp_enqueue_script( 'importacao-frontend', plugin_dir_url(__FILE__) . 'js/importacao-frontend.js', array( 'jquery' ), $this->version, false );
+        //wp_enqueue_script( 'importacao-frontend', plugin_dir_url(__FILE__) . 'js/importacao-frontend-full.js', array( 'jquery' ), $this->version, false );
+        wp_enqueue_script( 'importacao-frontend-full', plugin_dir_url(__FILE__) . 'js/importacao-frontend-full.js', array( 'jquery' ), $this->version, false );
 		wp_enqueue_script( $this->plugin_name, plugin_dir_url(__FILE__) . 'js/plugin-admin.js', array( 'jquery' ), $this->version, false );
         $options = get_option( 'pinedu_imovel_options', [] );
-        if (!isset($options['imoveis_importar_lote'])) {
+        //var_dump($options, true);
+        if ( ! isset($options['imoveis_importar_lote'])) {
             $imoveis_importar_lote = 10;
             $options['imoveis_importar_lote'] = $imoveis_importar_lote;
             update_option( 'pinedu_imovel_options', $options );
         }
-        if (!isset($options['imagem_destaque_importar_lote'])) {
+        $imoveis_importar_lote = $options['imoveis_importar_lote'];
+
+        if ( ! isset($options['imagem_destaque_importar_lote'])) {
             $imoveis_importar_lote = 10;
             $options['imagem_destaque_importar_lote'] = $imoveis_importar_lote;
             update_option( 'pinedu_imovel_options', $options );
         }
-        if (!isset($options['atrasar_requisicao'])) {
+        $imagem_destaque_importar_lote = $options['imagem_destaque_importar_lote'];
+
+        if ( ! isset($options['atrasar_requisicao'])) {
             $atrasar_requisicao = 0;
             $options['atrasar_requisicao'] = $atrasar_requisicao;
             update_option( 'pinedu_imovel_options', $options );
         }
-
-        $imoveis_importar_lote = $options['imoveis_importar_lote'];
-        $imagem_destaque_importar_lote = $options['imagem_destaque_importar_lote'];
         $atrasar_requisicao = $options['atrasar_requisicao'];
 
+        if ( ! isset($options['token'])) {
+            $token = '';
+            $options['token'] = $token;
+            update_option( 'pinedu_imovel_options', $options );
+        }
+        $token = $options['token'];
+        if ( ! isset($options['token_username'])) {
+            $token_username = '';
+            $options['token_username'] = $token_username;
+            update_option( 'pinedu_imovel_options', $options );
+        }
+        $token_username = $options['token_username'];
+        if ( ! isset($options['token_password'])) {
+            $token_password = '';
+            $options['token_password'] = $token_password;
+            update_option( 'pinedu_imovel_options', $options );
+        }
+        $token_password = $options['token_password'];
+
+        if (!isset($options['url_servidor'])) {
+            $url_servidor = '';
+            $options['url_servidor'] = $url_servidor;
+            update_option( 'pinedu_imovel_options', $options );
+        }
+        $url_servidor = $options['url_servidor'];
+
+
+/*
         wp_localize_script('importacao-frontend', 'PineduAjax', [
+                'url' => admin_url('admin-ajax.php'),
+                'ultimaAtualizacao' => isset($options['ultima_atualizacao'])? formataData_iso8601( $options['ultima_atualizacao'] ): null,
+                'max' => intval($imoveis_importar_lote),
+                'maxDestaques' => intval($imagem_destaque_importar_lote),
+                'atrasarRequisicao' => intval($atrasar_requisicao),
+                'environment' => is_development_mode() ? 'development' : 'production',
+                'token' => $token,
+                'tokenUsername' => $token_username,
+                'tokenPassword' => $token_password
+        ]);
+*/
+        wp_localize_script('importacao-frontend-full', 'PineduAjax', [
             'url' => admin_url('admin-ajax.php'),
-            'ultimaAtualizacao' => isset($options['ultima_atualizacao'])? formataData_iso8601( $options['ultima_atualizacao'] ): null,
+            'ultimaAtualizacao' => isset($options['ultima_atualizacao'])? formataData_iso8601( $options['ultima_atualizacao'] ): '1980-01-01T00:00:00.000Z',
             'max' => intval($imoveis_importar_lote),
             'maxDestaques' => intval($imagem_destaque_importar_lote),
             'atrasarRequisicao' => intval($atrasar_requisicao),
             'environment' => is_development_mode() ? 'development' : 'production',
+            'token' => $token,
+            'tokenUsername' => $token_username,
+            'tokenPassword' => $token_password,
+            'urlServidor' => $url_servidor,
+            'empresa' => 1,
+            'pathRemoto' => '/wordpress/'
         ]);
 	}
 	public function display_plugin_admin_page( ) {
@@ -196,7 +245,7 @@ class Pinedu_Imovel_Plugin_Admin {
 	}
 	public function exibir_tempo_atualizacao( ) {
 		$options = get_option( 'pinedu_imovel_options', [] );
-		echo '<input type="number" min="1" max="24" name="pinedu_imovel_options[tempo_atualizacao]" value="'.( $options['tempo_atualizacao']??1 ).'">';
+		echo '<input type="number" min="1" max="24" id="tempo_atualizacao" name="pinedu_imovel_options[tempo_atualizacao]" value="'.( $options['tempo_atualizacao']??1 ).'">';
 	}
 	public function exibir_token_bearer( ) {
 		$options = get_option( 'pinedu_imovel_options', [] );
@@ -204,11 +253,11 @@ class Pinedu_Imovel_Plugin_Admin {
 	}
 	public function exibir_token_username( ) {
 		$options = get_option( 'pinedu_imovel_options', [] );
-		echo '<input type="text" placeholder="Usuário" name="pinedu_imovel_options[token_username]" value="'.esc_attr( $options['token_username']??'' ).'" required>';
+		echo '<input type="text" placeholder="Usuário" id="token_username" name="pinedu_imovel_options[token_username]" value="'.esc_attr( $options['token_username']??'' ).'" required>';
 	}
 	public function exibir_token_password( ) {
 		$options = get_option( 'pinedu_imovel_options', [] );
-		echo '<input type="password" placeholder="Senha" name="pinedu_imovel_options[token_password]" value="'.esc_attr( $options['token_password']??'' ).'" required>';
+		echo '<input type="password" placeholder="Senha" id="token_password" name="pinedu_imovel_options[token_password]" value="'.esc_attr( $options['token_password']??'' ).'" required>';
 	}
 
     public function exibir_token_expiration_date( ) {

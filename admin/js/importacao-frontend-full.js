@@ -1,3 +1,54 @@
+function doRemotePost(endPoint, argumentos, callbackSuccess, callbackError, callbackPre, callbackPost) {
+    const urlParams = {
+        server: PineduAjax.urlServidor
+        , path: PineduAjax.pathRemoto
+        , endPoint: endPoint
+    };
+    const url = construirUrl(urlParams, 'POST');
+    if (typeof callbackPre === 'function') {
+        callbackPre();
+    }
+    fetch(url, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {
+            'Accept': 'application/json',
+            'Authorization': `Bearer ${PineduAjax.token}`,
+            'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: new URLSearchParams(argumentos)
+    })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (typeof callbackSuccess === 'function') {
+                // Agora, callbackSuccess recebe o objeto 'data' final e pronto para uso
+                if ( parseInt( PineduAjax.atrasarRequisicao ) > 0 ) {
+                    setTimeout(() => {
+                        callbackSuccess(data);
+                    }, ( parseInt( PineduAjax.atrasarRequisicao ) * 1000) );
+                } else {
+                    callbackSuccess(data);
+                }
+            }
+        })
+        .catch(err => {
+            console.error('❌ Erro na requisição:', err);
+            if (typeof callbackError === 'function') {
+                // Passe o objeto de erro para o callback de erro
+                callbackError(err);
+            }
+        })
+        .finally(() => {
+            if (typeof callbackPost === 'function') {
+                callbackPost();
+            }
+        });
+}
 function doPost(action, argumentos, callbackSuccess, callbackError, callbackPre, callbackPost) {
     const data = {action, ...(argumentos || {})}; // <== Este troço mescla a string com o JSON
     if (typeof callbackPre === 'function') {
@@ -51,6 +102,143 @@ function doPost(action, argumentos, callbackSuccess, callbackError, callbackPre,
             }
             // Ideal para esconder o spinner, reabilitar o botão, etc.
         });
+}
+/**
+ * Cria a URL final para uma requisição, tratando os parâmetros.
+ * Para GET, anexa como query string. Para POST, retorna a URL base.
+ *
+ * @param {object} urlParts - Objeto com as partes da URL.
+ * @param {string} urlParts.server - Ex: "https://www.example.com/service/"
+ * @param {string} urlParts.path - Ex: "/apiService/"
+ * @param {string} urlParts.endPoint - Ex: "/fazAlgo/"
+ * @param {object} urlParts.parametros - Objeto com os parâmetros. Ex: {nome: 'jose', idade: 30}
+ * @param {string} method - Método HTTP ('GET' ou 'POST').
+ * @returns {string} A URL final.
+ */
+function construirUrl(urlParts, method) {
+    const fullPath = `${urlParts.server.replace(/\/$/, '')}${urlParts.path}${urlParts.endPoint}`.replace(/\/{2,}/g, '/');
+    const url = new URL(fullPath);
+    if (method.toUpperCase() === 'GET') {
+        const params = new URLSearchParams(url.search);
+        for (const [key, value] of Object.entries(urlParts.parametros)) {
+            params.append(key, value);
+        }
+        url.search = params.toString();
+    }
+    return url.href;
+}
+
+function preparaObjetoAjax() {
+    const urlServidor = document.getElementById('url_servidor').value;
+    const token = document.getElementById('token').value;
+    const tokenUsername = document.getElementById('token_username').value;
+    const tokenPassword = document.getElementById('token_password').value;
+    var atualizacoes = {};
+    if (urlServidor && ( urlServidor.trim() !== '' ) && ( urlServidor.trim() !== PineduAjax.urlServidor ) ) {
+        atualizacoes.urlServidor = urlServidor;
+    }
+    if (token && ( token.trim() !== '' ) && ( token.trim() !== PineduAjax.token ) ) {
+        atualizacoes.token = token;
+    }
+    if (tokenUsername && ( tokenUsername.trim() !== '' ) && ( tokenUsername.trim() !== PineduAjax.tokenUsername ) ) {
+        atualizacoes.tokenUsername = tokenUsername;
+    }
+    if (tokenPassword && ( tokenPassword.trim() !== '' ) && ( tokenPassword.trim() !== PineduAjax.tokenPassword ) ) {
+        atualizacoes.tokenPassword = tokenPassword;
+    }
+
+    Object.assign(PineduAjax, atualizacoes);
+}
+function inicializar() {
+    if ( PineduAjax?.environment === 'development' ) console.log('inicializar');
+    var before = function () {
+        escondeFechar();
+        inicializaOverlay();
+        alteraInfo('Inicializando...');
+        alteraMessage('Testando conexão com o servidor.');
+        alteraProgresso(0);
+    }
+    , success = function (data) {
+        const info = 'Sucesso!';
+        const progresso = 100;
+        const message = 'Conexão com o Servidor remoto realizada com sucesso!';
+        if (data.success === true) {
+            alteraInfo(info);
+            alteraMessage(message);
+            alteraProgresso(progresso);
+            preLogin( 33 );
+        } else {
+            alteraInfo('Erro!');
+            alteraMessage(data.message ?? 'Não foi possível conectar ao servidor remoto. Volte novamente mais tarde.');
+            alteraProgresso(0);
+        }
+    }
+    , error = errorDoPost;
+
+    doPost('IMPORTACAO_PRELOGIN', {}, success, error, before, null);
+}
+function posLogin( dadosLogin, progresso ) {
+    if ( PineduAjax?.environment === 'development' ) console.log('posLogin');
+
+    var before = function () {
+        escondeFechar();
+        inicializaOverlay();
+        alteraInfo('Atualizando Autorização...');
+        alteraMessage('Atualizando informações de Autorização com o servidor.');
+        alteraProgresso(progresso);
+    }
+    , success = function (data) {
+        const info = 'Sucesso!';
+        const progresso = 100;
+        const message = 'Atualização realizada com sucesso!';
+        if (data.success === true) {
+            alteraInfo(info);
+            alteraMessage(message);
+            alteraProgresso(100);
+            prepararCadastrosBasicos( {} );
+        } else {
+            alteraInfo('Erro!');
+            alteraMessage(data.message ?? 'Não foi possível conectar ao servidor remoto. Volte novamente mais tarde.');
+            alteraProgresso(0);
+        }
+    }
+    , error = errorDoPost;
+    doPost('IMPORTACAO_POSLOGIN', dadosLogin, success, error, before, null);
+}
+function preLogin( progresso ) {
+    if ( PineduAjax?.environment === 'development' ) console.log('preLogin');
+    preparaObjetoAjax();
+    var before = function () {
+        escondeFechar();
+        inicializaOverlay();
+        alteraInfo('Autorização de Importação...');
+        alteraMessage('Solicitando conexão com o servidor Remoto.');
+        alteraProgresso(progresso);
+    }
+    , success = function (data) {
+        const info = 'Sucesso!';
+        const message = 'Autorização de Importação concedida!';
+        if (data.success === true) {
+            alteraInfo(info);
+            alteraMessage(message);
+            alteraProgresso(progresso);
+            data.urlServidor = PineduAjax.urlServidor;
+            PineduAjax.token = data.token;
+            PineduAjax.expiracaoToken = data.expiracaoToken;
+            posLogin( data, 66 );
+        } else {
+            alteraInfo('Erro!');
+            alteraMessage(data.message ?? 'Não foi possível conectar ao servidor remoto. Volte novamente mais tarde.');
+            alteraProgresso(0);
+        }
+    }
+    , error = errorDoPost;
+    const parametros = {
+        empresa: PineduAjax.empresa
+        , username: PineduAjax.tokenUsername
+        , password: PineduAjax.tokenPassword
+    };
+    doRemotePost('login', parametros, success, error, before, null);
 }
 
 function errorDoPost(data) {
@@ -113,52 +301,22 @@ function alteraProgresso(progresso, text) {
     }
 }
 
-function inicializar() {
-    if ( PineduAjax?.environment === 'development' ) console.log('inicializar');
-    var before = function () {
-        escondeFechar();
-        inicializaOverlay();
-        alteraInfo('Inicializando...');
-        alteraMessage('Testando conexão com o servidor Remoto. Aguarde!');
-        alteraProgresso(0);
-    }
-    , success = function (data) {
-        const info = 'Sucesso!';
-        const progresso = 100;
-        const message = 'Conexão com o Servidor remoto realizada com sucesso!';
-        if (data.success === true) {
-            alteraInfo(info);
-            alteraMessage(message);
-            alteraProgresso(progresso);
-            prepararCadastrosBasicos();
-        } else {
-            alteraInfo('Erro!');
-            alteraMessage(data.message ?? 'Não foi possível conectar ao servidor remoto. Volte novamente mais tarde.');
-            alteraProgresso(0);
-        }
-    }
-    , error = errorDoPost;
-
-    const args = {url_servidor: document.getElementById('url_servidor').value};
-    doPost('IMPORTA_FRONTEND_INICIALIZAR', args, success, error, before, null);
-}
-
-function prepararCadastrosBasicos() {
+function prepararCadastrosBasicos( parametrosBasicos ) {
     if ( PineduAjax?.environment === 'development' ) console.log('importarCadastrosBasicos');
     var before = function () {
         alteraInfo('Cadastros Básicos...');
-        alteraMessage('Importando dados básicos. Aguarde!');
+        alteraMessage('Importando dados básicos.');
         alteraProgresso(0);
     }
     , success = function (data) {
         const info = 'Sucesso!';
-        const progresso = 100;
+        const progresso = ( ( 100 / 10 ) * 1);
         const message = 'Dados básicos processados com sucesso!';
         if (data.success === true) {
             alteraInfo(info);
             alteraMessage(message);
             alteraProgresso(progresso);
-            importarEmpresa(data.empresa, data, ( ( 100 / 9 ) * 1));
+            importarEmpresa(data.empresa, data, ( ( 100 / 10 ) * 2));
         } else {
             alteraInfo('Erro!');
             alteraMessage(data.message ?? 'Não foi possível conectar ao servidor remoto. Volte novamente mais tarde.');
@@ -168,17 +326,21 @@ function prepararCadastrosBasicos() {
     , error = errorDoPost;
     const args = {
         url_servidor: document.getElementById('url_servidor').value,
-        forcar: ((document?.forcar === true) ? true : false)
+        forcar: ((document?.forcar === true) ? true : false),
+        empresa: PineduAjax.empresa,
+        token: PineduAjax.token
     };
-    doPost('IMPORTA_FRONTEND_PREPARAR_BASICOS', args, success, error, before, null);
+
+    Object.assign(args, parametrosBasicos);
+    doRemotePost('basicos', args, success, error, before, null);
 }
 
 function importarEmpresa(empresa, dadosBasicos, progresso) {
     if ( PineduAjax?.environment === 'development' ) console.log('importarEmpresa');
     var before = function () {
         alteraInfo('Cadastros Básicos...');
-        alteraMessage('Importando Empresa. Aguarde!');
-        alteraProgresso(0);
+        alteraMessage('Importando Empresa.');
+        alteraProgresso(progresso);
     }
     , success = function (data) {
         const info = 'Sucesso!';
@@ -187,7 +349,7 @@ function importarEmpresa(empresa, dadosBasicos, progresso) {
             alteraInfo(info);
             alteraMessage(message);
             alteraProgresso(progresso);
-            importarLoja(dadosBasicos.lojas, dadosBasicos, ( ( 100 / 9 ) * 2));
+            importarLoja(dadosBasicos.lojas, dadosBasicos, ( ( 100 / 10 ) * 3));
         } else {
             alteraInfo('Erro!');
             alteraMessage(data.message ?? 'Não foi possível conectar ao servidor remoto. Volte novamente mais tarde.');
@@ -202,7 +364,7 @@ function importarLoja(lojas, dadosBasicos, progresso) {
     if ( PineduAjax?.environment === 'development' ) console.log('importarLoja');
     var before = function () {
         alteraInfo('Cadastros Básicos...');
-        alteraMessage('Importando Lojas. Aguarde!');
+        alteraMessage('Importando Lojas.');
         alteraProgresso(progresso);
     }
     , success = function (data) {
@@ -212,7 +374,7 @@ function importarLoja(lojas, dadosBasicos, progresso) {
             alteraInfo(info);
             alteraMessage(message);
             alteraProgresso(progresso);
-            importarParamentrosEmpresa(dadosBasicos.parametroSistema, dadosBasicos, ( ( 100 / 9 ) * 3));
+            importarParamentrosEmpresa(dadosBasicos.parametroSistema, dadosBasicos, ( ( 100 / 10 ) * 4));
         } else {
             alteraInfo('Erro!');
             alteraMessage(data.message ?? 'Não foi possível conectar ao servidor remoto. Volte novamente mais tarde.');
@@ -227,7 +389,7 @@ function importarParamentrosEmpresa(parametros, dadosBasicos, progresso) {
     if ( PineduAjax?.environment === 'development' ) console.log('importarParametrosEmpresa');
     var before = function () {
         alteraInfo('Cadastros Básicos...');
-        alteraMessage('Importando Parâmetros da Empresa. Aguarde!');
+        alteraMessage('Importando Parâmetros da Empresa.');
         alteraProgresso( progresso );
     }
         , success = function (data) {
@@ -237,7 +399,7 @@ function importarParamentrosEmpresa(parametros, dadosBasicos, progresso) {
             alteraInfo(info);
             alteraMessage(message);
             alteraProgresso(progresso);
-            importarCidades(dadosBasicos.cidades, dadosBasicos, ( ( 100 / 9 ) * 4));
+            importarCidades(dadosBasicos.cidades, dadosBasicos, ( ( 100 / 10 ) * 5));
         } else {
             alteraInfo('Erro!');
             alteraMessage(data.message ?? 'Não foi possível conectar ao servidor remoto. Volte novamente mais tarde.');
@@ -253,7 +415,7 @@ function importarCidades(cidades, dadosBasicos, progresso) {
     if ( PineduAjax?.environment === 'development' ) console.log('importarCidades');
     var before = function () {
         alteraInfo('Cadastros Básicos...');
-        alteraMessage('Importando Cidades. Aguarde!');
+        alteraMessage('Importando Cidades.');
         alteraProgresso(progresso);
     }
     , success = function (data) {
@@ -263,7 +425,7 @@ function importarCidades(cidades, dadosBasicos, progresso) {
             alteraInfo(info);
             alteraMessage(message);
             alteraProgresso(progresso);
-            importarCorretores(dadosBasicos.corretores, dadosBasicos, ( ( 100 / 9 ) * 5));
+            importarCorretores(dadosBasicos.corretores, dadosBasicos, ( ( 100 / 10 ) * 6));
         } else {
             alteraInfo('Erro!');
             alteraMessage(data.message ?? 'Não foi possível conectar ao servidor remoto. Volte novamente mais tarde.');
@@ -279,7 +441,7 @@ function importarCorretores(corretores, dadosBasicos, progresso) {
     if ( PineduAjax?.environment === 'development' ) console.log('importarCorretores');
     var before = function () {
         alteraInfo('Cadastros Básicos...');
-        alteraMessage('Importando Corretores. Aguarde!');
+        alteraMessage('Importando Corretores.');
         alteraProgresso(progresso);
     }
     , success = function (data) {
@@ -289,7 +451,7 @@ function importarCorretores(corretores, dadosBasicos, progresso) {
             alteraInfo(info);
             alteraMessage(message);
             alteraProgresso(progresso);
-            importarTipoImoveis(dadosBasicos.tipoImoveis, dadosBasicos, ( ( 100 / 9 ) * 6));
+            importarTipoImoveis(dadosBasicos.tipoImoveis, dadosBasicos, ( ( 100 / 10 ) * 7));
         } else {
             alteraInfo('Erro!');
             alteraMessage(data.message ?? 'Não foi possível conectar ao servidor remoto. Volte novamente mais tarde.');
@@ -305,7 +467,7 @@ function importarTipoImoveis(tipoImoveis, dadosBasicos, progresso) {
     if ( PineduAjax?.environment === 'development' ) console.log('importarTipoImoveis');
     var before = function () {
         alteraInfo('Cadastros Básicos...');
-        alteraMessage('Importando Tipo de Imoveis. Aguarde!');
+        alteraMessage('Importando Tipo de Imoveis.');
         alteraProgresso(progresso);
     }
     , success = function (data) {
@@ -315,7 +477,7 @@ function importarTipoImoveis(tipoImoveis, dadosBasicos, progresso) {
             alteraInfo(info);
             alteraMessage(message);
             alteraProgresso(progresso);
-            importarFaixaValor(dadosBasicos.faixaValores, dadosBasicos, ( ( 100 / 9 ) * 7));
+            importarFaixaValor(dadosBasicos.faixaValores, dadosBasicos, ( ( 100 / 10 ) * 8));
         } else {
             alteraInfo('Erro!');
             alteraMessage(data.message ?? 'Não foi possível conectar ao servidor remoto. Volte novamente mais tarde.');
@@ -331,7 +493,7 @@ function importarFaixaValor(faixaValores, dadosBasicos, progresso) {
     if ( PineduAjax?.environment === 'development' ) console.log('importarFaixaValor');
     var before = function () {
         alteraInfo('Cadastros Básicos...');
-        alteraMessage('Importando Faixa de Valor. Aguarde!');
+        alteraMessage('Importando Faixa de Valor.');
         alteraProgresso(progresso);
     }
     , success = function (data) {
@@ -341,7 +503,7 @@ function importarFaixaValor(faixaValores, dadosBasicos, progresso) {
             alteraInfo(info);
             alteraMessage(message);
             alteraProgresso(progresso);
-            importarTipoDependencias(dadosBasicos.tipoDependencias, dadosBasicos, ( ( 100 / 9 ) * 8));
+            importarTipoDependencias(dadosBasicos.tipoDependencias, dadosBasicos, ( ( 100 / 10 ) * 9));
         } else {
             alteraInfo('Erro!');
             alteraMessage(data.message ?? 'Não foi possível conectar ao servidor remoto. Volte novamente mais tarde.');
@@ -357,7 +519,7 @@ function importarTipoDependencias(tipoDependencias, dadosBasicos, progresso) {
     if ( PineduAjax?.environment === 'development' ) console.log('importarTipoDependencias');
     var before = function () {
         alteraInfo('Cadastros Básicos...');
-        alteraMessage('Importando Tipo de Dependências. Aguarde!');
+        alteraMessage('Importando Tipo de Dependências.');
         alteraProgresso(progresso);
     }
     , success = function (data) {
@@ -367,7 +529,7 @@ function importarTipoDependencias(tipoDependencias, dadosBasicos, progresso) {
             alteraInfo(info);
             alteraMessage(message);
             alteraProgresso(progresso);
-            importarTipoContrato(dadosBasicos.tipoContratos, dadosBasicos, ( ( 100 / 9 ) * 9));
+            importarTipoContrato(dadosBasicos.tipoContratos, dadosBasicos, ( ( 100 / 10 ) * 10));
         } else {
             alteraInfo('Erro!');
             alteraMessage(data.message ?? 'Não foi possível conectar ao servidor remoto. Volte novamente mais tarde.');
@@ -383,7 +545,7 @@ function importarTipoContrato(tipoContratos, dadosBasicos, progresso) {
     if ( PineduAjax?.environment === 'development' ) console.log('importarTipoContrato');
     var before = function () {
         alteraInfo('Cadastros Básicos...');
-        alteraMessage('Importando Tipo de Contrato. Aguarde!');
+        alteraMessage('Importando Tipo de Contrato.');
         alteraProgresso(progresso);
     }
     , success = function (data) {
@@ -404,66 +566,65 @@ function importarTipoContrato(tipoContratos, dadosBasicos, progresso) {
     const args = {tipo_contratos: JSON.stringify(tipoContratos)};
     doPost('IMPORTA_FRONTEND_IMPORTAR_CONTRATO', args, success, error, before, null);
 }
-
-function prepararImportarImoveis() {
-    if ( PineduAjax?.environment === 'development' ) console.log('prepararImportarImoveis');
+function recuperaPostsExcluir( referenciasExcluir ) {
+    if ( PineduAjax?.environment === 'development' ) console.log('recuperaPostsExcluir');
     var before = function () {
-        alteraInfo('Imóveis...');
-        alteraMessage('Preparando Importação de Imóveis. Aguarde!');
-        alteraProgresso(0);
+        alteraInfo('Excluir Imóveis...');
+        alteraMessage('Recuperando posts para excluir.');
+        alteraProgresso(50);
     }
     , success = function (data) {
         const info = 'Sucesso!';
-        const progresso = 100;
-        const message = 'Preparação importação de Imóveis realizada com sucesso!';
+        const message = 'Tipo de Contrato processados com sucesso!';
         if (data.success === true) {
             alteraInfo(info);
             alteraMessage(message);
             alteraProgresso(progresso);
-            importarImoveisFrontEnd(PineduAjax.max, 0, data.total, 0, 0);
+            excluirImoveis( data.ids );
         } else {
-            prepararImportarImagemDestaque(0);
+            prepararImportarImoveis( {} );
+        }
+    }
+    , error = errorDoPost;
+    const args = {forcar: ((document?.forcar === true) ? true : false), excluidos: JSON.stringify(referenciasExcluir)};
+    doPost('RECUPERA_EXCLUIDOS_FROM_JSON', args, success, error, before, null);
+}
+function prepararExcluirImoveis( parametrosExcluir ) {
+    if ( PineduAjax?.environment === 'development' ) console.log('prepararExcluirImoveis');
+    var before = function () {
+        alteraInfo('Imóveis...');
+        alteraMessage('Preparando Exclusão de Imóveis fora do contexto.');
+        alteraProgresso(0);
+    }
+    , success = function (data) {
+        const info = 'Sucesso!';
+        const progresso = 25;
+        const message = 'Imóveis a serem excluídos obtidos com sucesso!';
+        if (data.success === true) {
+            alteraInfo(info);
+            alteraMessage(message);
+            alteraProgresso(progresso);
+            recuperaPostsExcluir( data.excluidos );
+        } else {
+            prepararImportarImoveis( {} );
         }
     }
     , error = errorDoPost;
     const args = {
-        url_servidor: document.getElementById('url_servidor').value,
-        forcar: ((document?.forcar === true) ? true : false)
+        forcar: ((document?.forcar === true) ? true : false),
+        ultimaAtualizacao: PineduAjax.ultimaAtualizacao,
+        empresa: PineduAjax.empresa,
+        token: PineduAjax.token,
     };
-    doPost('IMPORTA_FRONTEND_PREPARAR_IMOVEIS', args, success, error, before, null);
+    Object.assign(args, parametrosExcluir);
+    doRemotePost('listaExcluidos', args, success, error, before, null);
 }
-
-function prepararExcluirImoveis() {
-    if ( PineduAjax?.environment === 'development' ) console.log('excluirImoveis');
-    var before = function () {
-        alteraInfo('Imóveis...');
-        alteraMessage('Preparando Exclusão de Imóveis fora do contexto. Aguarde!');
-        alteraProgresso(0);
-    }
-    , success = function (data) {
-        const info = 'Sucesso!';
-        const progresso = 100;
-        const message = 'Exclusão de Imóveis fora do contexto realizada com sucesso!';
-        if (data.success === true) {
-            alteraInfo(info);
-            alteraMessage(message);
-            alteraProgresso(progresso);
-            excluirImoveis( data.ids, data.total );
-        } else {
-            prepararImportarImoveis();
-        }
-    }
-    , error = errorDoPost;
-    const args = {url_servidor: document.getElementById('url_servidor').value, forcar: ((document?.forcar === true) ? true : false)};
-    doPost('PREPARAR_EXCLUIR_IMOVEIS', args, success, error, before, null);
-}
-
 function excluirImoveis(imoveisExcluidos, total) {
     if ( PineduAjax?.environment === 'development' ) console.log('excluirImoveis');
     var before = function () {
-        alteraInfo('Imóveis...');
-        alteraMessage('Preparando Exclusão de Imóveis fora do contexto. Aguarde!');
-        alteraProgresso(0);
+        alteraInfo('Excluir Imóveis...');
+        alteraMessage('Excluindo imóveis.');
+        alteraProgresso(75);
     }
     , success = function (data) {
         const info = 'Sucesso!';
@@ -473,7 +634,7 @@ function excluirImoveis(imoveisExcluidos, total) {
             alteraInfo(info);
             alteraMessage(message);
             alteraProgresso(progresso);
-            prepararImportarImoveis();
+            prepararImportarImoveis( {} );
         } else {
             alteraInfo('Erro!');
             alteraMessage(data.message);
@@ -484,27 +645,53 @@ function excluirImoveis(imoveisExcluidos, total) {
     const args = {excluidos: JSON.stringify(imoveisExcluidos)};
     doPost('IMPORTA_FRONTEND_EXCLUIR_IMOVEIS', args, success, error, before, null);
 }
-
-function importarImoveisFrontEnd(max, offset, total, progresso, retornados) {
-    if ( PineduAjax?.environment === 'development' ) console.log('importarImoveis');
-
+function prepararImportarImoveis( parametrosImportarImoveis ) {
+    if ( PineduAjax?.environment === 'development' ) console.log('prepararImportarImoveis');
     var before = function () {
         alteraInfo('Imóveis...');
-        alteraMessage('Importando Imóveis. Aguarde!');
-        alteraProgresso(progresso, offset + ' / ' + total);
+        alteraMessage('Preparando Importação de Imóveis.');
+        alteraProgresso(0);
     }
     , success = function (data) {
         const info = 'Sucesso!';
-        const message = 'Importação de Imóveis realizada com sucesso!';
+        const progresso = 100;
+        const message = 'Preparação importação de Imóveis realizada com sucesso!';
         if (data.success === true) {
-            retornados += data.returned;
-            progresso = Math.round((retornados / total) * 100);
-            offset = parseInt(offset) + parseInt(max);
             alteraInfo(info);
             alteraMessage(message);
-            alteraProgresso(progresso, parseInt(offset) + '/' + parseInt(total));
-            if (retornados < total) {
-                importarImoveisFrontEnd(max, parseInt(offset), parseInt(total), progresso, retornados);
+            alteraProgresso(progresso);
+            recuperarLoteImoveis(PineduAjax.max, 0, data.total, 0, 0);
+        } else {
+            prepararImportarImagemDestaque(0);
+        }
+    }
+        , error = errorDoPost;
+    const args = {
+        forcar: ((document?.forcar === true) ? true : false)
+        , ignorarExcluidos: true
+        , ultimaAtualizacao: PineduAjax.ultimaAtualizacao
+    };
+    Object.assign(args, parametrosImportarImoveis);
+    doRemotePost('preparaImportacao', args, success, error, before, null);
+}
+function recuperarLoteImoveis( max, offset, total, progresso, retornados ) {
+    if ( PineduAjax?.environment === 'development' ) console.log('recuperarLoteImoveis');
+    var before = function () {
+        alteraInfo('Imóveis...');
+        alteraMessage('Importando Imóveis.');
+        alteraProgresso(progresso, offset + ' / ' + total);
+    }
+    , success = function (data) {
+        const info = 'Imóveis...';
+        if (data.success === true) {
+            var returned = data.pagination.returned;
+            retornados += returned;
+            progresso = Math.round((retornados / total) * 100);
+            alteraInfo(info);
+            alteraMessage('Importando Imóveis.');
+            alteraProgresso(progresso, (parseInt( offset ) + parseInt( max )) + ' / ' + parseInt(total));
+            if (returned > 0) {
+                importarImoveisFrontEnd(data.imoveis, max, parseInt(offset), parseInt(total), progresso, retornados);
             } else {
                 prepararImportarImagemDestaque(total);
             }
@@ -516,21 +703,52 @@ function importarImoveisFrontEnd(max, offset, total, progresso, retornados) {
     }
     , error = errorDoPost;
     const args = {
-        url_servidor: document.getElementById('url_servidor').value
-        , ultima_atualizacao: PineduAjax?.ultimaAtualizacao
-        , forcar: ((document?.forcar === true) ? true : false)
+        forcar: ((document?.forcar === true) ? true : false)
+        , ultimaAtualizacao: PineduAjax.ultimaAtualizacao
         , max: max
         , offset: offset
         , total: total
+        , ignorarExcluidos: true
     };
-    doPost('IMPORTA_FRONTEND_IMPORTAR_IMOVEIS', args, success, error, before, null);
+    Object.assign(args);
+    doRemotePost('imoveis', args, success, error, before, null);
 }
-
+function importarImoveisFrontEnd(imoveis, max, offset, total, progresso, retornados) {
+    if ( PineduAjax?.environment === 'development' ) console.log('importarImoveis');
+    offset = parseInt(offset) + parseInt(max);
+    var before = function () {
+        alteraInfo('Imóveis...');
+        alteraMessage('Importando Imóveis.');
+        alteraProgresso(progresso, offset + ' / ' + parseInt(total));
+    }
+    , success = function (data) {
+        alteraMessage('Importando Imóveis.');
+        if (data.success === true) {
+            alteraInfo('Imóveis...');
+            alteraMessage('Importando Imóveis.');
+            alteraProgresso(progresso, offset + ' / ' + parseInt(total));
+            if (retornados < total) {
+                recuperarLoteImoveis(PineduAjax.max, offset, total, progresso, retornados);
+            } else {
+                prepararImportarImagemDestaque(total);
+            }
+        } else {
+            alteraInfo('Erro!');
+            alteraMessage(data.message);
+            alteraProgresso(0);
+        }
+    }
+    , error = errorDoPost;
+    const args = {
+        imoveis: JSON.stringify(imoveis)
+    };
+    doPost('IMPORTA_FRONTEND_IMPORTAR_IMOVEIS_JSON', args, success, error, before, null);
+}
 function prepararImportarImagemDestaque(totalImoveis, isRetificar = false) {
     if ( PineduAjax?.environment === 'development' ) console.log('prepararImportarImagemDestaque');
     var before = function () {
         alteraInfo('Imagem de Destaque...');
-        alteraMessage('Preparando Importação de Imagem Destaque. Aguarde!');
+        alteraMessage('Preparando Importação de Imagem Destaque.');
         alteraProgresso(0);
     }
     , success = function (data) {
@@ -564,19 +782,18 @@ function prepararImportarImagemDestaque(totalImoveis, isRetificar = false) {
     doPost('PREPARA_IMAGEM_DESTAQUE', args, success, error, before, null);
 
 }
-
 function importarImagemDestaque(totalImoveis, ids, offset, totalDestaques, progresso, retornados, isRetificar = false) {
     if ( PineduAjax?.environment === 'development' ) console.log('importarImagemDestaque');
     var before = function () {
         const info = 'Sucesso!';
-        const message = 'Importando Imagens Destaque. Aguarde!';
+        const message = 'Importando Imagens Destaque.';
         alteraInfo(info);
         alteraMessage(message);
         alteraProgresso(progresso, parseInt(retornados) + '/' + parseInt(totalDestaques));
     }
     , success = function (data) {
         const info = 'Sucesso!';
-        const message = 'Importando Imagens Destaque. Aguarde!';
+        const message = 'Importando Imagens Destaque.';
 
         if (data.success === true) {
             retornados += parseInt(data.returned);
@@ -602,13 +819,12 @@ function importarImagemDestaque(totalImoveis, ids, offset, totalDestaques, progr
     };
     doPost('IMPORTA_IMAGEM_DESTAQUE', args, success, error, before, null);
 }
-
 function finalizarImportacaoDestaques(totalImoveis, isRetificar = false) {
     if ( PineduAjax?.environment === 'development' ) console.log('finalizarImportacaoDestaques');
 
     var before = function () {
         alteraInfo('Concluído!');
-        alteraMessage('Finalizando Importação de Destaques. Aguarde!');
+        alteraMessage('Finalizando Importação de Destaques.');
         alteraProgresso(0);
     }
     , success = function (data) {
@@ -626,13 +842,12 @@ function finalizarImportacaoDestaques(totalImoveis, isRetificar = false) {
     , error = errorDoPost;
     doPost('FINALIZA_IMAGEM_DESTAQUE', {}, success, error, before, null);
 }
-
 function finalizarImportacaoFrontEnd(totalImoveis) {
     if ( PineduAjax?.environment === 'development' ) console.log('finalizarImportacaoFrontEnd');
 
     var before = function () {
         alteraInfo('Concluído!');
-        alteraMessage('Finalizando Importação. Aguarde!');
+        alteraMessage('Finalizando Importação.');
         alteraProgresso(0);
     }
     , success = function (data) {
@@ -663,7 +878,7 @@ function retificarDestaque() {
         escondeFechar();
         inicializaOverlay();
         alteraInfo('Iniciando!');
-        alteraMessage('Retificando Imagens de destaque. Aguarde!');
+        alteraMessage('Retificando Imagens de destaque.');
         alteraProgresso(0);
     }
     , success = function (data) {
