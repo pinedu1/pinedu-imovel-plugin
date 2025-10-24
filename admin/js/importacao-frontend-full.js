@@ -693,7 +693,6 @@ function recuperarLoteImoveis( max, offset, total, progresso, retornados ) {
             alteraMessage('Importando Imóveis.');
             alteraProgresso(progresso, (parseInt( offset ) + parseInt( max )) + ' / ' + parseInt(total));
             if (returned > 0) {
-                console.log( data.imoveis )
                 importarImoveisFrontEnd(data.imoveis, max, parseInt(offset), parseInt(total), progresso, retornados);
             } else {
                 prepararImportarImagemDestaque(total);
@@ -730,6 +729,7 @@ function importarImoveisFrontEnd(imoveis, max, offset, total, progresso, retorna
             alteraInfo('Imóveis...');
             alteraMessage('Importando Imóveis.');
             alteraProgresso(progresso, offset + ' / ' + parseInt(total));
+            console.log('Retornados: ' + retornados + ' | Total: ' + total + ' | Progresso: ' + progresso + ' | Offset: ' + offset);
             if (retornados < total) {
                 recuperarLoteImoveis(PineduAjax.max, offset, total, progresso, retornados);
             } else {
