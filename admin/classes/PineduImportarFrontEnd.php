@@ -323,6 +323,7 @@ class PineduImportarFrontEnd {
         $options[ 'token' ] = $token;
         $options[ 'proxima_atualizacao' ] = self::parse_timestamp_scheduler( self::consulta_agendamento( ) );
         $options[ 'importacao_andamento' ] = false;
+
         $options[ 'success' ] = true;
         update_option( 'pinedu_imovel_options', $options );
         /* Enviar estes dados para o Servidor */
@@ -334,6 +335,10 @@ class PineduImportarFrontEnd {
             , 'dataAtualizacao' => formataData_iso8601( $options[ 'ultima_atualizacao' ] )
             , 'proximaAtualizacao' => formataData_iso8601( $options[ 'proxima_atualizacao' ] )
             , 'token' => $options[ 'token' ]
+            , 'urlWordpress' => home_url()
+            , 'pathIntegracao' => 'pinedu-imovel/v1/update'
+            , 'tokenUsername' => $options[ 'token_username' ]
+            , 'tokenPassword' => $options[ 'token_password' ]
         ];
         $request = new PineduRequest( );
         $request->get( $fullUrl, $args );
@@ -565,7 +570,7 @@ class PineduImportarFrontEnd {
             error_log( 'PineduImportarFrontEnd:pos_login' );
         }
         $options = get_option( 'pinedu_imovel_options', [ ] );
-        $options['fotos_demanda'] = 'on';
+        //$options['fotos_demanda'] = 'on';
         $options['importacao_andamento'] = true;
 
         if ( isset( $_POST[ 'urlServidor' ] ) ) {

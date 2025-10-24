@@ -37,6 +37,7 @@ function doRemotePost(endPoint, argumentos, callbackSuccess, callbackError, call
             }
         })
         .catch(err => {
+            console.error('❌ Erro na requisição:', argumentos);
             console.error('❌ Erro na requisição:', err);
             if (typeof callbackError === 'function') {
                 // Passe o objeto de erro para o callback de erro
@@ -86,6 +87,7 @@ function doPost(action, argumentos, callbackSuccess, callbackError, callbackPre,
             // Você não precisa de um 'return' aqui a menos que queira encadear mais Promises
         })
         .catch(err => {
+            console.error('❌ Erro na requisição:', argumentos);
             // O .catch() lida com erros de rede OU o Error lançado no primeiro .then()
             console.error('❌ Erro na requisição:', err);
             // MELHOR LUGAR PARA O CALLBACK DE ERRO:
@@ -691,6 +693,7 @@ function recuperarLoteImoveis( max, offset, total, progresso, retornados ) {
             alteraMessage('Importando Imóveis.');
             alteraProgresso(progresso, (parseInt( offset ) + parseInt( max )) + ' / ' + parseInt(total));
             if (returned > 0) {
+                console.log( data.imoveis )
                 importarImoveisFrontEnd(data.imoveis, max, parseInt(offset), parseInt(total), progresso, retornados);
             } else {
                 prepararImportarImagemDestaque(total);

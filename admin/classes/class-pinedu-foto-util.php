@@ -304,18 +304,32 @@ class Pinedu_Imovel_Importa_Foto extends Pinedu_Foto_Util {
 	}
 
     public function salva_imagem_destaque( ) {
+        $options = get_option( 'pinedu_imovel_options', [] );
+        if ( is_development_mode() ) {
+            error_log('Salva Imagem Destaque: ' . print_r( $options, true ));
+        }
         $imagem_destaque = $this->resolve_imagem_destaque( );
         if ( $imagem_destaque && ! empty( $imagem_destaque ) ) {
-            //$this->salva_post_imagem( $imagem_destaque );
-            $this->salva_destaque_term( $imagem_destaque );
+            if ( ! isset( $options['fotos_demanda'] ) || ( ! $options['fotos_demanda'] ) ) {
+                $this->salva_post_imagem( $imagem_destaque );
+            } else {
+                $this->salva_destaque_term( $imagem_destaque );
+            }
         }
     }
     public function salvar_fotografias( ) {
+        $options = get_option( 'pinedu_imovel_options', [] );
+        if ( is_development_mode() ) {
+            error_log('Salva Imagem Destaque: ' . print_r( $options, true ));
+        }
         $fotografias = $this->imovel[ 'fotos' ];
         if ( empty( $fotografias ) ) return false;
         foreach( $fotografias as $foto ) {
-            //$this->salvar_fotografia( $foto );
-            $this->salvar_fotografia_term( $foto );
+            if ( ! isset( $options['fotos_demanda'] ) || ( ! $options['fotos_demanda'] ) ) {
+                $this->salvar_fotografia( $foto );
+            } else {
+                $this->salvar_fotografia_term( $foto );
+            }
         }
     }
 
@@ -449,11 +463,16 @@ class Pinedu_Imovel_Importa_Foto extends Pinedu_Foto_Util {
 	}
 	public function atualiza_imagem_destaque( ) {
 		$this->delete_post_thumbnail( $this->post_id );
+        $options = get_option( 'pinedu_imovel_options', [] );
+        if ( is_development_mode() ) {
+            error_log('Salva Imagem Destaque: ' . print_r( $options, true ));
+        }
 		$imagem_destaque = $this->resolve_imagem_destaque( );
-		if ( $imagem_destaque && ! empty( $imagem_destaque ) ) {
-			//$this->salva_post_imagem( $imagem_destaque );
+        if ( ! isset( $options['fotos_demanda'] ) || ( ! $options['fotos_demanda'] ) ) {
+            $this->salva_post_imagem( $imagem_destaque );
+        } else {
             $this->update_destaque_term( $imagem_destaque );
-		}
+        }
 	}
 	private function resolve_imagem_destaque( ) {
 		if ( isset( $this->imovel['fotos'] ) && !empty( $this->imovel['fotos'] ) ) {
@@ -471,11 +490,11 @@ class Pinedu_Imovel_Importa_Foto extends Pinedu_Foto_Util {
 	}
 	private function salva_post_imagem( $imagem_destaque ) {
 		$image_ulr = $imagem_destaque['big'];
-		$alt_text = $imagem_destaque['nome'];
-		$title = $imagem_destaque['nome'];
-		$description = $imagem_destaque['descricao'];
-		$label = $imagem_destaque['nome'];
-		$attachment_id = $this->importa_foto( $image_ulr, $imagem_destaque['nome'], $title, $alt_text );
+		$alt_text = $imagem_destaque['nome'] ?? '';
+		$title = $imagem_destaque['nome'] ?? '';
+		$description = $imagem_destaque['descricao'] ?? '';
+		$label = $imagem_destaque['nome'] ?? '';
+		$attachment_id = $this->importa_foto( $image_ulr, $label, $title, $alt_text );
 		if ( $this->post_id && $attachment_id ) {
 			set_post_thumbnail( $this->post_id, $attachment_id );
 		}
@@ -500,9 +519,13 @@ class Pinedu_Imovel_Importa_Foto extends Pinedu_Foto_Util {
 		if ( empty( $fotografias ) ) {
 			return false;
 		}
+        $options = get_option( 'pinedu_imovel_options', [] );
 		foreach( $fotografias as $foto ) {
-            //$this->atualizar_fotografia( $foto, $fotografias_post );
-            $this->salvar_fotografia_term( $foto );
+            if ( ! isset( $options['fotos_demanda'] ) || ( ! $options['fotos_demanda'] ) ) {
+                $this->salvar_fotografia( $foto );
+            } else {
+                $this->salvar_fotografia_term( $foto );
+            }
 		}
 	}
 	public function excluir_fotografias( $fotografias_post ) {
