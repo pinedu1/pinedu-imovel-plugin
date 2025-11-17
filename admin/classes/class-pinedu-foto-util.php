@@ -303,21 +303,23 @@ class Pinedu_Imovel_Importa_Foto extends Pinedu_Foto_Util {
 		$this->post_id = $post_id;
 	}
 
-    public function salva_imagem_destaque( ) {
+    public function salva_imagem_destaque( $silent_mode = false ) {
         $options = get_option( 'pinedu_imovel_options', [] );
         if ( is_development_mode() ) {
             error_log('Salva Imagem Destaque: ' . print_r( $options, true ));
         }
         $imagem_destaque = $this->resolve_imagem_destaque( );
-        if ( $imagem_destaque && ! empty( $imagem_destaque ) ) {
-            if ( ! isset( $options['fotos_demanda'] ) || ( ! $options['fotos_demanda'] ) ) {
-                $this->salva_post_imagem( $imagem_destaque );
-            } else {
-                $this->salva_destaque_term( $imagem_destaque );
+        if ( $imagem_destaque ) {
+            if ($imagem_destaque && !empty($imagem_destaque)) {
+                if (!isset($options['fotos_demanda']) || (!$options['fotos_demanda'])) {
+                    $this->salva_post_imagem($imagem_destaque, $silent_mode);
+                } else {
+                    $this->salva_destaque_term($imagem_destaque);
+                }
             }
         }
     }
-    public function salvar_fotografias( ) {
+    public function salvar_fotografias( $silent_mode = false ) {
         $options = get_option( 'pinedu_imovel_options', [] );
         if ( is_development_mode() ) {
             error_log('Salva Imagem Destaque: ' . print_r( $options, true ));
@@ -326,7 +328,7 @@ class Pinedu_Imovel_Importa_Foto extends Pinedu_Foto_Util {
         if ( empty( $fotografias ) ) return false;
         foreach( $fotografias as $foto ) {
             if ( ! isset( $options['fotos_demanda'] ) || ( ! $options['fotos_demanda'] ) ) {
-                $this->salvar_fotografia( $foto );
+                $this->salvar_fotografia( $foto, $silent_mode );
             } else {
                 $this->salvar_fotografia_term( $foto );
             }
@@ -461,17 +463,19 @@ class Pinedu_Imovel_Importa_Foto extends Pinedu_Foto_Util {
 		//$this->delete_post_thumbnail( $this->post_id );
         $this->delete_destaque_term( $this->post_id );
 	}
-	public function atualiza_imagem_destaque( ) {
+	public function atualiza_imagem_destaque( $silent_mode = false ) {
 		$this->delete_post_thumbnail( $this->post_id );
         $options = get_option( 'pinedu_imovel_options', [] );
         if ( is_development_mode() ) {
             error_log('Salva Imagem Destaque: ' . print_r( $options, true ));
         }
 		$imagem_destaque = $this->resolve_imagem_destaque( );
-        if ( ! isset( $options['fotos_demanda'] ) || ( ! $options['fotos_demanda'] ) ) {
-            $this->salva_post_imagem( $imagem_destaque );
-        } else {
-            $this->update_destaque_term( $imagem_destaque );
+        if ( $imagem_destaque ) {
+            if (!isset($options['fotos_demanda']) || (!$options['fotos_demanda'])) {
+                $this->salva_post_imagem( $imagem_destaque, $silent_mode);
+            } else {
+                $this->update_destaque_term($imagem_destaque);
+            }
         }
 	}
 	private function resolve_imagem_destaque( ) {
@@ -488,17 +492,70 @@ class Pinedu_Imovel_Importa_Foto extends Pinedu_Foto_Util {
 		}
 		return false;
 	}
-	private function salva_post_imagem( $imagem_destaque ) {
-		$image_ulr = $imagem_destaque['big'];
+	private function salva_post_imagem( $imagem_destaque, $silent_mode = false ) {
+        if ( is_development_mode( ) ) {
+            error_log('Buscando Imagem Destaque:' . print_r($imagem_destaque, true));
+        }
+        $exibir = $imagem_destaque[ 'exibeInternet' ];
+        if ( $exibir !== true ) return false;
+        //
+        $nome = $imagem_destaque[ 'nome' ];
+        $image_url = sanitize_url( $imagem_destaque['big'] );
+        $tmp_name = download_url( $image_url );
+
+        if ( is_wp_error( $tmp_name ) ) {
+            if ( $silent_mode === true ) {
+                error_log('1 - Falha ao baixar a URL remota: ' . $tmp_name->get_error_message() );
+                return false;
+            }
+            wp_send_json_error( [ 'message' => 'Falha ao baixar a URL remota: ' . $tmp_name->get_error_message() ] );
+            wp_die();
+        }
+
+        $file_array = array(
+            'name'     => $nome,
+            'tmp_name' => $tmp_name
+        );
+
+        // media_handle_sideload (Processamento e Criação do Anexo)
+        $image_id = media_handle_sideload( $file_array, $this->post_id );
+
+        // 3. Salvamento no Campo Personalizado (Ação Requerida)
+
+        if ( is_wp_error( $image_id ) ) {
+            @unlink( $file_array['tmp_name'] );
+            if ( $silent_mode === true ) {
+                error_log('2 - Falha ao processar a imagem: ' . $image_id->get_error_message() );
+                return false;
+            }
+            wp_send_json_error( [ 'message' => 'Falha ao processar a imagem: ' . $image_id->get_error_message() ] );
+            wp_die();
+        } else {
+            $pm = set_post_thumbnail( $this->post_id, $image_id );
+
+            if ( $pm === false ) {
+                if ( $silent_mode === true ) {
+                    error_log('3 - Falha ao salvar metadados (Destaque pm).' );
+                    return false;
+                }
+                wp_send_json_error( [ 'message' => 'Falha ao salvar metadados (Destaque).' ] );
+                wp_die();
+            }
+        }
+
+/*		$image_ulr = $imagem_destaque['big'];
 		$alt_text = $imagem_destaque['nome'] ?? '';
 		$title = $imagem_destaque['nome'] ?? '';
 		$description = $imagem_destaque['descricao'] ?? '';
 		$label = $imagem_destaque['nome'] ?? '';
-		$attachment_id = $this->importa_foto( $image_ulr, $label, $title, $alt_text );
+		$attachment_id = $this->importa_foto( $image_ulr, $label, $title, $alt_text, $silent_mode );
+        if ($attachment_id === false) {
+            return false;
+        }
 		if ( $this->post_id && $attachment_id ) {
 			set_post_thumbnail( $this->post_id, $attachment_id );
-		}
-		return $attachment_id;
+		}*/
+		return $image_id;
 	}
 	public function apagar_fotografias( $fotografias ) {
 		foreach( $fotografias as $foto ) {
@@ -511,7 +568,7 @@ class Pinedu_Imovel_Importa_Foto extends Pinedu_Foto_Util {
 		}
 		return false;
 	}
-	public function atualizar_fotografias( $fotografias_post ) {
+	public function atualizar_fotografias( $fotografias_post, $silent_mode = false ) {
         if ( !empty( $fotografias_post ) ) {
             $this->apagar_fotografias( $fotografias_post );
         }
@@ -522,7 +579,7 @@ class Pinedu_Imovel_Importa_Foto extends Pinedu_Foto_Util {
         $options = get_option( 'pinedu_imovel_options', [] );
 		foreach( $fotografias as $foto ) {
             if ( ! isset( $options['fotos_demanda'] ) || ( ! $options['fotos_demanda'] ) ) {
-                $this->salvar_fotografia( $foto );
+                $this->salvar_fotografia( $foto, $silent_mode );
             } else {
                 $this->salvar_fotografia_term( $foto );
             }
@@ -533,10 +590,67 @@ class Pinedu_Imovel_Importa_Foto extends Pinedu_Foto_Util {
 			$this->apagar_fotografias( $fotografias_post );
 		}
 	}
-    private function salvar_fotografia( $foto ) {
-        error_log( 'Buscando Foto:' . print_r( $foto, true ) );
-
+    private function salvar_fotografia( $foto, $silent_mode = false ) {
+        if ( is_development_mode( ) ) {
+            error_log('Buscando Foto:' . print_r($foto, true));
+        }
         $exibir = $foto[ 'exibeInternet' ];
+        if ( $exibir !== true ) return false;
+        $nome = $foto[ 'nome' ];
+        $image_url = sanitize_url( $foto['big'] );
+        $tmp_name = download_url( $image_url );
+
+        if ( is_wp_error( $tmp_name ) ) {
+            if ( $silent_mode === true ) {
+                error_log('1 - Falha ao baixar a URL remota: ' . $tmp_name->get_error_message() );
+                return false;
+            }
+            wp_send_json_error( [ 'message' => 'Falha ao baixar a URL remota: ' . $tmp_name->get_error_message() ] );
+            wp_die();
+        }
+
+        $file_array = array(
+            'name'     => $nome,
+            'tmp_name' => $tmp_name
+        );
+
+        // media_handle_sideload (Processamento e Criação do Anexo)
+        $image_id = media_handle_sideload( $file_array, $this->post_id );
+
+        // 3. Salvamento no Campo Personalizado (Ação Requerida)
+
+        if ( is_wp_error( $image_id ) ) {
+            @unlink( $file_array['tmp_name'] );
+            if ( $silent_mode === true ) {
+                error_log('2 - Falha ao processar a imagem: ' . $image_id->get_error_message() );
+                return false;
+            }
+            wp_send_json_error( [ 'message' => 'Falha ao processar a imagem: ' . $image_id->get_error_message() ] );
+            wp_die();
+        } else {
+            // AÇÃO ALTERADA: Adiciona o ID da imagem (anexo) ao campo 'fotografias'
+            // 'false' no final permite adicionar múltiplas fotos ao mesmo post.
+            //$valor = $image_id; // O valor a ser salvo é o ID da mídia
+            //$pm = add_post_meta( $this->post_id, 'fotografias', $valor, false );
+            $foto_id = $foto[ 'id' ];
+            $nome = $foto[ 'nome' ];
+            $descricao = $foto[ 'descricao' ];
+            $ordem= $foto[ 'ordem' ];
+            $fachada = $foto[ 'fotoBanner' ];
+
+            $valor = [ 'nome' => $nome, 'descricao' => $descricao, 'ordem' => $ordem, 'fachada' => $fachada, 'foto_id' => $foto_id, 'id' => $image_id];
+            $pm = add_post_meta( $this->post_id, 'fotografias', $valor, false );
+
+            if ( $pm === false ) {
+                if ( $silent_mode === true ) {
+                    error_log('3 - Falha ao salvar metadados (fotografias pm).' );
+                    return false;
+                }
+                wp_send_json_error( [ 'message' => 'Falha ao salvar metadados (fotografias).' ] );
+                wp_die();
+            }
+        }
+/*        $exibir = $foto[ 'exibeInternet' ];
         if ( !$exibir ) return false;
         $foto_id = $foto[ 'id' ];
         $nome = $foto[ 'nome' ];
@@ -547,11 +661,13 @@ class Pinedu_Imovel_Importa_Foto extends Pinedu_Foto_Util {
         $image_ulr = $foto['big'];
         $alt_text = $nome;
         $title = $nome;
-        $attachment_id = $this->importa_foto( $image_ulr, $foto['nome'], $title, $alt_text );
-
+        $attachment_id = $this->importa_foto( $image_ulr, $foto['nome'], $title, $alt_text, $silent_mode );
+        if (!$attachment_id) {
+            return false;
+        }
         $valor = [ 'nome' => $nome, 'descricao' => $descricao, 'ordem' => $ordem, 'exibir' => $exibir, 'fachada' => $fachada, 'foto_id' => $foto_id, 'id' => $attachment_id];
         $pm = add_post_meta( $this->post_id, 'fotografias', $valor, false );
-        $x=$pm;
+        $x=$pm;*/
         return true;
     }
     private function atualizar_fotografia( $foto, &$fotografias_post ) {
@@ -587,17 +703,17 @@ class Pinedu_Imovel_Importa_Foto extends Pinedu_Foto_Util {
     }
     public function salvar_fotografia_term( $foto ): bool {
         $meta_key_slug = 'fotos';
-        if ( empty( $this->post_id ) || ! is_numeric( $this->post_id ) ) {
+        if ( is_development_mode( ) && empty( $this->post_id ) || ! is_numeric( $this->post_id ) ) {
             error_log( 'Erro: ID do Post inválido ou ausente em salva_destaque_term.' );
             return false;
         }
-        if ( ! is_array( $foto ) || empty( $foto['big'] ) || empty( $foto['id'] ) ) {
+        if ( is_development_mode( ) && ((! is_array( $foto )) || empty( $foto['big'] ) || empty( $foto['id'] ) )) {
             error_log( 'Erro: Dados de destaque (array) inválidos, URL principal (big) ou ID (id) ausentes.' );
             return false;
         }
         $imagem_url_sanitizada = esc_url_raw( $foto['big'] );
         $imagem_id_sanitizado  = sanitize_key( $foto['id'] );
-        if ( empty( $imagem_url_sanitizada ) || empty( $imagem_id_sanitizado ) ) {
+        if ( is_development_mode( ) && (empty( $imagem_url_sanitizada ) || empty( $imagem_id_sanitizado )) ) {
             error_log( 'Erro: URL ou ID da imagem inválidos após a sanitização.' );
             return false;
         }
@@ -628,7 +744,9 @@ class Pinedu_Imovel_Importa_Foto extends Pinedu_Foto_Util {
         if ( $meta_id === false ) {
             // Falha: O meta campo já existe ou houve um erro no DB.
             // Se ele já existe, isso é esperado ao usar TRUE como quarto parâmetro.
-            error_log( 'Aviso: Meta campo fixo "' . $meta_key_slug . '" já existe ou falha na adição (Post ID: ' . $this->post_id . ').' );
+            if ( is_development_mode( ) ) {
+                error_log('Aviso: Meta campo fixo "' . $meta_key_slug . '" já existe ou falha na adição (Post ID: ' . $this->post_id . ').');
+            }
             return false;
         }
         return true;
@@ -659,27 +777,33 @@ abstract class Pinedu_Foto_Util {
 		require_once( ABSPATH . 'wp-admin/includes/image.php' );
 		require_once( ABSPATH . 'wp-admin/includes/media.php' );
 	}
-	public function importa_foto( $url, $image_name = null, $image_title = null, $alt_text = null ) {
+	public function importa_foto( $url, $image_name = null, $image_title = null, $alt_text = null, $silent_mode = false ) {
 		$image_path = $this->download_image_temp_file( $url, $image_name );
 		if ( !$image_path ) {
             return false;
             //return new WP_Error( 'download_error', 'Erro ao fazer download do arquivo.' );
 		}
-		$attach_id = $this->upload_to_library( $image_path, $image_title, $alt_text );
-		if ( is_wp_error( $attach_id ) ) {
-			return $attach_id;
+		$attach_id = $this->upload_to_library( $image_path, $image_title, $alt_text, $silent_mode );
+		if ( !$attach_id || is_wp_error( $attach_id ) ) {
+			return false;
 		}
         @unlink( $image_path );
 		return $attach_id;
 	}
-	private function upload_to_library( $image_path, $image_title, $alt_text ) {
+	private function upload_to_library( $image_path, $image_title, $alt_text, $silent_mode = false ) {
 		if ( !file_exists( $image_path ) ) {
+            if ( $silent_mode === true ) {
+                return false;
+            }
 			return new WP_Error( 'file_not_found', 'Arquivo não encontrado.' );
 		}
 		// Faz o upload do arquivo para o diretório de uploads do WordPress
 		$upload = wp_upload_bits( basename( $image_path ), null, file_get_contents( $image_path ) );
 		// Verifica se houve erro no upload
 		if ( $upload[ 'error' ] ) {
+            if ( $silent_mode === true ) {
+                return false;
+            }
             if (is_development_mode()) {
                 error_log('Erro ao fazer upload da imagem: ' . $upload['error']);
             }
@@ -703,6 +827,9 @@ abstract class Pinedu_Foto_Util {
 
 		// Verifica se a inserção foi bem-sucedida
 		if ( is_wp_error( $attach_id ) ) {
+            if ( $silent_mode === true ) {
+                return false;
+            }
 			return new WP_Error( 'upload_error', $attach_id->get_error_message( ) );
 		}
 		// Gera os metadados da imagem
@@ -724,7 +851,7 @@ abstract class Pinedu_Foto_Util {
 		if ( !filter_var( $url, FILTER_VALIDATE_URL ) ) {
 			return false;
 		}
-		$temp_dir = get_temp_dir( );
+/*		$temp_dir = get_temp_dir( );
 		if ( !$file_name ) {
 			$file_name = basename( parse_url( $url, PHP_URL_PATH ) ) . 'tmp';
 			$file_name = sanitize_file_name( $file_name );
@@ -741,8 +868,11 @@ abstract class Pinedu_Foto_Util {
 		}
 		if ( !file_exists( $temp_file ) ) {
 			return false;
-		}
+		}*/
+        $image_id = download_url( $url );
+        if ( is_wp_error( $image_id ) ) {
 
-		return $temp_file;
+        }
+		return download_url( $url );
 	}
 }

@@ -66,16 +66,19 @@ class Pinedu_Imovel_Importa_Imovel {
             }
         }
     }
-	public function importa_imoveis( $imoveis ) {
+	public function importa_imoveis( $imoveis, $silent_mode = false ) {
 		if ( ! post_type_exists( 'imovel' ) ) {
+            if ( $silent_mode === true ) {
+                return false;
+            }
 			wp_send_json_error( ['message' => 'Post Type Imóvel não existe!.'] );
-			return;
+			wp_die();
 		}
 		foreach ( $imoveis as $imovel ) {
-			$this->importa_imovel( $imovel );
+			$this->importa_imovel( $imovel, $silent_mode );
 		}
 	}
-	private function importa_imovel( $imovel ) {
+	private function importa_imovel( $imovel, $silent_mode = false ) {
 		$args = array( 
 			'meta_key' => 'referencia'
 			, 'meta_value' => $imovel['referencia']
@@ -85,16 +88,16 @@ class Pinedu_Imovel_Importa_Imovel {
 		 );
 		$post = get_posts( $args );
 		if ( empty( $post ) ) {
-			$post_id = $this->salvar( $imovel );
+			$post_id = $this->salvar( $imovel, $silent_mode );
 		} else {
 			$post = $post[0];
-			$post_id = $this->atualizar( $post->ID, $imovel );
+			$post_id = $this->atualizar( $post->ID, $imovel, $silent_mode );
 		}
 
 		wp_reset_postdata( );
 		$this->setImoveisImportados( $this->getImoveisImportados() + 1 );
 	}
-	private function salvar( $imovel ) {
+	private function salvar( $imovel, $silent_mode = false ) {
 		$post_data = array( 
 			'post_title' => $this->resolve_slug( $imovel )
 			, 'post_content' => $this->resolve_anuncio( $imovel )??''
@@ -105,7 +108,6 @@ class Pinedu_Imovel_Importa_Imovel {
 		$post_id = wp_insert_post( $post_data );
 		if ( is_wp_error( $post_id ) ) {
 			wp_die( $post_id->get_error_messages( ) );
-			return false;
 		}
 
 		$importa_taxonomias = new Pinedu_Imovel_Importa_Taxonomias( $post_id, $imovel );
@@ -120,8 +122,8 @@ class Pinedu_Imovel_Importa_Imovel {
             $importar_fotos = false;
         }
         $importa_fotos = new Pinedu_Imovel_Importa_Foto($post_id, $imovel);
-        $importa_fotos->salva_imagem_destaque();
-        $importa_fotos->salvar_fotografias();
+        $importa_fotos->salva_imagem_destaque( $silent_mode );
+        $importa_fotos->salvar_fotografias( $silent_mode );
 
 		return $post_id;
 	}
@@ -155,7 +157,7 @@ class Pinedu_Imovel_Importa_Imovel {
 
 		wp_delete_post($post_id, true);
 	}*/
-	private function atualizar( $post_id, $imovel ) {
+	private function atualizar( $post_id, $imovel, $silent_mode = false ) {
 		$post_data = array( 
 			'post_title'   => $this->resolve_slug( $imovel )
 			, 'post_content' => $this->resolve_anuncio( $imovel )??''
@@ -177,8 +179,8 @@ class Pinedu_Imovel_Importa_Imovel {
 		$importa_metadados->atualizar( );
 
 		$importa_fotos = new Pinedu_Imovel_Importa_Foto( $post_id, $imovel );
-		$importa_fotos->atualiza_imagem_destaque( );
-		$importa_fotos->atualizar_fotografias( $fotografias_post );
+		$importa_fotos->atualiza_imagem_destaque( $silent_mode );
+		$importa_fotos->atualizar_fotografias( $fotografias_post, $silent_mode );
 
 		return $post_id;
 	}

@@ -84,8 +84,13 @@ class Pinedu_Imovel_Plugin_Admin {
 	 */
 	public function enqueue_scripts( ) {
         //wp_enqueue_script( 'importacao-frontend', plugin_dir_url(__FILE__) . 'js/importacao-frontend-full.js', array( 'jquery' ), $this->version, false );
-        wp_enqueue_script( 'importacao-frontend-full', plugin_dir_url(__FILE__) . 'js/importacao-frontend-full.js', array( 'jquery' ), $this->version, false );
-		wp_enqueue_script( $this->plugin_name, plugin_dir_url(__FILE__) . 'js/plugin-admin.js', array( 'jquery' ), $this->version, false );
+        $caminho_local = plugin_dir_path(__FILE__) . 'js/importacao-frontend-full.js';
+        $caminho_url = plugin_dir_url(__FILE__) . 'js/importacao-frontend-full.js';
+        wp_enqueue_script( 'importacao-frontend-full', $caminho_url, [ 'jquery' ], filemtime( $caminho_local ),  false );
+        $caminho_url = plugin_dir_url(__FILE__) . 'js/plugin-admin.js';
+        $caminho_local = plugin_dir_path(__FILE__) . 'js/plugin-admin.js';
+        wp_enqueue_script( $this->plugin_name, $caminho_url, array( 'jquery' ), filemtime( $caminho_local ), false );
+
         $options = get_option( 'pinedu_imovel_options', [] );
         //var_dump($options, true);
         if ( ! isset($options['imoveis_importar_lote'])) {
@@ -180,13 +185,18 @@ class Pinedu_Imovel_Plugin_Admin {
         add_settings_field( 'token_bearer', 'Token', [$this, 'exibir_token_bearer'], 'pinedu-imovel', 'secao_integracao' );
         add_settings_field( 'token_expiration_date', 'Validade do Token', [$this, 'exibir_token_expiration_date'], 'pinedu-imovel', 'secao_integracao' );
         add_settings_field( 'importacao_andamento', 'Importacao em andamento', [$this, 'exibir_importacao_andamento'], 'pinedu-imovel', 'secao_integracao' );
+        add_settings_field( 'fotos_demanda', 'Carregar fotos sob Demanda', [$this, 'exibir_fotos_demanda'], 'pinedu-imovel', 'secao_integracao' );
+        add_settings_field( 'imoveis_importar_lote', 'Lote de imóveis', [$this, 'exibir_imoveis_importar_lote'], 'pinedu-imovel', 'secao_integracao' );
+        add_settings_field( 'imagem_destaque_importar_lote', 'Lote de Destaques', [$this, 'exibir_imagem_destaque_importar_lote'], 'pinedu-imovel', 'secao_integracao' );
+        add_settings_field( 'atrasar_requisicao_segundos', 'Atrasar Requisição', [$this, 'exibir_atrasar_requisicao_segundos'], 'pinedu-imovel', 'secao_integracao' );
         // Adicionar seções de comportamento
         add_settings_section( 'secao_comportamento', 'Comportamento', [$this, 'exibir_secao_comportamento'], 'pinedu-imovel' );
-        add_settings_field( 'fotos_demanda', 'Carregar fotos sob Demanda', [$this, 'exibir_fotos_demanda'], 'pinedu-imovel', 'secao_comportamento' );
         add_settings_field( 'descricao_do_imovel', 'Usar Descrição do Imóvel', [$this, 'exibir_usar_descricao_do_imovel'], 'pinedu-imovel', 'secao_comportamento' );
-        add_settings_field( 'imoveis_importar_lote', 'Lote de imóveis', [$this, 'exibir_imoveis_importar_lote'], 'pinedu-imovel', 'secao_comportamento' );
-        add_settings_field( 'imagem_destaque_importar_lote', 'Lote de Destaques', [$this, 'exibir_imagem_destaque_importar_lote'], 'pinedu-imovel', 'secao_comportamento' );
-        add_settings_field( 'atrasar_requisicao_segundos', 'Atrasar Requisição', [$this, 'exibir_atrasar_requisicao_segundos'], 'pinedu-imovel', 'secao_comportamento' );
+        add_settings_field( 'contrato_padrao', 'Contrato Padrão', [$this, 'exibir_contrato_padrao'], 'pinedu-imovel', 'secao_comportamento' );
+        add_settings_field( 'tipo_imovel_padrao', 'Tipo Imóvel Padrão', [$this, 'exibir_tipo_imovel_padrao'], 'pinedu-imovel', 'secao_comportamento' );
+        add_settings_field( 'cidade_padrao', 'Cidade Padrão', [$this, 'exibir_cidade_padrao'], 'pinedu-imovel', 'secao_comportamento' );
+        add_settings_field( 'exibir_mensagem_direitos_fotos', 'Direitos Sobre Fotografias', [$this, 'exibir_mensagem_direitos_fotos'], 'pinedu-imovel', 'secao_comportamento' );
+
         // Adicionar seções de certificados
         add_settings_section( 'secao_certificados', 'Certificados', [$this, 'exibir_secao_certificados'], 'pinedu-imovel' );
         add_settings_field( 'chave_google_api', 'Chave Google API', [$this, 'exibir_chave_google_api'], 'pinedu-imovel', 'secao_certificados' );
@@ -204,7 +214,9 @@ class Pinedu_Imovel_Plugin_Admin {
 		add_settings_field( 'email_contato', 'Email Contato', [$this, 'exibir_email_contato'], 'pinedu-imovel', 'secao_email' );
 	}
 	public function exibir_secao_integracao( ) {
-		$options = get_option( 'pinedu_imovel_options', [] );
+        //var_dump( get_option( 'pinedu_imovel_options', [] ), true );
+
+        $options = get_option( 'pinedu_imovel_options', [] );
 		$ultima_atualizacao = !empty( $options['ultima_atualizacao'] ) ? $options['ultima_atualizacao']: null;
 		$imoveis_importados = $options['imoveis_importados'] ?? 0;
 		$tempo_utilizado = $options['tempo_utilizado'] ?? '';
@@ -311,6 +323,53 @@ class Pinedu_Imovel_Plugin_Admin {
         $options = get_option( 'pinedu_imovel_options', [] );
         echo '<input type="number" min="1" max="50" name="pinedu_imovel_options[imagem_destaque_importar_lote]" value="'.( $options['imagem_destaque_importar_lote']??10 ).'">';
         echo '<p class="description">Tamanho por ROUND de importação (Hospedagem Compartilhada)</p>';
+    }
+    public function exibir_contrato_padrao() {
+        $options = get_option( 'pinedu_imovel_options', [] );
+        $contrato_padrao = $options['contrato']??'1';
+        $terms_contrato = lista_contratos( );
+        ?>
+        <select id="contrato" name="pinedu_imovel_options[contrato]">
+            <?php if ( isset( $terms_contrato ) && ! empty( $terms_contrato ) ) : ?>
+                <?php foreach ( (array) $terms_contrato as $contrato ) : ?>
+                    <option value="<?php echo esc_attr( $contrato->slug ); ?>" <?php echo ( $contrato->slug == $contrato_padrao ) ? 'selected="true"' : '' ?>><?php echo esc_html( $contrato->name ); ?></option>
+                <?php endforeach; ?>
+            <?php endif; ?>
+        </select>
+        <?php
+    }
+    public function exibir_tipo_imovel_padrao() {
+        $options = get_option( 'pinedu_imovel_options', [] );
+        $tipo_imovel_padrao = strtolower( $options['tipo_imovel']??'' );
+        $terms_tipo_imovel = lista_tipo_imovel( );
+        ?>
+        <select id="tipo-imovel" name="pinedu_imovel_options[tipo_imovel]">
+          <?php if ( isset( $terms_tipo_imovel ) && ! empty( $terms_tipo_imovel ) ): ?>
+            <?php foreach ( (array) $terms_tipo_imovel as $tipo_imovel ): ?>
+              <option value="<?php echo esc_attr( $tipo_imovel->slug ); ?>" <?php echo ( $tipo_imovel->slug === $tipo_imovel_padrao ) ? 'selected="true"' : '' ?>><?php echo esc_html( $tipo_imovel->name ); ?></option>
+            <?php endforeach; ?>
+          <?php endif; ?>
+        </select>
+        <?php
+    }
+    public function exibir_cidade_padrao() {
+        $options = get_option( 'pinedu_imovel_options', [] );
+        $cidade_padrao = $options['cidade']??'';
+        $terms_cidade = lista_cidade( );
+        ?>
+        <select id="cidade" name="pinedu_imovel_options[cidade]">
+            <?php if ( isset( $terms_cidade ) && ! empty( $terms_cidade ) ) : ?>
+                <?php foreach ( (array) $terms_cidade as $cidade ) : ?>
+                    <option value="<?php echo esc_attr( $cidade->slug ); ?>" <?php echo ( $cidade->slug == $cidade_padrao ) ? 'selected="true"' : '' ?>><?php echo esc_html( $cidade->name ); ?></option>
+                <?php endforeach; ?>
+            <?php endif; ?>
+        </select>
+        <?php
+    }
+    public function exibir_mensagem_direitos_fotos() {
+        $options = get_option( 'pinedu_imovel_options', [] );
+        echo '<input type="text" placeholder="Direitos sobre Fotografias" name="pinedu_imovel_options[fotos_direitos_autorais]" value="' . esc_attr( $options['fotos_direitos_autorais']??'Todos os direitos reservados' ) . '" required>';
+        echo '<p class="description">Mensagem de Direitos autorais sobre fotografias dos imóveis</p>';
     }
     public function exibir_atrasar_requisicao_segundos( ) {
         $options = get_option( 'pinedu_imovel_options', [] );

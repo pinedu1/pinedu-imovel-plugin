@@ -376,7 +376,7 @@ function importarLoja(lojas, dadosBasicos, progresso) {
             alteraInfo(info);
             alteraMessage(message);
             alteraProgresso(progresso);
-            importarParamentrosEmpresa(dadosBasicos.parametroSistema, dadosBasicos, ( ( 100 / 10 ) * 4));
+            importarParametrosEmpresa(dadosBasicos.parametroSistema, dadosBasicos, ( ( 100 / 10 ) * 4));
         } else {
             alteraInfo('Erro!');
             alteraMessage(data.message ?? 'Não foi possível conectar ao servidor remoto. Volte novamente mais tarde.');
@@ -387,7 +387,7 @@ function importarLoja(lojas, dadosBasicos, progresso) {
     const args = {lojas: JSON.stringify(lojas)};
     doPost('IMPORTA_FRONTEND_IMPORTAR_LOJA', args, success, error, before, null);
 }
-function importarParamentrosEmpresa(parametros, dadosBasicos, progresso) {
+function importarParametrosEmpresa(parametros, dadosBasicos, progresso) {
     if ( PineduAjax?.environment === 'development' ) console.log('importarParametrosEmpresa');
     var before = function () {
         alteraInfo('Cadastros Básicos...');
@@ -647,6 +647,16 @@ function excluirImoveis(imoveisExcluidos, total) {
     const args = {excluidos: JSON.stringify(imoveisExcluidos)};
     doPost('IMPORTA_FRONTEND_EXCLUIR_IMOVEIS', args, success, error, before, null);
 }
+function chunkArray(lista, tamanho) {
+    return lista.reduce((acc, item, index) => {
+        if (index % tamanho === 0) {
+            acc.push([item]);
+        } else {
+            acc[acc.length - 1].push(item);
+        }
+        return acc;
+    }, []);
+}
 function prepararImportarImoveis( parametrosImportarImoveis ) {
     if ( PineduAjax?.environment === 'development' ) console.log('prepararImportarImoveis');
     var before = function () {
@@ -662,7 +672,8 @@ function prepararImportarImoveis( parametrosImportarImoveis ) {
             alteraInfo(info);
             alteraMessage(message);
             alteraProgresso(progresso);
-            recuperarLoteImoveis(PineduAjax.max, 0, data.total, 0, 0);
+            const imoveisFatiados = chunkArray( data.imoveis, PineduAjax.max );
+            recuperarLoteImoveis(imoveisFatiados, 0, PineduAjax.max, 0, data.total, 0, 0);
         } else {
             prepararImportarImagemDestaque(0);
         }
@@ -676,7 +687,7 @@ function prepararImportarImoveis( parametrosImportarImoveis ) {
     Object.assign(args, parametrosImportarImoveis);
     doRemotePost('preparaImportacao', args, success, error, before, null);
 }
-function recuperarLoteImoveis( max, offset, total, progresso, retornados ) {
+function recuperarLoteImoveis( listaReferencias, slice, max, offset, total, progresso, retornados ) {
     if ( PineduAjax?.environment === 'development' ) console.log('recuperarLoteImoveis');
     var before = function () {
         alteraInfo('Imóveis...');
@@ -693,7 +704,7 @@ function recuperarLoteImoveis( max, offset, total, progresso, retornados ) {
             alteraMessage('Importando Imóveis.');
             alteraProgresso(progresso, (parseInt( offset ) + parseInt( max )) + ' / ' + parseInt(total));
             if (returned > 0) {
-                importarImoveisFrontEnd(data.imoveis, max, parseInt(offset), parseInt(total), progresso, retornados);
+                importarImoveisFrontEnd(listaReferencias, slice, data.imoveis, max, parseInt(offset), parseInt(total), progresso, retornados);
             } else {
                 prepararImportarImagemDestaque(total);
             }
@@ -705,17 +716,12 @@ function recuperarLoteImoveis( max, offset, total, progresso, retornados ) {
     }
     , error = errorDoPost;
     const args = {
-        forcar: ((document?.forcar === true) ? true : false)
-        , ultimaAtualizacao: PineduAjax.ultimaAtualizacao
-        , max: max
-        , offset: offset
-        , total: total
-        , ignorarExcluidos: true
+        imoveis: JSON.stringify(listaReferencias[ slice ])
     };
-    Object.assign(args);
-    doRemotePost('imoveis', args, success, error, before, null);
+    if ( PineduAjax?.environment === 'development' ) console.log(args);
+    doRemotePost('imoveisByRefs', args, success, error, before, null);
 }
-function importarImoveisFrontEnd(imoveis, max, offset, total, progresso, retornados) {
+function importarImoveisFrontEnd(listaReferencias, slice, imoveis, max, offset, total, progresso, retornados) {
     if ( PineduAjax?.environment === 'development' ) console.log('importarImoveis');
     offset = parseInt(offset) + parseInt(max);
     var before = function () {
@@ -731,7 +737,7 @@ function importarImoveisFrontEnd(imoveis, max, offset, total, progresso, retorna
             alteraProgresso(progresso, offset + ' / ' + parseInt(total));
             console.log('Retornados: ' + retornados + ' | Total: ' + total + ' | Progresso: ' + progresso + ' | Offset: ' + offset);
             if (retornados < total) {
-                recuperarLoteImoveis(PineduAjax.max, offset, total, progresso, retornados);
+                recuperarLoteImoveis(listaReferencias, slice + 1, max, offset, total, progresso, retornados);
             } else {
                 prepararImportarImagemDestaque(total);
             }

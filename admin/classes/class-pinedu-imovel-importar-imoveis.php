@@ -140,13 +140,12 @@ class Pinedu_Imovel_Importar_Imoveis extends Pinedu_Importa_Libs {
     public function importa_imoveis_particao_json( $imoveis = [] ) {
         $imoveis_importar = new Pinedu_Imovel_Importa_Imovel();
         if ( isset($imoveis) && !empty( $imoveis ) ) {
-            $imoveis_importar->importa_imoveis( $imoveis );
+            $imoveis_importar->importa_imoveis( $imoveis, true );
             wp_send_json([
                 'success' => true,
                 'message' => count($imoveis) . ' imóveis importados com sucesso!'
             ]);
             wp_die( );
-            return;
         }
         wp_send_json([
             'success' => false,

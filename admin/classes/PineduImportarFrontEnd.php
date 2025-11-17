@@ -46,9 +46,6 @@ class PineduImportarFrontEnd {
     const HOOK_IMPORTAR_TIPO_DEPENDENCIA = 'IMPORTA_FRONTEND_IMPORTAR_TIPO_DEPENDENCIA';
     public static function init( ) {
         if ( !is_admin( ) ) return;
-        if ( is_development_mode( ) ) {
-            error_log( 'PineduImportarFrontEnd:init' );
-        }
         add_action( self::PREFIXO_ADMIN . self::HOOK_INICIALIZAR, [ __CLASS__, 'testar_server' ], 10 );
         add_action( self::PREFIXO_ADMIN . self::HOOK_IMPORTACAO_PRELOGIN, [ __CLASS__, 'pre_login' ], 10 );
         add_action( self::PREFIXO_ADMIN . self::HOOK_IMPORTACAO_POSLOGIN, [ __CLASS__, 'pos_login' ], 10 );
@@ -74,7 +71,13 @@ class PineduImportarFrontEnd {
         add_action( self::PREFIXO_ADMIN . self::HOOK_IMPORTAR_TIPO_IMOVEL, [ __CLASS__, 'importar_tipo_imovel' ], 10 );
         add_action( self::PREFIXO_ADMIN . self::HOOK_IMPORTAR_FAIXA_VALOR, [ __CLASS__, 'importar_faixa_valor' ], 10 );
         add_action( self::PREFIXO_ADMIN . self::HOOK_IMPORTAR_TIPO_DEPENDENCIA, [ __CLASS__, 'importar_tipo_dependencia' ], 10 );
+        add_filter( 'heartbeat_settings', [ __CLASS__, 'custom_heartbeat_settings'] );
     }
+    public static function custom_heartbeat_settings( $settings ) {
+        $settings['interval'] = 60;
+        return $settings;
+    }
+
     public static function getImportador( ): Pinedu_Imovel_Importar {
         if ( self::$instancia_importar === null ) {
             self::$instancia_importar = new Pinedu_Imovel_Importar( );
