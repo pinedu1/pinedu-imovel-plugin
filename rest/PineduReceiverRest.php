@@ -44,12 +44,20 @@ class PineduReceiverRest extends PineduRequest {
         $options = get_option('pinedu_imovel_options', []);
         if ( isset( $options['importacao_andamento'] ) && 'on' === $options['importacao_andamento'] ) {
             $options['importacao_andamento'] = true;
+        } else {
+            $options['importacao_andamento'] = false;
         }
         if ( $options['importacao_andamento'] === true ) {
             wp_send_json_error( [
                 'message' => 'Importação em andamento por outro processo. Tente novamente mais tarde!',
             ] );
             wp_die();
+        }
+        if ( ! isset( $options['ultima_atualizacao'] ) ) {
+            $options['ultima_atualizacao'] = DateTime::createFromFormat(
+                'd/m/Y H:i:sT',
+                '01/01/1980 00:00:00-300'
+            );
         }
 
         $options['importacao_andamento'] = true;
@@ -116,7 +124,6 @@ class PineduReceiverRest extends PineduRequest {
     public static function receber_imoveis( $request ) {
         $json_string = $request->get_body();
         $data = json_decode( $json_string, true );
-        //error_log( 'Hello World Imóveis!!!' );
         $importa_imoveis = new Pinedu_Imovel_Importar_Imoveis();
         $result = $importa_imoveis->importar_callback( $data );
         return $result;
@@ -127,9 +134,7 @@ class PineduReceiverRest extends PineduRequest {
             error_log('Authorization Header: ' . $auth_header);
         }
         if (empty($auth_header)) {
-            if (is_development_mode()) {
-                error_log('Authorization header missing');
-            }
+            error_log('Authorization header missing');
             return false;
         }
         if (preg_match('/Bearer\s+(.*)$/i', $auth_header, $matches)) {
@@ -139,22 +144,15 @@ class PineduReceiverRest extends PineduRequest {
             }
             return self::validate_bearer_token($bearer_token);
         }
-        if (is_development_mode()) {
-            error_log('Invalid Authorization format');
-        }
+        error_log('Invalid Authorization format');
         return false;
     }
     private static function validate_bearer_token( $token ): bool {
         $options = get_option( 'pinedu_imovel_options', [] );
         if ( isset( $options['token'] ) && $options['token'] === $token ) {
             return true;
-        } else {
-            if (is_development_mode()) {
-                $options['token'] = $token;
-                update_option( 'pinedu_imovel_options', $options );
-                return true;
-            }
         }
+        error_log('Invalid Token');
         return false;
     }
 }

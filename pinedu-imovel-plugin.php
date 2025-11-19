@@ -81,12 +81,6 @@ function run_pinedu_imovel_plugin( ) {
 }
 run_pinedu_imovel_plugin( );
 
-/*require_once plugin_dir_path( __FILE__ ) . 'rest/PineduReceiverRest.php';
-add_action( 'rest_api_init', function() {
-    PineduReceiverRest::instala_rest_end_point();
-});*/
-add_action( 'wp_footer', 'pinedu_exibir_meus_endpoints', 99 );
-
 
 function normalizar($texto) {
     $texto = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $texto);
