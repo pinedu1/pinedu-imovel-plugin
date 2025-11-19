@@ -275,7 +275,7 @@ class Pinedu_Imovel_Importar_Imoveis extends Pinedu_Importa_Libs {
             $imoveis_importar = new Pinedu_Imovel_Importa_Imovel();
             if ( isset( $data['imoveis'] ) && !empty( $data['imoveis'] ) ) {
                 /* Invoca importacao */
-                $imoveis_importar->importa_imoveis( $data['imoveis'] );
+                $imoveis_importar->importa_imoveis( $data['imoveis'], true );
                 /* Atualiza contador de imoveis importados */
             }
             if ( isset( $this->imoveis_excluidos ) && !empty( $this->imoveis_excluidos ) ) {

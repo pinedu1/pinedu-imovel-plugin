@@ -339,7 +339,7 @@ class PineduImportarFrontEnd {
             , 'proximaAtualizacao' => formataData_iso8601( $options[ 'proxima_atualizacao' ] )
             , 'token' => $options[ 'token' ]
             , 'urlWordpress' => home_url()
-            , 'pathIntegracao' => 'pinedu-imovel/v1/update'
+            , 'pathIntegracao' => 'pinedu-imovel/v1'
             , 'tokenUsername' => $options[ 'token_username' ]
             , 'tokenPassword' => $options[ 'token_password' ]
         ];

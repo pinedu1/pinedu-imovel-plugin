@@ -685,6 +685,7 @@ function prepararImportarImoveis( parametrosImportarImoveis ) {
         , ultimaAtualizacao: PineduAjax.ultimaAtualizacao
     };
     Object.assign(args, parametrosImportarImoveis);
+    console.log(args);
     doRemotePost('preparaImportacao', args, success, error, before, null);
 }
 function recuperarLoteImoveis( listaReferencias, slice, max, offset, total, progresso, retornados ) {
@@ -919,15 +920,15 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
     if (btnImportar) {
-        document.forcar = false;
         btnImportar.addEventListener('click', function (e) {
+            document.forcar = false;
             e.preventDefault();
             inicializar();
         });
     }
     if (btnImportarForcado) {
-        document.forcar = true;
         btnImportarForcado.addEventListener('click', function (e) {
+            document.forcar = true;
             e.preventDefault();
             inicializar();
         });

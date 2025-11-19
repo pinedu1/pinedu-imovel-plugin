@@ -501,6 +501,15 @@ class Pinedu_Imovel_Importa_Foto extends Pinedu_Foto_Util {
         //
         $nome = $imagem_destaque[ 'nome' ];
         $image_url = sanitize_url( $imagem_destaque['big'] );
+        if ( ! function_exists( 'download_url' ) ) {
+            require_once( ABSPATH . 'wp-admin/includes/file.php' );
+        }
+        if ( ! function_exists( 'media_handle_sideload' ) ) {
+            require_once( ABSPATH . 'wp-admin/includes/media.php' );
+        }
+        if ( ! function_exists( 'wp_read_image_metadata' ) ) {
+            require_once( ABSPATH . 'wp-admin/includes/image.php' );
+        }
         $tmp_name = download_url( $image_url );
 
         if ( is_wp_error( $tmp_name ) ) {
@@ -598,6 +607,15 @@ class Pinedu_Imovel_Importa_Foto extends Pinedu_Foto_Util {
         if ( $exibir !== true ) return false;
         $nome = $foto[ 'nome' ];
         $image_url = sanitize_url( $foto['big'] );
+        if ( ! function_exists( 'download_url' ) ) {
+            require_once( ABSPATH . 'wp-admin/includes/file.php' );
+        }
+        if ( ! function_exists( 'media_handle_sideload' ) ) {
+            require_once( ABSPATH . 'wp-admin/includes/media.php' );
+        }
+        if ( ! function_exists( 'wp_read_image_metadata' ) ) {
+            require_once( ABSPATH . 'wp-admin/includes/image.php' );
+        }
         $tmp_name = download_url( $image_url );
 
         if ( is_wp_error( $tmp_name ) ) {
@@ -869,6 +887,15 @@ abstract class Pinedu_Foto_Util {
 		if ( !file_exists( $temp_file ) ) {
 			return false;
 		}*/
+        if ( ! function_exists( 'download_url' ) ) {
+            require_once( ABSPATH . 'wp-admin/includes/file.php' );
+        }
+        if ( ! function_exists( 'media_handle_sideload' ) ) {
+            require_once( ABSPATH . 'wp-admin/includes/media.php' );
+        }
+        if ( ! function_exists( 'wp_read_image_metadata' ) ) {
+            require_once( ABSPATH . 'wp-admin/includes/image.php' );
+        }
         $image_id = download_url( $url );
         if ( is_wp_error( $image_id ) ) {
 

@@ -220,6 +220,12 @@ class Pinedu_Imovel_Plugin_Admin {
 		$ultima_atualizacao = !empty( $options['ultima_atualizacao'] ) ? $options['ultima_atualizacao']: null;
 		$imoveis_importados = $options['imoveis_importados'] ?? 0;
 		$tempo_utilizado = $options['tempo_utilizado'] ?? '';
+        $tempo_display = 'Tempo não disponível.';
+        if ( $tempo_utilizado instanceof DateInterval ) {
+            $tempo_display = $tempo_utilizado->format( '%H horas, %I minutos, %S segundos' );
+        } elseif ( is_string( $tempo_utilizado ) ) {
+            $tempo_display = $tempo_utilizado;
+        }
 		$proxima_atualizacao = $options['proxima_atualizacao'] ?? null;
 		?>
 		<div id="status-importacao">
@@ -234,7 +240,7 @@ class Pinedu_Imovel_Plugin_Admin {
 				<ul>
 					<li><div id="ultima_atualizacao"><p><strong>Última atualização: </strong><?php echo esc_html( $ultima_atualizacao->format( 'd/m/Y, H:i:s' ) ); ?></p></div></li>
 					<li><div id="imoveis_importados"><p><strong>Imóveis importados: </strong><?php echo esc_html( $imoveis_importados ); ?></p></div></li>
-					<?php if (isset($tempo_utilizado)): ?><li><div id="tempo_utilizado"><p><strong>Tempo utilizado:  </strong><?php echo esc_html( $tempo_utilizado ); ?></p></div></li><?php endif; ?>
+					<?php if (isset($tempo_utilizado)): ?><li><div id="tempo_utilizado"><p><strong>Tempo utilizado:  </strong><?php echo esc_html( $tempo_display ); ?></p></div></li><?php endif; ?>
                     <?php if (isset($proxima_atualizacao)): ?><li><div id="proxima_atualizacao"><p><strong>Próxima atualização: </strong><?php echo esc_html( $proxima_atualizacao->format( 'd/m/Y, H:i:s' ) ); ?></p></div></li><?php endif; ?>
 				</ul>
 			<?php endif; ?>
@@ -249,6 +255,10 @@ class Pinedu_Imovel_Plugin_Admin {
         }
     }
     public function exibir_secao_certificados( ) {
+        $options = get_option( 'pinedu_imovel_options', [] );
+        //if ( isset( $options['proxima_atualizacao'] ) ) echo '<input type="hidden" name="pinedu_imovel_options[proxima_atualizacao]" value="'.( $options['proxima_atualizacao'] ).'">';
+        //if ( isset( $options['imoveis_importados'] ) ) echo '<input type="hidden" name="pinedu_imovel_options[imoveis_importados]" value="'.( $options['imoveis_importados'] ).'">';
+        //if ( isset( $options['tempo_utilizado'] ) ) echo '<input type="hidden" name="pinedu_imovel_options[tempo_utilizado]" value="'.( $options['tempo_utilizado'] ).'">';
     }
 
 	public function exibir_url_servidor( ) {
@@ -257,6 +267,7 @@ class Pinedu_Imovel_Plugin_Admin {
 	}
 	public function exibir_tempo_atualizacao( ) {
 		$options = get_option( 'pinedu_imovel_options', [] );
+        $options['tempo_atualizacao'] = 1;
 		echo '<input type="number" min="1" max="24" id="tempo_atualizacao" name="pinedu_imovel_options[tempo_atualizacao]" value="'.( $options['tempo_atualizacao']??1 ).'">';
 	}
 	public function exibir_token_bearer( ) {

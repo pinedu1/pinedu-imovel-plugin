@@ -80,6 +80,14 @@ function run_pinedu_imovel_plugin( ) {
 	$plugin->run( );
 }
 run_pinedu_imovel_plugin( );
+
+/*require_once plugin_dir_path( __FILE__ ) . 'rest/PineduReceiverRest.php';
+add_action( 'rest_api_init', function() {
+    PineduReceiverRest::instala_rest_end_point();
+});*/
+add_action( 'wp_footer', 'pinedu_exibir_meus_endpoints', 99 );
+
+
 function normalizar($texto) {
     $texto = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $texto);
     return strtoupper($texto);
@@ -506,4 +514,72 @@ function is_development_mode() {
         return true;
     }
     return false;
+}
+/**
+ * Lista e exibe todos os REST endpoints registrados no WordPress.
+ *
+ * Esta função utiliza a variável global $wp_rest_server para acessar
+ * o mapa de rotas registradas.
+ */
+/**
+ * Lista na tela os endpoints REST customizados definidos no seu módulo/plugin.
+ */
+function pinedu_exibir_meus_endpoints() {
+    // É crucial garantir que o servidor REST foi inicializado.
+    // O hook 'rest_api_init' já deve ter sido executado.
+    global $wp_rest_server;
+
+    // Se o servidor não estiver pronto, tentamos carregá-lo (Embora o ideal seja o rest_api_init ter rodado).
+    if ( ! ( $wp_rest_server instanceof WP_REST_Server ) ) {
+        $wp_rest_server = new WP_REST_Server;
+    }
+
+    $routes = $wp_rest_server->get_routes();
+    $meus_endpoints = [];
+    $namespace_alvo = 'pinedu-imovel/v1';
+    $url_base = get_rest_url(); // Ex: http://seusite.com.br/wp-json/
+
+    // 1. Filtra apenas os seus endpoints
+    foreach ( $routes as $route_path => $handlers ) {
+        // Verifica se o caminho da rota começa com seu namespace
+        if ( strpos( $route_path, '/' . $namespace_alvo . '/' ) === 0 ) {
+            $metodos = [];
+
+            foreach ( $handlers as $handler ) {
+                if ( isset( $handler['methods'] ) ) {
+                    // Converte os códigos binários de volta para strings HTTP
+                    $metodos[] = implode( ', ', array_keys( $handler['methods'], array_filter( $handler['methods'], 'is_numeric' ) ) );
+                }
+            }
+
+            $caminho_sem_barra_inicial = ltrim($route_path, '/');
+
+            $meus_endpoints[] = [
+                'path' => $route_path,
+                'methods' => implode(' / ', array_unique($metodos)),
+                'url_completa' => $url_base . $caminho_sem_barra_inicial
+            ];
+        }
+        //wp_die();
+    }
+
+    // 2. Exibe o HTML (Pode ser formatado para ser mais discreto ou em um bloco de debug)
+    echo '<div style="margin: 20px auto; padding: 15px; border: 2px solid #00a0d2; max-width: 600px; background-color: #e0f7fa;">';
+    echo '<h4>✅ Endpoints REST Ativos</h4>';
+
+    if ( empty( $meus_endpoints ) ) {
+        echo '<p style="color: red;">Nenhum endpoint encontrado para o namespace <code>' . esc_html($namespace_alvo) . '</code>.</p>';
+        echo '<p>Possível causa: Permalinks ou função de registro falharam.</p>';
+    } else {
+        echo '<ul style="padding-left: 20px; list-style-type: square;">';
+        foreach ( $meus_endpoints as $endpoint ) {
+            echo '<li style="margin-bottom: 10px;">';
+            echo "<strong>Método:</strong> <code style='font-weight: bold;'>{$endpoint['methods']}</code><br>";
+            echo "<strong>URL:</strong> <a href='{$endpoint['url_completa']}' target='_blank'>{$endpoint['url_completa']}</a>";
+            echo '</li>';
+        }
+        echo '</ul>';
+    }
+
+    echo '</div>';
 }
