@@ -44,6 +44,7 @@ class PineduImportarFrontEnd {
     const HOOK_IMPORTAR_TIPO_IMOVEL = 'IMPORTA_FRONTEND_IMPORTAR_TIPO_IMOVEL';
     const HOOK_IMPORTAR_FAIXA_VALOR = 'IMPORTA_FRONTEND_IMPORTAR_FAIXA_VALOR';
     const HOOK_IMPORTAR_TIPO_DEPENDENCIA = 'IMPORTA_FRONTEND_IMPORTAR_TIPO_DEPENDENCIA';
+    const HOOK_IMPORTAR_APAGAR_TODOS_IMOVEIS = 'IMPORTA_FRONTEND_APAGAR_TODOS_IMOVEIS';
     public static function init( ) {
         if ( !is_admin( ) ) return;
         add_action( self::PREFIXO_ADMIN . self::HOOK_INICIALIZAR, [ __CLASS__, 'testar_server' ], 10 );
@@ -71,7 +72,63 @@ class PineduImportarFrontEnd {
         add_action( self::PREFIXO_ADMIN . self::HOOK_IMPORTAR_TIPO_IMOVEL, [ __CLASS__, 'importar_tipo_imovel' ], 10 );
         add_action( self::PREFIXO_ADMIN . self::HOOK_IMPORTAR_FAIXA_VALOR, [ __CLASS__, 'importar_faixa_valor' ], 10 );
         add_action( self::PREFIXO_ADMIN . self::HOOK_IMPORTAR_TIPO_DEPENDENCIA, [ __CLASS__, 'importar_tipo_dependencia' ], 10 );
+        add_action( self::PREFIXO_ADMIN . self::HOOK_IMPORTAR_APAGAR_TODOS_IMOVEIS, [ __CLASS__, 'apagar_todos_imoveis' ], 10 );
+
         add_filter( 'heartbeat_settings', [ __CLASS__, 'custom_heartbeat_settings'] );
+    }
+    public static function apagar_todos_imoveis( ) {
+
+        // 1. Configuração da WP_Query para obter APENAS os IDs
+        $args = array(
+            'post_type' => 'imovel',
+            'posts_per_page' => -1,
+            'fields' => 'ids',
+            'post_status' => 'any'
+        );
+
+        $query_imoveis = new WP_Query($args);
+        $imovel_ids = $query_imoveis->posts;
+        $deleted_count = 0;
+        $deleted_error_count = 0;
+        $qtde = count( $query_imoveis->posts );
+        $deleted_ids = [];
+
+        if (!empty($imovel_ids)) {
+            foreach ($imovel_ids as $post_id) {
+                $thumbnail_id = get_post_thumbnail_id( $post_id );
+                if ( $thumbnail_id ) {
+                    wp_delete_attachment( $thumbnail_id, true );
+                }
+                $fotografias_imovel = get_post_meta( $post_id, 'fotografias', false );
+                if ( ! empty( $fotografias_imovel ) ) {
+                    foreach ( $fotografias_imovel as $fotografia ) {
+                        if ( is_development_mode( ) ) {
+                            error_log('PineduImportarFrontEnd:apagar_todos_imoveis:fotografia: ' . print_r($fotografia, true));
+                        }
+                        if ( isset( $fotografia['id'] ) ) {
+                            $attachment_id = (int) $fotografia['id'];
+                            if ( $attachment_id ) {
+                                wp_delete_attachment( $attachment_id, true );
+                            }
+                        }
+                    }
+                }
+                $result = wp_delete_post($post_id, true);
+                if ($result !== false) {
+                    $deleted_count++;
+                    $deleted_ids[] = $post_id;
+                } else {
+                    $deleted_error_count++;
+                }
+            }
+        }
+        wp_reset_postdata();
+        wp_send_json( [
+            'success' => true,
+            'total' => $qtde,
+            'excluidos' => $deleted_count,
+            'erro_excluidos' => $deleted_error_count,
+        ] );
     }
     public static function custom_heartbeat_settings( $settings ) {
         $settings['interval'] = 60;

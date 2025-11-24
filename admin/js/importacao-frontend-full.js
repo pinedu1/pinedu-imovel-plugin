@@ -908,11 +908,41 @@ function retificarDestaque() {
     , error = errorDoPost;
     doPost('RETIFICA_IMAGEM_DESTAQUE', {}, success, error, before, null);
 }
+
+function apagarImoveis() {
+    var before = function () {
+        escondeFechar();
+        inicializaOverlay();
+        alteraInfo('Iniciando!');
+        alteraMessage('Apagando todos os Imóveis.');
+        alteraProgresso(0);
+    }
+    , success = function (data) {
+        const info = 'Sucesso!';
+        const message = 'Operação realizada com sucesso!';
+        if (data.success === true) {
+            alteraInfo(info);
+            alteraMessage(message);
+            alteraProgresso(100);
+            exibeFechar();
+        }
+    }
+    , error = errorDoPost;
+    doPost('IMPORTA_FRONTEND_APAGAR_TODOS_IMOVEIS', {}, success, error, before, null);
+}
+
 document.addEventListener('DOMContentLoaded', function () {
     const btnImportarForcado = document.getElementById('btnImportarForcadoFrontEnd');
     const btnImportar = document.getElementById('btnImportarFrontEnd');
     const btnFechar = document.getElementById('btnFechar');
     const btnRetificar = document.getElementById('btnRetificarDestaqueFrontEnd');
+    const btnImportarFrontEndApagarImoveis = document.getElementById('btnImportarFrontEndApagarImoveis');
+    if (btnImportarFrontEndApagarImoveis) {
+        btnImportarFrontEndApagarImoveis.addEventListener('click', function (e) {
+            e.preventDefault();
+            apagarImoveis();
+        });
+    }
     if (btnRetificar) {
         btnRetificar.addEventListener('click', function (e) {
             e.preventDefault();

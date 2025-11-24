@@ -53,13 +53,16 @@
                     <button id="importar-forcado-btn" class="button secondary" style="display: none" <?php echo $importacao_andamento?'disabled':'' ?> onclick="return importarImoveisForcado(event);">Forçar Importação</button>
                 </li>
                 <li>
-                    <button id="btnImportarFrontEnd" class="button button-primary" <?php echo $importacao_andamento?'disabled':'' ?>>Importar imóveis</button>
+                    <button id="btnImportarFrontEnd" class="button button-primary" style="display: none" <?php echo $importacao_andamento?'disabled':'' ?>>Importar imóveis</button>
+                </li>
+                <li>
+                    <button id="btnImportarFrontEndApagarImoveis" class="button button-primary" <?php echo $importacao_andamento?'disabled':'' ?>>Apagar Todos</button>
                 </li>
                 <li>
                     <button id="btnImportarForcadoFrontEnd" class="button secondary" <?php echo $importacao_andamento?'disabled':'' ?>>Forçar Importação</button>
                 </li>
                 <li>
-                    <button id="btnRetificarDestaqueFrontEnd" class="button secondary" <?php echo $importacao_andamento?'disabled':'' ?>>Retificar Destaques</button>
+                    <button id="btnRetificarDestaqueFrontEnd" class="button secondary" style="display: none" <?php echo $importacao_andamento?'disabled':'' ?>>Retificar Destaques</button>
                 </li>
             </ul>
         </div>

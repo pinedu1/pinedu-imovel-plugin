@@ -636,7 +636,6 @@ class Pinedu_Imovel_Importa_Foto extends Pinedu_Foto_Util {
         $image_id = media_handle_sideload( $file_array, $this->post_id );
 
         // 3. Salvamento no Campo Personalizado (Ação Requerida)
-
         if ( is_wp_error( $image_id ) ) {
             @unlink( $file_array['tmp_name'] );
             if ( $silent_mode === true ) {
@@ -646,10 +645,6 @@ class Pinedu_Imovel_Importa_Foto extends Pinedu_Foto_Util {
             wp_send_json_error( [ 'message' => 'Falha ao processar a imagem: ' . $image_id->get_error_message() ] );
             wp_die();
         } else {
-            // AÇÃO ALTERADA: Adiciona o ID da imagem (anexo) ao campo 'fotografias'
-            // 'false' no final permite adicionar múltiplas fotos ao mesmo post.
-            //$valor = $image_id; // O valor a ser salvo é o ID da mídia
-            //$pm = add_post_meta( $this->post_id, 'fotografias', $valor, false );
             $foto_id = $foto[ 'id' ];
             $nome = $foto[ 'nome' ];
             $descricao = $foto[ 'descricao' ];
