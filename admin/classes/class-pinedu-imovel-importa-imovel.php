@@ -23,7 +23,7 @@ class Pinedu_Imovel_Importa_Imovel {
         if (empty($post_ids)) {
             return true;
         }
-        if (is_development_mode()){
+        if (is_development_mode()) {
             error_log('Excluidos: ' . implode(', ', $post_ids));
         }
         $this->trata_excluidos_post_ids( $post_ids );

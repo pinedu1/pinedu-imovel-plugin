@@ -619,6 +619,9 @@ class Pinedu_Imovel_Importa_Foto extends Pinedu_Foto_Util {
         $tmp_name = download_url( $image_url );
 
         if ( is_wp_error( $tmp_name ) ) {
+            if ( is_development_mode( ) ) {
+                error_log('0 - URL: ' . $image_url );
+            }
             if ( $silent_mode === true ) {
                 error_log('1 - Falha ao baixar a URL remota: ' . $tmp_name->get_error_message() );
                 return false;
