@@ -8,10 +8,12 @@ class Pinedu_Imovel_Enviar_Cliente {
 	private $cookie;
 	private $mensagem;
 	private $referencia;
-	public function setMensagem( $mensagem ): void {
+    private $corretor;
+
+    public function setMensagem( $mensagem ): void {
 		$this->mensagem = $mensagem;
 	}
-	public function __construct( $nome, $telefone, $email, $mensagem, $cookie, $referencia = null ) {
+	public function __construct( $nome, $telefone, $email, $mensagem, $cookie, $referencia = null, $corretor = null ) {
 		$this->setNome( $nome );
 		$this->setTelefone( $telefone );
 		$this->setEmail( $email );
@@ -20,6 +22,9 @@ class Pinedu_Imovel_Enviar_Cliente {
 		if ( $referencia ) {
 			$this->referencia = $referencia;
 		}
+        if ( $corretor ) {
+            $this->corretor = $corretor;
+        }
 	}
 	public function contato_cliente( ) {
 		$options = get_option( 'pinedu_imovel_options', [] );
@@ -30,18 +35,19 @@ class Pinedu_Imovel_Enviar_Cliente {
 		}
 		$fullUrl = trailingslashit( $url ) . ltrim( self::ENDPOINT, '/' );
 		$args = [
-			'body' => json_encode(
+			'body' => json_encode( 
 				[
-					'nome' => sanitize_text_field($this->nome)
-					, 'telefone' => sanitize_text_field($this->telefone)
-					, 'email' => sanitize_text_field($this->email)
-					, 'cookie' => sanitize_text_field($this->cookie)
-					, 'mensagem' => sanitize_text_field($this->mensagem)
-					, 'referencia' => sanitize_text_field($this->referencia)
+					'nome' => sanitize_text_field( $this->nome )
+					, 'telefone' => sanitize_text_field( $this->telefone )
+					, 'email' => sanitize_text_field( $this->email )
+					, 'cookie' => sanitize_text_field( $this->cookie )
+					, 'mensagem' => sanitize_text_field( $this->mensagem )
+					, 'referencia' => sanitize_text_field( $this->referencia )
+                    , 'corretor' => sanitize_text_field( $this->corretor )
 					, 'username' => $options['token_username']
 					, 'password' => $options['token_password']
 				]
-			)
+			 )
 			, 'headers' => [
 				'Content-Type' => 'application/json'
 				, 'Authorization' => 'Bearer ' . sanitize_text_field( $options['token'] )
@@ -120,7 +126,7 @@ class Pinedu_Imovel_Enviar_Cliente {
 	/**
 	 * @return mixed
 	 */
-	public function getMensagem() {
+	public function getMensagem( ) {
 		return $this->mensagem;
 	}
 

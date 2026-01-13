@@ -82,9 +82,9 @@ function run_pinedu_imovel_plugin( ) {
 run_pinedu_imovel_plugin( );
 
 
-function normalizar($texto) {
-    $texto = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $texto);
-    return strtoupper($texto);
+function normalizar( $texto ) {
+    $texto = iconv( 'UTF-8', 'ASCII//TRANSLIT//IGNORE', $texto );
+    return strtoupper( $texto );
 }
 function lista_contratos( ) {
 	require_once plugin_dir_path( __FILE__ ) . './admin/classes/class-pinedu-imovel-importa-contrato.php';
@@ -113,7 +113,7 @@ function lista_faixa_valor_valores( $contrato ) {
     }
     $lista = Pinedu_Imovel_Importa_Faixa_Valor::list( $contrato );
     $l = [ 0 ];
-    foreach ((array) $lista as $key) {
+    foreach ( ( array ) $lista as $key ) {
         $m = get_term_meta( $key->term_id, 'valor-final', true );
         $l[] = floatval( $m );
     }
@@ -124,7 +124,7 @@ function registra_visita_imovel( $post = 0 ) {
 	$post_id = $post->ID;
 	$current_clicks = get_post_meta( $post_id, 'clicks', true );
 	$current_visitas = get_post_meta( $post_id, 'visitas', false );
-	$cookieId = getCookieId();
+	$cookieId = getCookieId( );
 	$busca_cookie = function( $clicks, $cookie ) {
 		foreach ( $clicks as $click_entry ) {
 			if ( is_array( $click_entry ) && isset( $click_entry['cookie'] ) ) {
@@ -143,20 +143,20 @@ function registra_visita_imovel( $post = 0 ) {
 		}
 		$my_cookie = $busca_cookie( $current_visitas, $cookieId );
 		if ( $my_cookie ) {
-			$valor = ($my_cookie[ 'clicks' ] + 1);
+			$valor = ( $my_cookie[ 'clicks' ] + 1 );
 			$pm = update_post_meta( $post_id, 'visitas', [ 'cookie' => $cookieId, 'clicks' => $valor ] );
 		} else {
 			$pm = add_post_meta( $post_id, 'visitas', [ 'cookie' => $cookieId, 'clicks' => 1 ], false );
 		}
 	}
 }
-function getCookie() {
+function getCookie( ) {
 	require_once plugin_dir_path( __FILE__ ) . './includes/classes/class-pinedu-imovel-cookie.php';
-	return CookieUtil::getCookie();
+	return CookieUtil::getCookie( );
 }
-function getCookieId() {
+function getCookieId( ) {
 	require_once plugin_dir_path( __FILE__ ) . './includes/classes/class-pinedu-imovel-cookie.php';
-	return CookieUtil::getCookieId();
+	return CookieUtil::getCookieId( );
 }
 function updateCookie( $nome, $telefone, $email ) {
 	require_once plugin_dir_path( __FILE__ ) . './includes/classes/class-pinedu-imovel-cookie.php';
@@ -167,19 +167,19 @@ function criarCookie( ) {
 	return CookieUtil::criaCookie( );
 }
 
-function enviarCliente( $nome, $telefone, $email, $mensagem, $cookieId, $referencia = null ) {
+function enviarCliente( $nome, $telefone, $email, $mensagem, $cookieId, $referencia = null, $corretor = null ) {
 	require_once plugin_dir_path( __FILE__ ) . './admin/classes/class-pinedu-imovel-enviar-cliente.php';
-	$enviar = new Pinedu_Imovel_Enviar_Cliente( $nome, $telefone, $email, $mensagem, $cookieId, $referencia );
+	$enviar = new Pinedu_Imovel_Enviar_Cliente( $nome, $telefone, $email, $mensagem, $cookieId, $referencia, $corretor );
 	return $enviar->contato_cliente( );
 }
 function formataData_iso8601( $data ) {
-	$timestamp = match(true) {
-		is_numeric($data) => (int)$data,
-		is_string($data) => (new DateTime($data))->getTimestamp(),
-		$data instanceof DateTime => $data->getTimestamp(),
-		default => time()
+	$timestamp = match( true ) {
+		is_numeric( $data ) => ( int )$data,
+		is_string( $data ) => ( new DateTime( $data ) )->getTimestamp( ),
+		$data instanceof DateTime => $data->getTimestamp( ),
+		default => time( )
 	};
-	return wp_date("Y-m-d\TH:i:s.v\Z", $timestamp);
+	return wp_date( "Y-m-d\TH:i:s.v\Z", $timestamp );
 }
 function formata_endereco( $endereco, $numero, $complemento, $bairro, $cidade, $estado, $cep, $pula_linha = false ) {
 	$end = $endereco;
@@ -245,15 +245,15 @@ function get_tipo_dependencias_imovel( $post_id ) {
 	require_once plugin_dir_path( __FILE__ ) . './admin/classes/class-pinedu-imovel-importa-tipo-dependencia.php';
 	$caracteristica_icons = [ 'DOR' => 'fa fa-bed', 'SUI' => 'fa fa-shower', 'BAN' => 'fa fa-bath', 'GAR' => 'fa fa-car', 'COZ' => 'fa-solid fa-kitchen-set', 'PIS' => 'fa-solid fa-person-swimming', 'PISPRV' => 'fa-solid fa-person-swimming', 'SAL' => 'fa-solid fa-couch', 'ARS' => 'fa fa-brush', 'INTERFON' => 'fa fa-bell', 'ARCOND' => 'fa fa-snowflake', 'ARUTIL' => 'fa-solid fa-ruler-combined', 'ARCONS' => 'fa-solid fa-draw-polygon', 'ARTOT' => 'fa-solid fa-circle-nodes' ];
 	$dependencias = [];
-	$tipo_dependencias = Pinedu_Imovel_Importa_Tipo_Dependencia::get_tipo_dependencias();
+	$tipo_dependencias = Pinedu_Imovel_Importa_Tipo_Dependencia::get_tipo_dependencias( );
 
 	$meta = get_post_meta( $post_id, '', true );
 	foreach ( [ 'CARACTERISTICAS', 'CONDOMINIO', 'EDIFICIO', 'INFRAEXTRUTURA' ] as $relativo ) {
 		$caracteristicas = $tipo_dependencias[ $relativo ];
-		foreach ( $caracteristicas as $caracteristica) {
+		foreach ( $caracteristicas as $caracteristica ) {
 			$sigla = $caracteristica['sigla'];
-			if ( isset($meta[ $sigla ] ) ) {
-				if ( !isset($dependencias[ $relativo ])) {
+			if ( isset( $meta[ $sigla ] ) ) {
+				if ( !isset( $dependencias[ $relativo ] ) ) {
 					$dependencias[ $relativo ] = [];
 				}
 				$caracteristica['valor'] = $meta[$sigla][0];
@@ -261,25 +261,25 @@ function get_tipo_dependencias_imovel( $post_id ) {
 					$caracteristica['icone'] = 'fa-solid fa-thumbtack';
                     if ( isset( $caracteristica_icons[ $sigla ] ) ) {
 						$caracteristica['icone'] = 'fa-solid fa-thumbtack';;
-                    } else if ( str_starts_with(normalizar( $caracteristica['nome'] ), 'GARAGE') || str_contains(strtolower( $caracteristica['nome'] ), 'VAGA') ) {
+                    } else if ( str_starts_with( normalizar( $caracteristica['nome'] ), 'GARAGE' ) || str_contains( strtolower( $caracteristica['nome'] ), 'VAGA' ) ) {
                         $caracteristica['icone'] = 'fa fa-car';
-                    } else if ( str_starts_with(normalizar( $caracteristica['nome'] ), 'DORMIT') || str_contains(strtolower( $caracteristica['nome'] ), 'QUARTO') ) {
+                    } else if ( str_starts_with( normalizar( $caracteristica['nome'] ), 'DORMIT' ) || str_contains( strtolower( $caracteristica['nome'] ), 'QUARTO' ) ) {
                         $caracteristica['icone'] = 'fa fa-bed';
-                    } else if ( str_starts_with(normalizar( $caracteristica['nome'] ), 'SUITE') ) {
+                    } else if ( str_starts_with( normalizar( $caracteristica['nome'] ), 'SUITE' ) ) {
                         $caracteristica['icone'] = 'fa fa-shower';
-                    } else if ( str_starts_with(normalizar( $caracteristica['nome'] ), 'SALA') ) {
+                    } else if ( str_starts_with( normalizar( $caracteristica['nome'] ), 'SALA' ) ) {
                         $caracteristica['icone'] = 'fa-solid fa-couch';
-                    } else if ( str_starts_with(normalizar( $caracteristica['nome'] ), 'BANHEIRO') || str_contains(strtolower( $caracteristica['nome'] ), 'WC')) {
+                    } else if ( str_starts_with( normalizar( $caracteristica['nome'] ), 'BANHEIRO' ) || str_contains( strtolower( $caracteristica['nome'] ), 'WC' ) ) {
                         $caracteristica['icone'] = 'fa fa-shower';
-                    } else if ( str_starts_with(normalizar( $caracteristica['nome'] ), 'COZINHA')) {
+                    } else if ( str_starts_with( normalizar( $caracteristica['nome'] ), 'COZINHA' ) ) {
                         $caracteristica['icone'] = 'fa-solid fa-kitchen-set';
-                    } else if ( str_starts_with(normalizar( $caracteristica['nome'] ), 'AREA')) {
+                    } else if ( str_starts_with( normalizar( $caracteristica['nome'] ), 'AREA' ) ) {
                         $caracteristica['icone'] = 'fa-solid fa-ruler-combined';
-                    } else if ( str_starts_with(normalizar( $caracteristica['nome'] ), 'PISCINA')) {
+                    } else if ( str_starts_with( normalizar( $caracteristica['nome'] ), 'PISCINA' ) ) {
                         $caracteristica['icone'] = 'fa-solid fa-person-swimming';
-                    } else if ( str_starts_with(normalizar( $caracteristica['nome'] ), 'VARANDA') || str_starts_with(normalizar( $caracteristica['nome'] ), 'SACADA')) {
+                    } else if ( str_starts_with( normalizar( $caracteristica['nome'] ), 'VARANDA' ) || str_starts_with( normalizar( $caracteristica['nome'] ), 'SACADA' ) ) {
                         $caracteristica['icone'] = 'fa-solid fa-chair';
-                    } else if ( $caracteristica['tipo'] == 'BOOLEAN') {
+                    } else if ( $caracteristica['tipo'] == 'BOOLEAN' ) {
                         $caracteristica['icone'] = 'fa fa-check-circle';
                     }
                 } else {
@@ -295,15 +295,15 @@ function get_meta_value( $post, $nome_meta = '' ) {
     if ( empty( $nome_meta ) ) return false;
     require_once plugin_dir_path( __FILE__ ) . './admin/classes/class-pinedu-imovel-importa-tipo-dependencia.php';
     $dependencias = [];
-    $tipo_dependencias = Pinedu_Imovel_Importa_Tipo_Dependencia::get_tipo_dependencias();
+    $tipo_dependencias = Pinedu_Imovel_Importa_Tipo_Dependencia::get_tipo_dependencias( );
 
     $meta = get_post_meta( $post->ID, '', true );
     foreach ( [ 'CARACTERISTICAS', 'CONDOMINIO', 'EDIFICIO', 'INFRAEXTRUTURA' ] as $relativo ) {
         $caracteristicas = $tipo_dependencias[ $relativo ];
-        foreach ( $caracteristicas as $caracteristica) {
+        foreach ( $caracteristicas as $caracteristica ) {
             $sigla = $caracteristica['sigla'];
-            if ( isset($meta[ $sigla ] ) ) {
-                if ( !isset($dependencias[ $relativo ])) {
+            if ( isset( $meta[ $sigla ] ) ) {
+                if ( !isset( $dependencias[ $relativo ] ) ) {
                     $dependencias[ $relativo ] = [];
                 }
                 $caracteristica['valor'] = $meta[$sigla][0];
@@ -316,52 +316,52 @@ function get_meta_value( $post, $nome_meta = '' ) {
     return false;
 }
 function corta_texto( $texto, $tamanho ): string {
-    if (!is_string($texto)) {
+    if ( !is_string( $texto ) ) {
         return '';
     }
-    if ( ( strlen($texto) > $tamanho ) ) {
-        return substr($texto, 0, $tamanho);
+    if ( ( strlen( $texto ) > $tamanho ) ) {
+        return substr( $texto, 0, $tamanho );
     }
     return $texto;
 }
-function formata_valor($valor, $decimais = 0, $moeda = ''): string {
-	$valor = is_numeric($valor) ? (float)$valor : 0;
+function formata_valor( $valor, $decimais = 0, $moeda = '' ): string {
+	$valor = is_numeric( $valor ) ? ( float )$valor : 0;
 
 	$valor_formatado = '';
 
-	if (!empty($moeda)) {
+	if ( !empty( $moeda ) ) {
 		$valor_formatado = 'R$ ';
 	}
 
-	return $valor_formatado . number_format($valor, $decimais, ',', '.');
+	return $valor_formatado . number_format( $valor, $decimais, ',', '.' );
 }
-function verificar_fotos_demanda(): bool {
+function verificar_fotos_demanda( ): bool {
     $options = get_option( 'pinedu_imovel_options', [] );
     if ( isset( $options['fotos_demanda'] ) && $options['fotos_demanda'] === 'on' ) {
         return true;
     }
     return false;
 }
-function get_the_post() {
-    Pinedu_Foto_Demanda_Controller::the_post();
+function get_the_post( ) {
+    Pinedu_Foto_Demanda_Controller::the_post( );
 }
 function baixar_fotos_destaque( $query, $apagar_destaque = true ) {
-    if (is_development_mode()) {
-        error_log('Baixando fotos destaque: apagar_destaque: ' . $apagar_destaque);
+    if ( is_development_mode( ) ) {
+        error_log( 'Baixando fotos destaque: apagar_destaque: ' . $apagar_destaque );
     }
     return Pinedu_Foto_Demanda_Controller::imagens_destaque( $query, $apagar_destaque );
 }
 
-function get_google_maps_key() {
+function get_google_maps_key( ) {
     $options = get_option( 'pinedu_imovel_options', [] );
     if ( isset( $options[ 'chave_google_api' ] ) ) {
         return $options[ 'chave_google_api' ];
     }
     return '';
 }
-function formatar_title_case(string $endereco_maiusculo, string $encoding = 'UTF-8'): string {
-    $endereco_minusculo = mb_strtolower($endereco_maiusculo, $encoding);
-    $endereco_title_case = mb_convert_case($endereco_minusculo, MB_CASE_TITLE, $encoding);
+function formatar_title_case( string $endereco_maiusculo, string $encoding = 'UTF-8' ): string {
+    $endereco_minusculo = mb_strtolower( $endereco_maiusculo, $encoding );
+    $endereco_title_case = mb_convert_case( $endereco_minusculo, MB_CASE_TITLE, $encoding );
     $substituicoes = [
         ' Cep' => ' CEP',
         ' Sp' => ' SP',
@@ -374,16 +374,16 @@ function formatar_title_case(string $endereco_maiusculo, string $encoding = 'UTF
         ' Epp' => ' EPP',
         ' Ltda' => ' LTDA',
     ];
-    $endereco_final = str_replace(
-        array_keys($substituicoes),
-        array_values($substituicoes),
+    $endereco_final = str_replace( 
+        array_keys( $substituicoes ),
+        array_values( $substituicoes ),
         $endereco_title_case
     );
     return $endereco_final;
 }
 function formata_link_telefone( $telefone ) {
 	$telefone = preg_replace( '/[^0-9]/', '', $telefone );
-    if (! str_starts_with( $telefone, 55 ) ) {
+    if ( ! str_starts_with( $telefone, 55 ) ) {
         $telefone = '+55' . $telefone;
     }
     return $telefone;
@@ -391,60 +391,60 @@ function formata_link_telefone( $telefone ) {
 
 
 /**
- * Calcula os pontos de um círculo (polígono) em torno de um ponto central
- * usando a fórmula da Grande Rota (Great Circle Distance).
+ * Calcula os pontos de um círculo ( polígono ) em torno de um ponto central
+ * usando a fórmula da Grande Rota ( Great Circle Distance ).
  *
- * @param array<string, float> $center Um array com as chaves 'latitude' e 'longitude' (em graus).
+ * @param array<string, float> $center Um array com as chaves 'latitude' e 'longitude' ( em graus ).
  * @param int $radiusMeters O raio do círculo em metros.
- * @return array<int, array<string, float>> Uma lista de pontos (latitude e longitude em graus) que formam o círculo.
+ * @return array<int, array<string, float>> Uma lista de pontos ( latitude e longitude em graus ) que formam o círculo.
  */
-function drawCircle(array $center, int $radiusMeters): array {
+function drawCircle( array $center, int $radiusMeters ): array {
     // Constantes
     $EARTH_RADIUS_KM = 6371.0;
 
     // PHP usa a constante M_PI para o valor de Pi
-    $PI = pi();
+    $PI = pi( );
 
     // 1. Converter centro e raio para radianos
-    // A fórmula original do Groovy já usa (graus * PI / 180.0)
+    // A fórmula original do Groovy já usa ( graus * PI / 180.0 )
     $latitudeRadians = $center['latitude'] * $PI / 180.0;
     $longitudeRadians = $center['longitude'] * $PI / 180.0;
 
-    // Raio em radianos: (metros / 1000) / Raio da Terra em KM
-    $radiusRadians = ($radiusMeters / 1000.0) / $EARTH_RADIUS_KM;
+    // Raio em radianos: ( metros / 1000 ) / Raio da Terra em KM
+    $radiusRadians = ( $radiusMeters / 1000.0 ) / $EARTH_RADIUS_KM;
 
-    // 2. Cálculos Prefixados (partes constantes do cálculo de latitude)
-    $calcLatPrefix = sin($latitudeRadians) * cos($radiusRadians);
-    $calcLatSuffix = cos($latitudeRadians) * sin($radiusRadians);
+    // 2. Cálculos Prefixados ( partes constantes do cálculo de latitude )
+    $calcLatPrefix = sin( $latitudeRadians ) * cos( $radiusRadians );
+    $calcLatSuffix = cos( $latitudeRadians ) * sin( $radiusRadians );
 
     $path = [];
 
-    // 3. Loop (ângulo de 0 a 360, passos de 10)
-    for ($angle = 0; $angle < 361; $angle += 10) {
+    // 3. Loop ( ângulo de 0 a 360, passos de 10 )
+    for ( $angle = 0; $angle < 361; $angle += 10 ) {
 
         // Converter ângulo do loop para radianos
         $angleRadians = $angle * $PI / 180.0;
 
-        // CÁLCULO DA LATITUDE (em radianos)
-        // latitude = Math.asin(calcLatPrefix + calcLatSuffix * Math.cos(angleRadians));
-        $latitude = asin($calcLatPrefix + $calcLatSuffix * cos($angleRadians));
+        // CÁLCULO DA LATITUDE ( em radianos )
+        // latitude = Math.asin( calcLatPrefix + calcLatSuffix * Math.cos( angleRadians ) );
+        $latitude = asin( $calcLatPrefix + $calcLatSuffix * cos( $angleRadians ) );
 
-        // CÁLCULO DA LONGITUDE (em radianos, antes da conversão final)
-        // Numerador: Math.sin(angleRadians) * Math.sin(radiusRadians) * Math.cos(latitudeRadians)
-        $numerator = sin($angleRadians) * sin($radiusRadians) * cos($latitudeRadians);
+        // CÁLCULO DA LONGITUDE ( em radianos, antes da conversão final )
+        // Numerador: Math.sin( angleRadians ) * Math.sin( radiusRadians ) * Math.cos( latitudeRadians )
+        $numerator = sin( $angleRadians ) * sin( $radiusRadians ) * cos( $latitudeRadians );
 
-        // Denominador: Math.cos(radiusRadians) - Math.sin(latitudeRadians) * Math.sin(latitude)
-        $denominator = cos($radiusRadians) - sin($latitudeRadians) * sin($latitude);
+        // Denominador: Math.cos( radiusRadians ) - Math.sin( latitudeRadians ) * Math.sin( latitude )
+        $denominator = cos( $radiusRadians ) - sin( $latitudeRadians ) * sin( $latitude );
 
         // A expressão completa do Groovy é:
-        // longitude = ((longitudeRadians + Math.atan2(Numerador, Denominador)) * 180) / Math.PI;
-        $longitude = (($longitudeRadians + atan2($numerator, $denominator)) * 180) / $PI;
+        // longitude = ( ( longitudeRadians + Math.atan2( Numerador, Denominador ) ) * 180 ) / Math.PI;
+        $longitude = ( ( $longitudeRadians + atan2( $numerator, $denominator ) ) * 180 ) / $PI;
 
         // Converter Latitude de radianos para graus
         // latitude = latitude * 180.0 / Math.PI;
         $latitude = $latitude * 180.0 / $PI;
 
-        // 4. Adicionar ao Path (Lista de arrays associativos)
+        // 4. Adicionar ao Path ( Lista de arrays associativos )
         $path[] = [
             'latitude' => $latitude,
             'longitude' => $longitude
@@ -452,59 +452,98 @@ function drawCircle(array $center, int $radiusMeters): array {
     }
     return $path;
 }
-function formatCoordinatesToCircle(array $points): string {
-    $formattedPoints = array_map(function($point) {
+function formatCoordinatesToCircle( array $points ): string {
+    $formattedPoints = array_map( function( $point ) {
         return $point['latitude'] . ',' . $point['longitude'];
-    }, $points);
-    $resultString = implode('|', $formattedPoints);
+    }, $points );
+    $resultString = implode( '|', $formattedPoints );
     return $resultString;
 }
 
 function getEmpresa( $id = 1 ) {
     $empresa = null;
-    $query = new \WP_Query( array(
+    $query = new \WP_Query( array( 
         'post_type' => 'empresa',
         'post_status' => 'publish',
         'posts_per_page' => 1,
         'meta_query' => [
             [
-                'key'     => 'id',
-                'value'   => $id,
+                'key' => 'id',
+                'value' => $id,
                 'compare' => '='
             ]
         ]
     ) );
 
-    if ($query->have_posts()) {
+    if ( $query->have_posts( ) ) {
         $empresa = $query->posts[0];
     }
-    wp_reset_postdata();
+    wp_reset_postdata( );
     return $empresa;
 }
 function getCorretor( $id ) {
-    if (empty($id)) return false;
+    if ( empty( $id ) ) return false;
     $corretor = null;
-    $query = new \WP_Query( array(
+    $query = new \WP_Query( array( 
         'post_type' => 'corretor',
         'post_status' => 'publish',
         'posts_per_page' => 1,
         'meta_query' => [
             [
-                'key'     => 'id',
-                'value'   => $id,
+                'key' => 'id',
+                'value' => $id,
                 'compare' => '='
             ]
         ]
     ) );
 
-    if ($query->have_posts()) {
+    if ( $query->have_posts( ) ) {
         $corretor = $query->posts[0];
     }
-    wp_reset_postdata();
+    wp_reset_postdata( );
     return $corretor;
 }
-function is_development_mode() {
-    if ( wp_get_environment_type() === 'development' ) {
+function saudacaoDia() {
+    if (function_exists('current_time')) {
+        $hora = current_time('H');
+    } else {
+        date_default_timezone_set('America/Sao_Paulo');
+        $hora = date('H');
+    }
+
+    if ($hora >= 5 && $hora < 12) {
+        $saudacao = 'Bom dia!';
+    } elseif ($hora >= 12 && $hora < 18) {
+        $saudacao = 'Boa tarde!';
+    } else {
+        $saudacao = 'Boa noite!';
+    }
+    return $saudacao;
+}
+function montaSaudacaoCorretorWhatsApp($nome, $telefone, $email, $referencia, $corretorNome) {
+    $telefone = formata_telefone($telefone);
+    $saudacao = saudacaoDia();
+    $mensagem = "{$saudacao}\n\n";
+    $mensagem .= "Senhor corretor: {$corretorNome}\n";
+    $mensagem .= "Meu nome é {$nome}, tenho visitado seu site e gostaria de informações sobre o imóvel Ref: {$referencia}.\n";
+    $mensagem .= "Caso não possa atender no momento, deixo meu Email: {$email}, e meu telefone para contato: {$telefone}";
+    $mensagemCodificada = rawurlencode($mensagem);
+    return $mensagemCodificada;
+}
+
+function validarWhatsappBR( $telefone ) {
+    $telefone = preg_replace( '/\D/', '', $telefone );
+    if ( preg_match( '/^[1-9]{2}9[0-9]{8}$/', $telefone ) ) {
+        return '+55' . $telefone;
+    }
+    if ( preg_match( '/^[1-9]{2}[2-8][0-9]{7}$/', $telefone ) ) {
+        return '+55' . $telefone;
+    }
+    return false;
+}
+
+function is_development_mode( ) {
+    if ( wp_get_environment_type( ) === 'development' ) {
         return true;
     }
     return false;
@@ -518,51 +557,35 @@ function is_development_mode() {
 /**
  * Lista na tela os endpoints REST customizados definidos no seu módulo/plugin.
  */
-function pinedu_exibir_meus_endpoints() {
-    // É crucial garantir que o servidor REST foi inicializado.
-    // O hook 'rest_api_init' já deve ter sido executado.
+function pinedu_exibir_meus_endpoints( ) {
     global $wp_rest_server;
-
-    // Se o servidor não estiver pronto, tentamos carregá-lo (Embora o ideal seja o rest_api_init ter rodado).
     if ( ! ( $wp_rest_server instanceof WP_REST_Server ) ) {
         $wp_rest_server = new WP_REST_Server;
     }
-
-    $routes = $wp_rest_server->get_routes();
+    $routes = $wp_rest_server->get_routes( );
     $meus_endpoints = [];
     $namespace_alvo = 'pinedu-imovel/v1';
-    $url_base = get_rest_url(); // Ex: http://seusite.com.br/wp-json/
-
-    // 1. Filtra apenas os seus endpoints
+    $url_base = get_rest_url( );
     foreach ( $routes as $route_path => $handlers ) {
-        // Verifica se o caminho da rota começa com seu namespace
         if ( strpos( $route_path, '/' . $namespace_alvo . '/' ) === 0 ) {
             $metodos = [];
-
             foreach ( $handlers as $handler ) {
                 if ( isset( $handler['methods'] ) ) {
-                    // Converte os códigos binários de volta para strings HTTP
                     $metodos[] = implode( ', ', array_keys( $handler['methods'], array_filter( $handler['methods'], 'is_numeric' ) ) );
                 }
             }
-
-            $caminho_sem_barra_inicial = ltrim($route_path, '/');
-
+            $caminho_sem_barra_inicial = ltrim( $route_path, '/' );
             $meus_endpoints[] = [
                 'path' => $route_path,
-                'methods' => implode(' / ', array_unique($metodos)),
+                'methods' => implode( ' / ', array_unique( $metodos ) ),
                 'url_completa' => $url_base . $caminho_sem_barra_inicial
             ];
         }
-        //wp_die();
     }
-
-    // 2. Exibe o HTML (Pode ser formatado para ser mais discreto ou em um bloco de debug)
     echo '<div style="margin: 20px auto; padding: 15px; border: 2px solid #00a0d2; max-width: 600px; background-color: #e0f7fa;">';
     echo '<h4>✅ Endpoints REST Ativos</h4>';
-
     if ( empty( $meus_endpoints ) ) {
-        echo '<p style="color: red;">Nenhum endpoint encontrado para o namespace <code>' . esc_html($namespace_alvo) . '</code>.</p>';
+        echo '<p style="color: red;">Nenhum endpoint encontrado para o namespace <code>' . esc_html( $namespace_alvo ) . '</code>.</p>';
         echo '<p>Possível causa: Permalinks ou função de registro falharam.</p>';
     } else {
         echo '<ul style="padding-left: 20px; list-style-type: square;">';
@@ -574,6 +597,5 @@ function pinedu_exibir_meus_endpoints() {
         }
         echo '</ul>';
     }
-
     echo '</div>';
 }

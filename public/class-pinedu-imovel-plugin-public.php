@@ -121,7 +121,7 @@ require_once plugin_dir_path( __FILE__ ) . '../rest/PineduReceiverRest.php';
 			return isset($_REQUEST[$key]) ? sanitize_text_field($_REQUEST[$key]) : $default;
 		}
 		private function ordenar_pesquisa( $query, $contrato, $sort, $direction ) {
-			$meta_query = $query->get('meta_query');
+            $meta_query = $query->get('meta_query') ?: [];
 			switch ( $sort ) {
 				case 'dataPreco':
 					switch ( $contrato ) {
@@ -145,84 +145,107 @@ require_once plugin_dir_path( __FILE__ ) . '../rest/PineduReceiverRest.php';
 					}
 					break;
 				case 'valor':
-					switch ( $contrato ) {
-						case '1':
-							$query->set('meta_key', 'vendaValor');
-							$query->set('orderby', 'meta_value_num');
-							$query->set('order', $direction);
-							break;
-						case '2':
-							$query->set('meta_key', 'locacaoValor');
-							$query->set('orderby', 'meta_value_num');
-							$query->set('order', $direction);
-							break;
-						case '3':
-							$query->set('meta_key', 'lancamentoValor');
-							$query->set('orderby', 'meta_value_num');
-							$query->set('order', $direction);
-							break;
-						default:
-							$query->set('meta_key', 'valor');
-							$query->set('orderby', 'meta_value_num');
-							$query->set('order', $direction);
-							break;
-					}
-					break;
+                    $key_valor = 'vendaValor'; // default
+                    if ($contrato == '1') $key_valor = 'vendaValor';
+                    if ($contrato == '2') $key_valor = 'locacaoValor';
+                    if ($contrato == '3') $key_valor = 'lancamentoValor';
+                    $meta_query['ordenacao_valor_clause'] = [
+                        'key'     => $key_valor,
+                        'compare' => 'EXISTS',
+                        'type'    => 'NUMERIC',
+                    ];
+                    $query->set('orderby', [ 'ordenacao_valor_clause' => $direction ]);
+                    break;
 				case 'referencia':
-					$query->set('meta_key', 'referencia');
-					$query->set('orderby', 'meta_value_num');
-					$query->set('order', $direction);
-					break;
+                    $meta_query['ordenacao_referencia'] = [
+                        'key'     => 'referencia',
+                        'compare' => 'EXISTS',
+                        'type'    => 'NUMERIC',
+                    ];
+                    $query->set('orderby', [
+                        'ordenacao_referencia' => $direction
+                    ]);
+                    break;
 				case 'cidade':
-					$query->set('meta_key', 'cidade');
-					$query->set('orderby', 'meta_value');
-					$query->set('order', $direction);
+                    $meta_query['ordenacao_cidade'] = [
+                        'key'     => 'cidade',
+                        'compare' => 'EXISTS',
+                        'type'    => 'NUMERIC',
+                    ];
+                    $query->set('orderby', [
+                        'ordenacao_cidade' => $direction
+                    ]);
 					break;
+                case 'regiao':
+                    $meta_query['ordenacao_regiao'] = [
+                        'key'     => 'regiao',
+                        'compare' => 'EXISTS',
+                        'type'    => 'NUMERIC',
+                    ];
+                    $query->set('orderby', [
+                        'ordenacao_regiao' => $direction
+                    ]);
+                    break;
 				case 'tipoimovel':
-					$query->set('meta_key', 'tipoImovelNome');
-					$query->set('orderby', 'meta_value');
-					$query->set('order', $direction);
-					break;
-				case 'regiao':
-					$query->set('meta_key', 'regiao');
-					$query->set('orderby', 'meta_value');
-					$query->set('order', $direction);
-					break;
-				case 'bairro':
-					$query->set('meta_key', 'bairro');
-					$query->set('orderby', 'meta_value');
-					$query->set('order', $direction);
-					break;
-				case 'finalidade':
-					$query->set('meta_key', 'finalidadeNome');
-					$query->set('orderby', 'meta_value');
-					$query->set('order', $direction);
-					break;
+                    $meta_query['ordenacao_tipoimovel'] = [
+                        'key'     => 'tipoImovelNome',
+                        'compare' => 'EXISTS',
+                        'type'    => 'CHAR',
+                    ];
+                    $query->set('orderby', [
+                        'ordenacao_tipoimovel' => $direction
+                    ]);
+                    break;
 				case 'dormitorio':
-					$query->set('meta_key', 'DOR');
-					$query->set('orderby', 'meta_value_num');
-					$query->set('order', $direction);
-					break;
+                    $meta_query['ordenacao_DOR'] = [
+                        'key'     => 'DOR',
+                        'compare' => 'EXISTS',
+                        'type'    => 'NUMERIC',
+                    ];
+                    $query->set('orderby', [
+                        'ordenacao_DOR' => $direction
+                    ]);
+                    break;
 				case 'suite':
-					$query->set('meta_key', 'SUI');
-					$query->set('orderby', 'meta_value_num');
-					$query->set('order', $direction);
-					break;
+                    $meta_query['ordenacao_SUI'] = [
+                        'key'     => 'SUI',
+                        'compare' => 'EXISTS',
+                        'type'    => 'NUMERIC',
+                    ];
+                    $query->set('orderby', [
+                        'ordenacao_SUI' => $direction
+                    ]);
+                    break;
 				case 'garagem':
-					$query->set('meta_key', 'GAR');
-					$query->set('orderby', 'meta_value_num');
-					$query->set('order', $direction);
-					break;
+                    $meta_query['ordenacao_GAR'] = [
+                        'key'     => 'GAR',
+                        'compare' => 'EXISTS',
+                        'type'    => 'NUMERIC',
+                    ];
+                    $query->set('orderby', [
+                        'ordenacao_GAR' => $direction
+                    ]);
+                    break;
 				case 'iptu':
-					$query->set('meta_key', 'valorIptu');
-					$query->set('orderby', 'meta_value_num');
-					$query->set('order', $direction);
-					break;
+                    $meta_query['ordenacao_IPTU'] = [
+                        'key'     => 'valorIptu',
+                        'compare' => 'EXISTS',
+                        'type'    => 'NUMERIC',
+                    ];
+                    $query->set('orderby', [
+                        'ordenacao_IPTU' => $direction
+                    ]);
+                    break;
 				case 'condominio':
-					$query->set('meta_key', 'valorCondominio');
-					$query->set('orderby', 'meta_value_num');
-					$query->set('order', $direction);
-					break;
+                    $meta_query['ordenacao_CONDO'] = [
+                        'key'     => 'valorCondominio',
+                        'compare' => 'EXISTS',
+                        'type'    => 'NUMERIC',
+                    ];
+                    $query->set('orderby', [
+                        'ordenacao_CONDO' => $direction
+                    ]);
+                    break;
 			}
 			$query->set('meta_query', $meta_query );
 		}
