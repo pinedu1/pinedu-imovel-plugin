@@ -53,8 +53,37 @@ class Pinedu_Imovel_Importa_Faixa_Valor extends Pinedu_Importa_Taxonomia_Base {
 			, 'order'   => 'ASC'
 		];
 		if ( !empty( $contrato ) ) {
-			$args[ 'meta_query' ] = [ [ 'key'     => 'tipo-contrato' , 'value'   => $contrato , 'compare' => '=' ] ];
+			$args[ 'meta_query' ] = [ [ 'key' => 'tipo-contrato', 'value' => $contrato, 'compare' => '=' ] ];
 		}
 		return get_terms($args);
 	}
+    public static function lista( $contrato ) {
+        if ( !taxonomy_exists( 'faixa-valor' ) ) {
+            wp_send_json_error( ['message' => 'Taxonomia Faixa de Valor não existe!.'] );
+            return false;
+        }
+        $args = [
+            'taxonomy'   => 'faixa-valor'
+            , 'hide_empty' => false
+            , 'orderby' => 'meta_value_num'
+            , 'meta_key' => 'valor-inicial'
+            , 'order'   => 'ASC'
+        ];
+        if ( !empty( $contrato ) ) {
+            $args[ 'meta_query' ] = [ [ 'key' => 'tipo-contrato', 'value' => $contrato, 'compare' => '=' ] ];
+        }
+        $terms = get_terms($args);
+        $fx = [];
+        foreach ($terms as $term) {
+            $id_term = $term->term_id;
+            $fx[] = [
+                'id'=>$id_term
+                , 'nome'=>(string)$term->name
+                , 'valor-inicial'=>get_term_meta( $id_term, 'valor-inicial')
+                , 'valor-final'=>get_term_meta( $id_term, 'valor-final')
+            ];
+        }
+
+        return $fx;
+    }
 }
