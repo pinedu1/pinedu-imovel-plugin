@@ -165,7 +165,7 @@ class Pinedu_Imovel_Plugin_Admin {
             'tokenUsername' => $token_username,
             'tokenPassword' => $token_password,
             'urlServidor' => $url_servidor,
-            'empresa' => 1,
+        'empresa' => 1,
             'pathRemoto' => '/wordpress/'
         ]);
 	}

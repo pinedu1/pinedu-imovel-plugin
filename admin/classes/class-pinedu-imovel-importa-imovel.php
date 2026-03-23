@@ -132,6 +132,12 @@ class Pinedu_Imovel_Importa_Imovel {
         $status = get_post_status( $post_id );
         // Se o status NÃO é falso (ou seja, o post existe) E o ID é um número
         if ( $status !== false && is_numeric( $post_id ) ) {
+
+            $importa_fotos = new Pinedu_Imovel_Importa_Foto( $post_id, array() );
+            $importa_fotos->exclui_imagem_destaque( );
+            $fotografias_post = get_post_meta( $post_id, 'fotografias', false );
+            $importa_fotos->excluir_fotografias( $fotografias_post );
+
             $resultado = wp_delete_post( $post_id, true );
             return $resultado !== false && $resultado !== null;
         }
@@ -157,6 +163,26 @@ class Pinedu_Imovel_Importa_Imovel {
 
 		wp_delete_post($post_id, true);
 	}*/
+    private function apaga_attachments( $post_id ): void {
+        $attachments = get_posts( array(
+            'post_type' => 'attachment',
+            'post_parent' => $post_id,
+            'numberposts' => -1,
+            'post_status' => null,
+            'fields' => 'ids'
+        ) );
+        if ( $attachments ) {
+            foreach ( $attachments as $attachment_id ) {
+                wp_delete_attachment( $attachment_id, true );
+            }
+        }
+        // Busca o ID do anexo que é a imagem de destaque atual
+        $thumbnail_id = get_post_thumbnail_id( $post_id );
+        // Se você quiser apagar especificamente ela antes de tudo:
+        if ( $thumbnail_id ) {
+            wp_delete_attachment( $thumbnail_id, true );
+        }
+    }
 	private function atualizar( $post_id, $imovel, $silent_mode = false ) {
 		$post_data = array( 
 			'post_title'   => $this->resolve_slug( $imovel )
@@ -165,12 +191,13 @@ class Pinedu_Imovel_Importa_Imovel {
 			, 'post_type'    => 'imovel'
 			, 'ID'           => $post_id
 		 );
+        $fotografias_post = get_post_meta( $post_id, 'fotografias', false );
+        $this->apaga_attachments( $post_id );
 		$post_id = wp_update_post( $post_data, true );
 		if ( is_wp_error( $post_id ) ) {
 			error_log( 'Erro ao atualizar imóvel: ' . $post_id->get_error_message( ) );
 			return false;
 		}
-		$fotografias_post = get_post_meta( $post_id, 'fotografias', false );
 
 		$importa_taxonomias = new Pinedu_Imovel_Importa_Taxonomias( $post_id, $imovel );
 		$importa_taxonomias->atualizar( );

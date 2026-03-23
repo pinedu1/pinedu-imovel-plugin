@@ -386,4 +386,27 @@ require_once plugin_dir_path( __FILE__ ) . '../rest/PineduReceiverRest.php';
         public function register_rest_endpoint() {
             PineduReceiverRest::instala_rest_end_point();
         }
-	}
+        /**
+         * Exclui fisicamente os anexos (fotos) ao deletar um post do tipo 'imovel'.
+         */
+        public function excluir_fotos_ao_apagar_post($post_id) {
+            // 1. Verifica se o post é do tipo 'imovel'
+            if (get_post_type( $post_id ) !== 'imovel') {
+                return;
+            }
+            // 2. Busca apenas os IDs das mídias vinculadas a este post
+            $attachments = get_posts([
+                'post_type'      => 'attachment',
+                'posts_per_page' => -1,
+                'post_parent'    => $post_id,
+                'fields'         => 'ids', // Retorna apenas IDs para economizar memória
+            ]);
+            // 3. Deleta cada anexo e remove os arquivos do diretório /uploads
+            if (!empty($attachments)) {
+                foreach ($attachments as $attachment_id) {
+                    // O parâmetro 'true' força a exclusão permanente e apaga os arquivos do HD
+                    wp_delete_attachment($attachment_id, true);
+                }
+            }
+        }
+    }

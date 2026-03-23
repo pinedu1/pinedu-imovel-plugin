@@ -194,6 +194,7 @@ class Pinedu_Imovel_Plugin {
 
         $this->loader->add_action( 'rest_api_init', $plugin_public , 'register_rest_endpoint' );
 
+        $this->loader->add_action( 'before_delete_post', $plugin_public, 'excluir_fotos_ao_apagar_post', 0 );
 	}
 
 	/**

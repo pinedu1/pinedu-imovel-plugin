@@ -665,24 +665,6 @@ class Pinedu_Imovel_Importa_Foto extends Pinedu_Foto_Util {
                 wp_die();
             }
         }
-/*        $exibir = $foto[ 'exibeInternet' ];
-        if ( !$exibir ) return false;
-        $foto_id = $foto[ 'id' ];
-        $nome = $foto[ 'nome' ];
-        $descricao = $foto[ 'descricao' ];
-        $ordem= $foto[ 'ordem' ];
-        $fachada = $foto[ 'fotoBanner' ];
-        //
-        $image_ulr = $foto['big'];
-        $alt_text = $nome;
-        $title = $nome;
-        $attachment_id = $this->importa_foto( $image_ulr, $foto['nome'], $title, $alt_text, $silent_mode );
-        if (!$attachment_id) {
-            return false;
-        }
-        $valor = [ 'nome' => $nome, 'descricao' => $descricao, 'ordem' => $ordem, 'exibir' => $exibir, 'fachada' => $fachada, 'foto_id' => $foto_id, 'id' => $attachment_id];
-        $pm = add_post_meta( $this->post_id, 'fotografias', $valor, false );
-        $x=$pm;*/
         return true;
     }
     private function atualizar_fotografia( $foto, &$fotografias_post ) {
