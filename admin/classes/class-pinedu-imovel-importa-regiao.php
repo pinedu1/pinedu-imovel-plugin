@@ -45,7 +45,7 @@ class Pinedu_Imovel_Importa_Regiao extends Pinedu_Importa_Taxonomia_Base {
 		, 'meta_query' => [
 				[
 					'key' => 'parent_id'
-					, 'value' => $cidade
+					, 'value' => str_pad($cidade, 4, '0', STR_PAD_LEFT)
 					, 'compare' => '='
 				]
 			]

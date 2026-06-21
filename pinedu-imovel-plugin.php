@@ -166,7 +166,26 @@ function criarCookie( ) {
 	require_once plugin_dir_path( __FILE__ ) . './includes/classes/class-pinedu-imovel-cookie.php';
 	return CookieUtil::criaCookie( );
 }
+function pinedu_validar_captcha( $token ) {
+    $secret_key = 'SUA_CHAVE_SECRETA_AQUI'; // Pegue no painel do Google reCAPTCHA
 
+    $response = wp_remote_post( 'https://www.google.com/recaptcha/api/siteverify', [
+        'body' => [
+            'secret'   => $secret_key,
+            'response' => sanitize_text_field( $token ),
+            'remoteip' => $_SERVER['REMOTE_ADDR']
+        ]
+    ]);
+
+    if ( is_wp_error( $response ) ) {
+        return false;
+    }
+
+    $body = json_decode( wp_remote_retrieve_body( $response ) );
+
+    // O v3 retorna um 'score' de 0.0 (bot) a 1.0 (humano). 0.5 é um bom corte seguro.
+    return ( $body->success && $body->score >= 0.5 );
+}
 function enviarCliente( $nome, $telefone, $email, $mensagem, $cookieId, $referencia = null, $corretor = null ) {
 	require_once plugin_dir_path( __FILE__ ) . './admin/classes/class-pinedu-imovel-enviar-cliente.php';
 	$enviar = new Pinedu_Imovel_Enviar_Cliente( $nome, $telefone, $email, $mensagem, $cookieId, $referencia, $corretor );

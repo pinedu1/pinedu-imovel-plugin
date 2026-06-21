@@ -200,6 +200,7 @@ class Pinedu_Imovel_Plugin_Admin {
         // Adicionar seções de certificados
         add_settings_section( 'secao_certificados', 'Certificados', [$this, 'exibir_secao_certificados'], 'pinedu-imovel' );
         add_settings_field( 'chave_google_api', 'Chave Google API', [$this, 'exibir_chave_google_api'], 'pinedu-imovel', 'secao_certificados' );
+        add_settings_field( 'exibir_chave_recaptcha_api', 'Chave Recaptcha', [$this, 'exibir_chave_recaptcha_api'], 'pinedu-imovel', 'secao_certificados' );
         add_settings_field( 'chave_facebook_id', 'Chave Facebook ID', [$this, 'exibir_chave_facebook_id'], 'pinedu-imovel', 'secao_certificados' );
 		// Adicionar seções de configuração
 		add_settings_section( 'secao_email', 'Configurações de Email', [$this, 'exibir_secao_email'], 'pinedu-imovel' );
@@ -392,6 +393,10 @@ class Pinedu_Imovel_Plugin_Admin {
 		$options = get_option( 'pinedu_imovel_options', [] );
 		echo '<input type="text" placeholder="Chave do Google Api" name="pinedu_imovel_options[chave_google_api]" value="'.esc_attr( $options['chave_google_api']??'' ).'">';
 	}
+    public function exibir_chave_recaptcha_api( ) {
+        $options = get_option( 'pinedu_imovel_options', [] );
+        echo '<input type="text" placeholder="Chave Pública RECAPTCHA" name="pinedu_imovel_options[chave_recaptcha]" value="'.esc_attr( $options['chave_recaptcha']??'' ).'">';
+    }
     public function exibir_chave_facebook_id( ) {
         $options = get_option( 'pinedu_imovel_options', [] );
         echo '<input type="text" placeholder="Chave Facebook ID" name="pinedu_imovel_options[facebook_app_id]" value="'.esc_attr( $options['facebook_app_id']??'' ).'">';
