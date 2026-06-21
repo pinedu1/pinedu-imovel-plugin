@@ -1,240 +1,171 @@
 <?php
-
 /**
  * The file that defines the core plugin class
  *
  * A class definition that includes attributes and functions used across both the
  * public-facing side of the site and the admin area.
  *
- * @link       https://www.pinedu.com.br
- * @since      1.0.0
+ * @link	   https://www.pinedu.com.br
+ * @since	  1.0.0
  *
- * @package    Pinedu_Imovel_Plugin
+ * @package	Pinedu_Imovel_Plugin
  * @subpackage Pinedu_Imovel_Plugin/includes
- */
-
-/**
- * The core plugin class.
- *
- * This is used to define internationalization, admin-specific hooks, and
- * public-facing site hooks.
- *
- * Also maintains the unique identifier of this plugin as well as the current
- * version of the plugin.
- *
- * @since      1.0.0
- * @package    Pinedu_Imovel_Plugin
- * @subpackage Pinedu_Imovel_Plugin/includes
- * @author     Eduardo Pinheiro da Silva <eduardopinhe@gmail.com>
  */
 class Pinedu_Imovel_Plugin {
-	/**
-	 * The loader that's responsible for maintaining and registering all hooks that power
-	 * the plugin.
-	 *
-	 * @since    1.0.0
-	 * @access   protected
-	 * @var      Pinedu_Imovel_Plugin_Loader    $loader    Maintains and registers all hooks for the plugin.
-	 */
-	protected $loader;
+    protected $loader;
+    protected $plugin_name;
+    protected $version;
+    public function __construct() {
+        if ( defined( 'PINEDU_IMOVEL_PLUGIN_VERSION' ) ) {
+            $this->version = PINEDU_IMOVEL_PLUGIN_VERSION;
+        } else {
+            $this->version = '1.0.0';
+        }
+        $this->plugin_name = 'pinedu-imovel-plugin';
+        $this->load_dependencies();
+        $this->set_locale();
+        $this->define_admin_hooks();
+        $this->define_public_hooks();
+    }
+    private function load_dependencies() {
+        require_once plugin_dir_path( __FILE__ ) . 'classes/Posttypes.php';
+        require_once plugin_dir_path( __FILE__ ) . 'classes/Taxonomias.php';
+        require_once plugin_dir_path( __FILE__ ) . 'classes/PaginasIniciais.php';
+        require_once plugin_dir_path( __FILE__ ) . 'classes/MailConfig.php';
+        require_once plugin_dir_path( __FILE__ ) . 'classes/PrettyUrl.php';
+        require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-pinedu-imovel-plugin-loader.php';
+        require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-pinedu-imovel-plugin-i18n.php';
+        require_once plugin_dir_path( dirname( __FILE__ ) ) . 'admin/class-pinedu-imovel-plugin-admin.php';
+        require_once plugin_dir_path( dirname( __FILE__ ) ) . 'public/class-pinedu-imovel-plugin-public.php';
+        $this->loader = new Pinedu_Imovel_Plugin_Loader();
+    }
+    /**
+     * Intercepta o envio a nível de servidor/SMTP e força o HTML
+     */
+    public function config_wp_mail( $phpmailer ) {
+        // Força globalmente o tipo de conteúdo como HTML
+        $phpmailer->isHTML( true );
+        require_once plugin_dir_path( __FILE__ ) . 'classes/MailConfig.php';
+        MailConfig::config_wp_mail( $phpmailer );
+    }
+    /**
+     * Intercepta o conteúdo do e-mail antes de passar para o PHPMailer e aplica o Template
+     */
+    /**
+     * Intercepta o conteúdo do e-mail antes de passar para o PHPMailer e busca o Template no Tema
+     */
+    public function aplicar_template_email( $args ) {
 
-	/**
-	 * The unique identifier of this plugin.
-	 *
-	 * @since    1.0.0
-	 * @access   protected
-	 * @var      string    $plugin_name    The string used to uniquely identify this plugin.
-	 */
-	protected $plugin_name;
+        // 1. Interceptação: Formulário de Contato Padrão
+        if ( strpos( $args['subject'], 'Contato via Site' ) !== false ) {
+            $mensagem_original = $args['message'];
 
-	/**
-	 * The current version of the plugin.
-	 *
-	 * @since    1.0.0
-	 * @access   protected
-	 * @var      string    $version    The current version of the plugin.
-	 */
-	protected $version;
+            // Extrai as variáveis da string original gerada no formulário
+            $nome     = preg_match( '/Nome:\s*(.*)/i', $mensagem_original, $matches ) ? trim( $matches[1] ) : '-';
+            $email    = preg_match( '/Email:\s*(.*)/i', $mensagem_original, $matches ) ? trim( $matches[1] ) : '-';
+            $telefone = preg_match( '/Telefone:\s*(.*)/i', $mensagem_original, $matches ) ? trim( $matches[1] ) : '-';
 
-	/**
-	 * Define the core functionality of the plugin.
-	 *
-	 * Set the plugin name and the plugin version that can be used throughout the plugin.
-	 * Load the dependencies, define the locale, and set the hooks for the admin area and
-	 * the public-facing side of the site.
-	 *
-	 * @since    1.0.0
-	 */
-	public function __construct() {
-		if ( defined( 'PINEDU_IMOVEL_PLUGIN_VERSION' ) ) {
-			$this->version = PINEDU_IMOVEL_PLUGIN_VERSION;
-		} else {
-			$this->version = '1.0.0';
-		}
-		$this->plugin_name = 'pinedu-imovel-plugin';
+            $texto_mensagem = $mensagem_original;
+            if ( preg_match( '/Mensagem:\s*(.*)/is', $mensagem_original, $matches ) ) {
+                $texto_mensagem = trim( $matches[1] );
+            }
 
-		$this->load_dependencies();
-		$this->set_locale();
-		$this->define_admin_hooks();
-		$this->define_public_hooks();
+            // Prepara o array de dados para enviar ao arquivo do tema
+            $dados_template = [
+                'nome'         => $nome
+                , 'email'      => $email
+                , 'telefone'   => $telefone
+                , 'mensagem'   => $texto_mensagem
+            ];
 
-	}
+            // Inicia o buffer para não imprimir o HTML na tela do usuário
+            ob_start();
+            get_template_part( 'template-parts/empresa/template-email', 'email', $dados_template );
+            $corpo_email_html = ob_get_clean();
 
-	/**
-	 * Load the required dependencies for this plugin.
-	 *
-	 * Include the following files that make up the plugin:
-	 *
-	 * - Pinedu_Imovel_Plugin_Loader. Orchestrates the hooks of the plugin.
-	 * - Pinedu_Imovel_Plugin_i18n. Defines internationalization functionality.
-	 * - Pinedu_Imovel_Plugin_Admin. Defines all hooks for the admin area.
-	 * - Pinedu_Imovel_Plugin_Public. Defines all hooks for the public side of the site.
-	 *
-	 * Create an instance of the loader which will be used to register the hooks
-	 * with WordPress.
-	 *
-	 * @since    1.0.0
-	 * @access   private
-	 */
-	private function load_dependencies() {
-		require_once plugin_dir_path( __FILE__ ) . 'classes/Posttypes.php';
-		require_once plugin_dir_path( __FILE__ ) . 'classes/Taxonomias.php';
-		require_once plugin_dir_path( __FILE__ ) . 'classes/PaginasIniciais.php';
-		require_once plugin_dir_path( __FILE__ ) . 'classes/MailConfig.php';
-		require_once plugin_dir_path( __FILE__ ) . 'classes/PrettyUrl.php';
+            // Fallback de segurança
+            if ( ! empty( $corpo_email_html ) ) {
+                $args['message'] = $corpo_email_html;
+            }
+        }
 
-		/**
-		 * The class responsible for orchestrating the actions and filters of the
-		 * core plugin.
-		 */
-		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-pinedu-imovel-plugin-loader.php';
+        // 2. Interceptação: Formulário Trabalhe Conosco
+        elseif ( strpos( $args['subject'], 'Trabalhe Conosco' ) !== false ) {
+            $mensagem_original = $args['message'];
 
-		/**
-		 * The class responsible for defining internationalization functionality
-		 * of the plugin.
-		 */
-		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-pinedu-imovel-plugin-i18n.php';
+            // Extrai as variáveis baseadas no padrão montado no arquivo trabalhe-conosco.php
+            $nome     = preg_match( '/Nome:\s*(.*)/i', $mensagem_original, $matches ) ? trim( $matches[1] ) : '-';
+            $email    = preg_match( '/Email:\s*(.*)/i', $mensagem_original, $matches ) ? trim( $matches[1] ) : '-';
+            $celular  = preg_match( '/Telefone:\s*(.*)/i', $mensagem_original, $matches ) ? trim( $matches[1] ) : '-';
+            $cidade   = preg_match( '/Cidade:\s*(.*)/i', $mensagem_original, $matches ) ? trim( $matches[1] ) : '-';
+            $cargo    = preg_match( '/Cargo:\s*(.*)/i', $mensagem_original, $matches ) ? trim( $matches[1] ) : '-';
+            $creci    = preg_match( '/Situação CRECI:\s*(.*)/i', $mensagem_original, $matches ) ? trim( $matches[1] ) : '';
 
-		/**
-		 * The class responsible for defining all actions that occur in the admin area.
-		 */
-		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'admin/class-pinedu-imovel-plugin-admin.php';
+            $texto_mensagem = '';
+            if ( preg_match( '/Mensagem:\s*(.*)/is', $mensagem_original, $matches ) ) {
+                $texto_mensagem = trim( $matches[1] );
+            }
 
-		/**
-		 * The class responsible for defining all actions that occur in the public-facing
-		 * side of the site.
-		 */
-		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'public/class-pinedu-imovel-plugin-public.php';
+            // Empacota os dados extras para o RH
+            $dados_template = [
+                'nome'       => $nome
+                , 'email'    => $email
+                , 'celular'  => $celular
+                , 'cidade'   => $cidade
+                , 'cargo'    => $cargo
+                , 'creci'    => $creci
+                , 'mensagem' => $texto_mensagem
+            ];
 
-		$this->loader = new Pinedu_Imovel_Plugin_Loader();
+            // Inicia o buffer e chama a nova template de RH
+            ob_start();
+            // Nota: Certifique-se de que o arquivo criado se chama "template-email-trabalhe-conosco.php"
+            // e está dentro da mesma pasta "template-parts/empresa/"
+            get_template_part( 'template-parts/empresa/template-email', 'trabalhe-conosco', $dados_template );
+            $corpo_email_html = ob_get_clean();
 
-	}
-	public function config_wp_mail( $phpmailer ) {
-		require_once plugin_dir_path( __FILE__ ) . 'classes/MailConfig.php';
-		MailConfig::config_wp_mail( $phpmailer );
-	}
-	/**
-	 * Define the locale for this plugin for internationalization.
-	 *
-	 * Uses the Pinedu_Imovel_Plugin_i18n class in order to set the domain and to register the hook
-	 * with WordPress.
-	 *
-	 * @since    1.0.0
-	 * @access   private
-	 */
-	private function set_locale() {
+            if ( ! empty( $corpo_email_html ) ) {
+                $args['message'] = $corpo_email_html;
+            }
+        }
 
-		$plugin_i18n = new Pinedu_Imovel_Plugin_i18n();
-
-		$this->loader->add_action( 'plugins_loaded', $plugin_i18n, 'load_plugin_textdomain' );
-
-	}
-
-	/**
-	 * Register all of the hooks related to the admin area functionality
-	 * of the plugin.
-	 *
-	 * @since    1.0.0
-	 * @access   private
-	 */
-	private function define_admin_hooks() {
-
-		$plugin_admin = new Pinedu_Imovel_Plugin_Admin( $this->get_plugin_name(), $this->get_version() );
-
-		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_styles' );
-		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_scripts' );
-
-	}
-
-	/**
-	 * Register all of the hooks related to the public-facing functionality
-	 * of the plugin.
-	 *
-	 * @since    1.0.0
-	 * @access   private
-	 */
-	private function define_public_hooks() {
-
-		$plugin_public = new Pinedu_Imovel_Plugin_Public( $this->get_plugin_name(), $this->get_version() );
-		$pretty_url = new PrettyUrl( true );
-
-        $this->loader->add_action( 'phpmailer_init', $plugin_public, 'config_wp_mail', 0 );
-
-		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_styles', 5 );
-		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_scripts', 10 );
-
-		$this->loader->add_action( 'init', $plugin_public, 'register_posttypes', 6 );
-		$this->loader->add_action( 'init', $plugin_public, 'register_taxonomies', 5 );
-
-		$this->loader->add_action( 'init', $pretty_url, 'do', 10 );
-
-		$this->loader->add_action( 'pre_get_posts', $plugin_public, 'register_search_posttype_imovel' );
-
-		$this->loader->add_filter('template_include', $plugin_public, 'force_single_imovel_template');
-
+        return $args;
+    }
+   private function set_locale() {
+        $plugin_i18n = new Pinedu_Imovel_Plugin_i18n();
+        $this->loader->add_action( 'plugins_loaded', $plugin_i18n, 'load_plugin_textdomain' );
+    }
+    private function define_admin_hooks() {
+        $plugin_admin = new Pinedu_Imovel_Plugin_Admin( $this->get_plugin_name(), $this->get_version() );
+        $this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_styles' );
+        $this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_scripts' );
+    }
+    private function define_public_hooks() {
+        $plugin_public = new Pinedu_Imovel_Plugin_Public( $this->get_plugin_name(), $this->get_version() );
+        $pretty_url = new PrettyUrl( true );
+        // CORREÇÃO E INTERCEPTAÇÃO: Usando $this para referenciar os métodos da própria classe
+        $this->loader->add_action( 'phpmailer_init', $this, 'config_wp_mail', 0 );
+        $this->loader->add_filter( 'wp_mail', $this, 'aplicar_template_email', 10 );
+        $this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_styles', 5 );
+        $this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_scripts', 10 );
+        $this->loader->add_action( 'init', $plugin_public, 'register_posttypes', 6 );
+        $this->loader->add_action( 'init', $plugin_public, 'register_taxonomies', 5 );
+        $this->loader->add_action( 'init', $pretty_url, 'do', 10 );
+        $this->loader->add_action( 'pre_get_posts', $plugin_public, 'register_search_posttype_imovel' );
+        $this->loader->add_filter( 'template_include', $plugin_public, 'force_single_imovel_template' );
         $this->loader->add_action( 'rest_api_init', $plugin_public , 'register_rest_endpoint' );
-
         $this->loader->add_action( 'before_delete_post', $plugin_public, 'excluir_fotos_ao_apagar_post', 0 );
-	}
-
-	/**
-	 * Run the loader to execute all of the hooks with WordPress.
-	 *
-	 * @since    1.0.0
-	 */
-	public function run() {
-		$this->loader->run();
-	}
-
-	/**
-	 * The name of the plugin used to uniquely identify it within the context of
-	 * WordPress and to define internationalization functionality.
-	 *
-	 * @since     1.0.0
-	 * @return    string    The name of the plugin.
-	 */
-	public function get_plugin_name() {
-		return $this->plugin_name;
-	}
-
-	/**
-	 * The reference to the class that orchestrates the hooks with the plugin.
-	 *
-	 * @since     1.0.0
-	 * @return    Pinedu_Imovel_Plugin_Loader    Orchestrates the hooks of the plugin.
-	 */
-	public function get_loader() {
-		return $this->loader;
-	}
-
-	/**
-	 * Retrieve the version number of the plugin.
-	 *
-	 * @since     1.0.0
-	 * @return    string    The version number of the plugin.
-	 */
-	public function get_version() {
-		return $this->version;
-	}
-
+    }
+    public function run() {
+        $this->loader->run();
+    }
+    public function get_plugin_name() {
+        return $this->plugin_name;
+    }
+    public function get_loader() {
+        return $this->loader;
+    }
+    public function get_version() {
+        return $this->version;
+    }
 }
