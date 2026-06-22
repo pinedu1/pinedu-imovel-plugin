@@ -57,6 +57,16 @@ class Pinedu_Imovel_Plugin_Public {
      */
     public function aplicar_filtros_pesquisa( $query ) {
         $tipo_pesquisa = $this->get_request_param( 'tipo_pesquisa_submit' );
+        if ( ! is_admin() && $query->is_main_query() && ( $query->is_search() || $query->is_archive() ) ) {
+            $query->set( 'post_type', 'imovel' );
+        }
+        if ( is_page( 'pesquisa' ) ) {
+            if ( ! isset( $_GET['tipo_pesquisa_submit'] ) ) {
+                $nova_url = add_query_arg( 'tipo_pesquisa_submit', 'imovel' );
+                wp_safe_redirect( $nova_url );
+                exit;
+            }
+        }
         if ( empty($tipo_pesquisa) ) return;
 
         if ( $tipo_pesquisa == 'imovel' ) {
@@ -164,6 +174,62 @@ class Pinedu_Imovel_Plugin_Public {
         if (!empty($attachments)) {
             foreach ($attachments as $attachment_id) {
                 wp_delete_attachment($attachment_id, true);
+            }
+        }
+    }
+    public function forcar_argumento_pesquisa_imovel() {
+        if ( !isset( $_REQUEST['tipo_pesquisa_submit'] ) ) {
+            $url_atual = $_SERVER['REQUEST_URI'];
+            // 1. Defina aqui todas as rotas que precisam do parâmetro
+            $rotas_monitoradas = [
+                '/pesquisa',
+                '/tipo-imovel',
+                '/cidade',
+                '/regiao'
+            ];
+            // 2. Verifica se a URL atual contém QUALQUER UMA das rotas definidas
+            $deve_redirecionar = false;
+            foreach ( $rotas_monitoradas as $rota ) {
+                if ( strpos( $url_atual, $rota ) !== false ) {
+                    $deve_redirecionar = true;
+                    break; // Achou uma rota, pode parar a busca
+                }
+            }
+            // 3. Executa a lógica apenas se necessário
+            if ( $deve_redirecionar ) {
+                $nova_url = add_query_arg( 'tipo_pesquisa_submit', 'imovel' );
+                wp_safe_redirect( $nova_url );
+                exit;
+            }
+            if ( strpos( $url_atual, '/vendas' ) !== false ) {
+                $nova_url = add_query_arg(
+                    [
+                        'tipo_pesquisa_submit' => 'imovel',
+                        'contrato'             => '1'
+                    ]
+                );
+                wp_safe_redirect( $nova_url );
+                exit;
+            }
+            if ( strpos( $url_atual, '/locacao' ) !== false ) {
+                $nova_url = add_query_arg(
+                    [
+                        'tipo_pesquisa_submit' => 'imovel',
+                        'contrato'             => '2'
+                    ]
+                );
+                wp_safe_redirect( $nova_url );
+                exit;
+            }
+            if ( strpos( $url_atual, '/lancamento' ) !== false ) {
+                $nova_url = add_query_arg(
+                    [
+                        'tipo_pesquisa_submit' => 'imovel',
+                        'contrato'             => '3'
+                    ]
+                );
+                wp_safe_redirect( $nova_url );
+                exit;
             }
         }
     }
