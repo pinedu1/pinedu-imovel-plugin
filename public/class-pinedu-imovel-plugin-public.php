@@ -201,7 +201,7 @@ class Pinedu_Imovel_Plugin_Public {
                 wp_safe_redirect( $nova_url );
                 exit;
             }
-            if ( strpos( $url_atual, '/a-venda' ) !== false ) {
+            if ( strpos( $url_atual, '/imoveis-a-venda' ) !== false ) {
                 $nova_url = add_query_arg(
                     [
                         'tipo_pesquisa_submit' => 'imovel',
@@ -211,7 +211,7 @@ class Pinedu_Imovel_Plugin_Public {
                 wp_safe_redirect( $nova_url );
                 exit;
             }
-            if ( strpos( $url_atual, '/locacao' ) !== false ) {
+            if ( strpos( $url_atual, '/imoveis-em-locacao' ) !== false ) {
                 $nova_url = add_query_arg(
                     [
                         'tipo_pesquisa_submit' => 'imovel',
@@ -221,7 +221,7 @@ class Pinedu_Imovel_Plugin_Public {
                 wp_safe_redirect( $nova_url );
                 exit;
             }
-            if ( strpos( $url_atual, '/lancamento' ) !== false ) {
+            if ( strpos( $url_atual, '/imoveis-em-lancamento' ) !== false ) {
                 $nova_url = add_query_arg(
                     [
                         'tipo_pesquisa_submit' => 'imovel',
