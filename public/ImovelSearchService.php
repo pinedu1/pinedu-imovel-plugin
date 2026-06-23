@@ -81,10 +81,10 @@ class ImovelSearchService {
         $query->set('meta_query', $meta_query);
         add_filter('posts_request', function($request, $query) {
             // Filtra para logar apenas a query de imóveis e não poluir o log
-            if ( $query->get('post_type') === 'imovel' ) {
+/*            if ( $query->get('post_type') === 'imovel' ) {
                 error_log('=== SQL GERADO PELO WP: ===');
                 error_log($request);
-            }
+            }*/
             return $request;
         }, 10, 2);
     }

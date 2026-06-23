@@ -201,7 +201,7 @@ class Pinedu_Imovel_Plugin_Public {
                 wp_safe_redirect( $nova_url );
                 exit;
             }
-            if ( strpos( $url_atual, '/vendas' ) !== false ) {
+            if ( strpos( $url_atual, '/a-venda' ) !== false ) {
                 $nova_url = add_query_arg(
                     [
                         'tipo_pesquisa_submit' => 'imovel',
