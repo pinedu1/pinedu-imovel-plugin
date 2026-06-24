@@ -313,7 +313,7 @@ class TipoDependencia implements TaxonomiaInterface {
 		);
 		$args = array(
 			'labels' => $labels
-			, 'public' => false
+			, 'public' => true
 			, 'show_ui' => true
 			, 'show_in_nav_menus' => false
 			, 'show_admin_column' => true
@@ -322,7 +322,7 @@ class TipoDependencia implements TaxonomiaInterface {
 			, 'show_in_tag_cloud' => true
 			, 'query_var' => true
 			, 'pll_translatable' => true
-			, 'rewrite' => array( 'slug' => 'Tipo de Dependencia' )
+			, 'rewrite' => array( 'slug' => 'tipo-dependencia' )
 		);
 		register_taxonomy( 'tipo-dependencia', array( ), $args );
 	}

@@ -270,9 +270,14 @@ class Pinedu_Imovel_Importar_Imoveis extends Pinedu_Importa_Libs {
 	}
     public function importar_callback( $data ) {
         try {
+            error_log("Importar callback: " . print_r($data, true));
+
             $options = get_option('pinedu_imovel_options', []);
             $options['importacao_andamento'] = true;
             $imoveis_importar = new Pinedu_Imovel_Importa_Imovel();
+            if ( isset( $data['excluidos'] ) && !empty( $data['excluidos'] ) ) {
+                $imoveis_importar->trata_excluidos( $data['excluidos'] );
+            }
             if ( isset( $data['imoveis'] ) && !empty( $data['imoveis'] ) ) {
                 /* Invoca importacao */
                 $imoveis_importar->importa_imoveis( $data['imoveis'], true );

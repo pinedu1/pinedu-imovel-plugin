@@ -51,7 +51,7 @@ class PaginasIniciais implements PaginasIniciaisInterface {
 			'post_type' => 'page',
 			'post_content' => 'ALTERE ME!',
 			'template' => 'default'
-		]
+        ]
 	);
 
 	public function desregistrar() {
@@ -70,12 +70,13 @@ class PaginasIniciais implements PaginasIniciaisInterface {
 			unset($pagina['front_page'], $pagina['posts_page'], $pagina['template']);
 
 			$name = sanitize_title($pagina['post_title']);
+            $slug = $pagina['slug'] ?? $name;
 			$page = get_page_by_path($name, OBJECT, $pagina['post_type']);
 
 			if ($page) {
 				$page_id = $page->ID;
 			} else {
-				$pagina['post_name'] = $name;
+				$pagina['post_name'] = $slug;
 				$page_id = wp_insert_post($pagina);
 			}
 

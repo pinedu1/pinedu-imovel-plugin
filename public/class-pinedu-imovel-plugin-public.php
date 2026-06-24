@@ -201,36 +201,6 @@ class Pinedu_Imovel_Plugin_Public {
                 wp_safe_redirect( $nova_url );
                 exit;
             }
-            if ( strpos( $url_atual, '/imoveis-a-venda' ) !== false ) {
-                $nova_url = add_query_arg(
-                    [
-                        'tipo_pesquisa_submit' => 'imovel',
-                        'contrato'             => '1'
-                    ]
-                );
-                wp_safe_redirect( $nova_url );
-                exit;
-            }
-            if ( strpos( $url_atual, '/imoveis-em-locacao' ) !== false ) {
-                $nova_url = add_query_arg(
-                    [
-                        'tipo_pesquisa_submit' => 'imovel',
-                        'contrato'             => '2'
-                    ]
-                );
-                wp_safe_redirect( $nova_url );
-                exit;
-            }
-            if ( strpos( $url_atual, '/imoveis-em-lancamento' ) !== false ) {
-                $nova_url = add_query_arg(
-                    [
-                        'tipo_pesquisa_submit' => 'imovel',
-                        'contrato'             => '3'
-                    ]
-                );
-                wp_safe_redirect( $nova_url );
-                exit;
-            }
         }
     }
 }

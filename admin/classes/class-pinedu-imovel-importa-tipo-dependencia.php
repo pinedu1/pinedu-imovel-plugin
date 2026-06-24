@@ -17,7 +17,10 @@ class Pinedu_Imovel_Importa_Tipo_Dependencia extends Pinedu_Importa_Taxonomia_Ba
 			$relativo = $tipo['relativo'];
 			$ordem = $tipo['ordem'];
 			$tipo_campo = $tipo['tipo'];
-
+            $pai = strtolower( trim( $tipo['pai'] ) );
+            if ($pai == 'cv') {
+                error_log('pai: ' . print_r($tipo, true));
+            }
 			$key = $sigla;
 			$nome = sanitize_text_field( $nome );
 			$term = $this->salva( $key, $nome, 'tipo-dependencia' );
@@ -27,36 +30,14 @@ class Pinedu_Imovel_Importa_Tipo_Dependencia extends Pinedu_Importa_Taxonomia_Ba
 				$id_term = $term;
 			}
 
-			if (metadata_exists('term', $id_term, 'nome')) {
-				$result = update_term_meta( $id_term, 'nome', $nome );
-			} else {
-				$result = add_term_meta( $id_term, 'nome', $nome );
-			}
-			if (metadata_exists('term', $id_term, 'sigla')) {
-				$result = update_term_meta( $id_term, 'sigla', $sigla );
-			} else {
-				$result = add_term_meta( $id_term, 'sigla', $sigla );
-			}
-			if (metadata_exists('term', $id_term, 'relativo')) {
-				$result = update_term_meta( $id_term, 'relativo', $relativo );
-			} else {
-				$result = add_term_meta( $id_term, 'relativo', $relativo );
-			}
-			if (metadata_exists('term', $id_term, 'descricao')) {
-				$result = update_term_meta( $id_term, 'descricao', $descricao );
-			} else {
-				$result = add_term_meta( $id_term, 'descricao', $descricao );
-			}
-			if (metadata_exists('term', $id_term, 'ordem')) {
-				$result = update_term_meta( $id_term, 'ordem', $ordem );
-			} else {
-				$result = add_term_meta( $id_term, 'ordem', $ordem );
-			}
-			if (metadata_exists('term', $id_term, 'tipo')) {
-				$result = update_term_meta( $id_term, 'tipo', $tipo_campo );
-			} else {
-				$result = add_term_meta( $id_term, 'tipo', $tipo_campo );
-			}
+            $result = update_term_meta( $id_term, 'nome', $nome );
+            $result = update_term_meta( $id_term, 'sigla', $sigla );
+            $result = update_term_meta( $id_term, 'relativo', $relativo );
+            $result = update_term_meta( $id_term, 'descricao', $descricao );
+            $result = update_term_meta( $id_term, 'ordem', $ordem );
+            $result = update_term_meta( $id_term, 'tipo', $tipo_campo );
+            $result = add_term_meta( $id_term, 'tipo', $tipo_campo );
+            $result = add_term_meta($id_term, 'tipo-imovel-pai', $pai);
 		}
 	}
 	public static function list( $relativo = '' ) {

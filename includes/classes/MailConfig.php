@@ -4,7 +4,6 @@
 		public static function config_options_mail( ) {
 			$options = get_option( 'pinedu_imovel_options', []);
             $options['url_servidor'] = 'https://haddad.intranet.pndimo.com.br/sisprof';
-            //$options['url_servidor'] = 'https://haddad.haddadimoveis.com.br/sisprof';
             $options['nome_remetente'] = 'Pinedu Software';
 			$options['email_remetente'] = 'eduardo@pinedu.com.br';
 			$options['usuario'] = 'no-reply@pinedu.com.br';
@@ -14,12 +13,14 @@
 			$options['tipo_seguranca'] = 'ssl';
 			$options['requer_autenticacao'] = 'on';
 			$options['email_contato'] = 'eduardo@pinedu.com.br';
-			$options['token'] = 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ3b3JkcHJlc3MiLCJST0xFIjoiUk9MRV9XT1JEUFJFU1MiLCJwYXNzd29yZCI6IntiY3J5cHR9JDJhJDEwJFhIVGhpak5xcy54cFhQZGJPY05XMWVKaEhmdkpyQWNuMnRVcld5N2M4M29qSGN1Y1NHeEdXIiwiaWF0IjoxNzUzNDU3OTM5LCJleHAiOjE3NTYwNDk5Mzl9.muCTcCFJnagRtXv_XeQHeBIRBylKM7onzH2mRRjtU1s';
+			$options['token'] = 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ3b3JkcHJlc3MiLCJwYXNzd29yZCI6IndvcmRwcmVzczEyMyIsIlpFTSI6MSwiaWF0IjoxNzYzNDkyMTYzLCJleHAiOjE3NjM1Nzg1NjN9.P4UQy7QRcjsHAIGc5jh-1WCLFoKyzeERr-Pp97pfVdA';
 			$options['token_username'] = 'wordpress';
 			$options['token_password'] = 'wordpress123';
             $options['token_expiration_date'] = '1980-01-01T00:00:00-300';
-			$options['chave_google_api'] = 'AIzaSyBe89OvSNnCtC3RrHKES0PrgGtbQ4lZAu0';
-            $options['fotos_demanda'] = 'on';
+			$options['chave_google_api'] = 'AIzaSyB5Jxg-gp9IQ5cXT_fBce1DLMpW8cLVjE0';
+            $options['chave_publica_recaptcha'] = '6LcSxystAAAAAHn_1Tu-FSJ9Fro6nlGh3h1NA71i';
+            $options['chave_secreta_recaptcha'] = '6LcSxystAAAAAC3x2o6yw4nUJTdj2P7QrO5IasJd';
+            $options['fotos_demanda'] = 'off';
 			update_option( 'pinedu_imovel_options', $options );
 		}
 		public static function config_wp_mail( $phpmailer ) {
