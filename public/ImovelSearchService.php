@@ -101,16 +101,18 @@ class ImovelSearchService {
         if ($tipo) {
             global $wpdb;
             $like_pattern = $wpdb->esc_like( $tipo ) . '-%';
+
+            // CORREÇÃO AQUI: TODAS as tabelas agora usam o prefixo dinâmico do $wpdb
             $query_tipo = $wpdb->prepare("
                 SELECT DISTINCT
                     upper(t.slug) AS termo_slug,
                     tm_tipo.meta_value AS meta_tipo
                 FROM {$wpdb->terms} t
-                INNER JOIN wp_term_taxonomy tt
+                INNER JOIN {$wpdb->term_taxonomy} tt
                     ON t.term_id = tt.term_id
-                INNER JOIN wp_termmeta tm_relativo
+                INNER JOIN {$wpdb->termmeta} tm_relativo
                     ON t.term_id = tm_relativo.term_id AND tm_relativo.meta_key = 'relativo'
-                INNER JOIN wp_termmeta tm_tipo
+                INNER JOIN {$wpdb->termmeta} tm_tipo
                     ON t.term_id = tm_tipo.term_id AND tm_tipo.meta_key = 'tipo'
                 WHERE tt.taxonomy = 'tipo-dependencia'
                   AND t.slug LIKE %s
