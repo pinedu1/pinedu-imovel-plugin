@@ -8,13 +8,17 @@ class CookieUtil {
 	 * Obtém o cookie do visitante
 	 * @return string|null Valor do cookie ou null se não existir
 	 */
-	public static function getCookie() {
-		if (isset($_COOKIE[self::NOME_COOKIE]) && $_COOKIE[self::NOME_COOKIE] !== 'true') {
-			return sanitize_text_field($_COOKIE[self::NOME_COOKIE]);
-		}
-		return null;
-	}
-	public static function getCookieId() {
+    public static function getCookie() {
+        // filter_input retorna null se o cookie não existir no navegador
+        $cookie_value = filter_input(INPUT_COOKIE, self::NOME_COOKIE);
+
+        if ($cookie_value !== null) {
+            return sanitize_text_field($cookie_value);
+        }
+
+        return null;
+    }
+    public static function getCookieId() {
 		if ( isset( $_COOKIE[ self::NOME_COOKIE ] ) ) {
 			$valor_cookie = stripslashes( $_COOKIE[ self::NOME_COOKIE ] );
 			$dados = json_decode( $valor_cookie, true );

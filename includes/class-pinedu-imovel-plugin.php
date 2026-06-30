@@ -155,7 +155,8 @@ class Pinedu_Imovel_Plugin {
         $this->loader->add_filter( 'template_include', $plugin_public, 'force_single_imovel_template' );
         $this->loader->add_action( 'rest_api_init', $plugin_public , 'register_rest_endpoint' );
         $this->loader->add_action( 'before_delete_post', $plugin_public, 'excluir_fotos_ao_apagar_post', 0 );
-        $this->loader->add_action( 'template_redirect', $plugin_public, 'forcar_argumento_pesquisa_imovel' );
+        $this->loader->add_action( 'template_redirect', $plugin_public, 'forcar_argumento_pesquisa_imovel', 10 );
+        $this->loader->add_action( 'template_redirect', $plugin_public, 'forcar_404_se_vazio', 20 );
     }
     public function run() {
         $this->loader->run();

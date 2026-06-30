@@ -203,4 +203,20 @@ class Pinedu_Imovel_Plugin_Public {
             }
         }
     }
+    public function forcar_404_se_vazio() {
+        global $wp_query;
+        $tipo_pesquisa = $this->get_request_param('tipo_pesquisa_submit');
+        if ( !empty($tipo_pesquisa) && $tipo_pesquisa === 'consulta' && $wp_query->is_main_query() ) {
+            if ( ! have_posts() ) {
+                $wp_query->set_404();
+                status_header( 404 );
+                nocache_headers();
+                $template_404 = locate_template( array( '404.php' ) );
+                if ( $template_404 ) {
+                    include( $template_404 );
+                    exit;
+                }
+            }
+        }
+    }
 }
