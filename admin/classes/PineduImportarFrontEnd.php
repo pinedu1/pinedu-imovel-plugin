@@ -45,6 +45,8 @@ class PineduImportarFrontEnd {
     const HOOK_IMPORTAR_FAIXA_VALOR = 'IMPORTA_FRONTEND_IMPORTAR_FAIXA_VALOR';
     const HOOK_IMPORTAR_TIPO_DEPENDENCIA = 'IMPORTA_FRONTEND_IMPORTAR_TIPO_DEPENDENCIA';
     const HOOK_IMPORTAR_APAGAR_TODOS_IMOVEIS = 'IMPORTA_FRONTEND_APAGAR_TODOS_IMOVEIS';
+    const HOOK_IMPORTA_FRONTEND_SELECIONAR_APAGAR_TODOS_IMOVEIS = 'IMPORTA_FRONTEND_SELECIONAR_APAGAR_TODOS_IMOVEIS';
+    const HOOK_IMPORTA_FRONTEND_APAGAR_IMOVEL = 'IMPORTA_FRONTEND_APAGAR_IMOVEL';
     public static function init( ) {
         if ( !is_admin( ) ) return;
         add_action( self::PREFIXO_ADMIN . self::HOOK_INICIALIZAR, [ __CLASS__, 'testar_server' ], 10 );
@@ -73,48 +75,120 @@ class PineduImportarFrontEnd {
         add_action( self::PREFIXO_ADMIN . self::HOOK_IMPORTAR_FAIXA_VALOR, [ __CLASS__, 'importar_faixa_valor' ], 10 );
         add_action( self::PREFIXO_ADMIN . self::HOOK_IMPORTAR_TIPO_DEPENDENCIA, [ __CLASS__, 'importar_tipo_dependencia' ], 10 );
         add_action( self::PREFIXO_ADMIN . self::HOOK_IMPORTAR_APAGAR_TODOS_IMOVEIS, [ __CLASS__, 'apagar_todos_imoveis' ], 10 );
-
+        add_action( self::PREFIXO_ADMIN . self::HOOK_IMPORTA_FRONTEND_SELECIONAR_APAGAR_TODOS_IMOVEIS, [ __CLASS__, 'selecionar_apagar_todos_imoveis' ], 10 );
+        add_action( self::PREFIXO_ADMIN . self::HOOK_IMPORTA_FRONTEND_APAGAR_IMOVEL, [ __CLASS__, 'apagar_post_imovel' ], 10 );
         add_filter( 'heartbeat_settings', [ __CLASS__, 'custom_heartbeat_settings'] );
     }
-    public static function apagar_todos_imoveis( ) {
+    //selecionar_apagar_todos_imoveis
+    public static function selecionar_apagar_todos_imoveis( ) {
+        $options = get_option( 'pinedu_imovel_options', [ ] );
+        $options[ 'importacao_andamento' ] = true;
+        update_option( 'pinedu_imovel_options', $options );
 
-        // 1. Configuração da WP_Query para obter APENAS os IDs
         $args = array(
             'post_type' => 'imovel',
             'posts_per_page' => -1,
             'fields' => 'ids',
             'post_status' => 'any'
         );
+        $query = new WP_Query( $args );
+        $qtde = count( $query->posts );
+        $imoveis_processados = [];
+        if ( ! empty( $query->posts ) ) {
+            foreach ( $query->posts as $post_id ) {
+                $imoveis_processados[] = [
+                    'id' => $post_id,
+                    'referencia' => get_post_meta( $post_id, 'referencia', true )
+                ];
+            }
+        } else {
+            $options = get_option( 'pinedu_imovel_options', [ ] );
+            $options[ 'importacao_andamento' ] = false;
+            update_option( 'pinedu_imovel_options', $options );
+        }
+        wp_reset_postdata();
+        wp_send_json( [
+            'success' => ($qtde > 0),
+            'total' => $qtde,
+            'imoveis' => $imoveis_processados
+        ] );
+    }
+    public static function apagar_post_imovel( ) {
+        $id = $_POST['id'] ?? null;
+        if ( empty( $id ) ) {
+            wp_send_json( [
+                'success' => false
+                , 'total' => 0
+            ] );
+            return;
+        }
+        wp_send_json( [
+            'success' => self::apagar_imovel_from_id( $id )
+            , 'total' => 1
+        ] );
+    }
+    private static function apagar_imovel_from_id( $id ) {
+        // Valida se o ID é válido e se o post realmente existe no banco de dados
+        if ( empty( $id ) || ! get_post_status( $id ) ) {
+            return false;
+        }
 
-        $query_imoveis = new WP_Query($args);
-        $imovel_ids = $query_imoveis->posts;
-        $deleted_count = 0;
-        $deleted_error_count = 0;
-        $qtde = count( $query_imoveis->posts );
-        $deleted_ids = [];
+        // 1. Apaga a imagem destacada (thumbnail), se existir
+        $thumbnail_id = get_post_thumbnail_id( $id );
+        if ( $thumbnail_id ) {
+            if ( is_development_mode() ) {
+                error_log('PineduImportarFrontEnd:apagar_imovel_from_id:wp_delete_attachment: ' . print_r($thumbnail_id, true));
+            }
+            wp_delete_attachment( $thumbnail_id, true );
+        }
 
-        if (!empty($imovel_ids)) {
-            foreach ($imovel_ids as $post_id) {
-                $thumbnail_id = get_post_thumbnail_id( $post_id );
-                if ( $thumbnail_id ) {
-                    wp_delete_attachment( $thumbnail_id, true );
+        // 2. Apaga as fotografias adicionais salvas no meta 'fotografias'
+        $fotografias_imovel = get_post_meta( $id, 'fotografias', false );
+        if ( ! empty( $fotografias_imovel ) ) {
+            foreach ( $fotografias_imovel as $fotografia ) {
+                if ( is_development_mode() ) {
+                    error_log('PineduImportarFrontEnd:apagar_imovel_from_id:fotografia: ' . print_r($fotografia, true));
                 }
-                $fotografias_imovel = get_post_meta( $post_id, 'fotografias', false );
-                if ( ! empty( $fotografias_imovel ) ) {
-                    foreach ( $fotografias_imovel as $fotografia ) {
-                        if ( is_development_mode( ) ) {
-                            error_log('PineduImportarFrontEnd:apagar_todos_imoveis:fotografia: ' . print_r($fotografia, true));
-                        }
-                        if ( isset( $fotografia['id'] ) ) {
-                            $attachment_id = (int) $fotografia['id'];
-                            if ( $attachment_id ) {
-                                wp_delete_attachment( $attachment_id, true );
-                            }
-                        }
+                if ( isset( $fotografia['id'] ) ) {
+                    $attachment_id = (int) $fotografia['id'];
+                    if ( $attachment_id ) {
+                        wp_delete_attachment( $attachment_id, true );
                     }
                 }
-                $result = wp_delete_post($post_id, true);
-                if ($result !== false) {
+            }
+        }
+
+        // 3. Apaga o post principal (o imóvel) forçando a exclusão definitiva (bypass lixeira)
+        $result = wp_delete_post( $id, true );
+
+        // Retorna true se a exclusão foi bem-sucedida, false caso contrário
+        return ( ($result !== false) && ($result !== null) );
+    }
+
+    public static function apagar_todos_imoveis( ) {
+        // 1. Configuração da WP_Query para obter APENAS os IDs
+        $args = array(
+            'post_type'      => 'imovel',
+            'posts_per_page' => -1,
+            'fields'         => 'ids',
+            'post_status'    => 'any'
+        );
+
+        $query_imoveis = new WP_Query( $args );
+        $imovel_ids    = $query_imoveis->posts;
+
+        $deleted_count       = 0;
+        $deleted_error_count = 0;
+        $qtde                = count( $imovel_ids );
+        $deleted_ids         = [];
+
+        // 2. Itera sobre os IDs e delega a exclusão para o novo método
+        if ( ! empty( $imovel_ids ) ) {
+            foreach ( $imovel_ids as $post_id ) {
+
+                $sucesso = self::apagar_imovel_from_id( $post_id );
+
+                if ( $sucesso ) {
                     $deleted_count++;
                     $deleted_ids[] = $post_id;
                 } else {
@@ -122,11 +196,12 @@ class PineduImportarFrontEnd {
                 }
             }
         }
-        wp_reset_postdata();
+
+        // Retorna a resposta JSON
         wp_send_json( [
-            'success' => true,
-            'total' => $qtde,
-            'excluidos' => $deleted_count,
+            'success'        => true,
+            'total'          => $qtde,
+            'excluidos'      => $deleted_count,
             'erro_excluidos' => $deleted_error_count,
         ] );
     }
@@ -826,8 +901,16 @@ class PineduImportarFrontEnd {
         $query = new WP_Query( $args );
         $post_ids = $query->posts;
         $count = $query->post_count;
+        $posts_array = [];
+        foreach ( $post_ids as $post_id ) {
+            $posts_array[] = [
+                'id' => $post_id,
+                'referencia' => get_post_meta( $post_id, 'referencia', true )
+            ];
+        }
+
         wp_reset_postdata( );
-        return ['ids' => $post_ids, 'total' => $count, 'success' => ( $count>0 )];
+        return ['ids' => $posts_array, 'total' => $count, 'success' => ( $count>0 )];
     }
     public static function excluir_imoveis( ) {
         if ( is_development_mode( ) ) {
