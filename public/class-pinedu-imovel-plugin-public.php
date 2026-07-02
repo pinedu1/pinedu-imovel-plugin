@@ -21,11 +21,11 @@ class Pinedu_Imovel_Plugin_Public {
     }
 
     public function enqueue_styles( ) {
-        wp_enqueue_style( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'css/pinedu-imovel-plugin-public.css', array( ), $this->version, 'all' );
+        wp_enqueue_style($this->plugin_name, plugin_dir_url(__FILE__) . 'css/pinedu-imovel-plugin-public.css', array(), $this->version, 'all');
     }
 
     public function enqueue_scripts( ) {
-        wp_enqueue_script( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'js/pinedu-imovel-plugin-public.js', array( 'jquery' ), $this->version, false );
+        wp_enqueue_script($this->plugin_name, plugin_dir_url(__FILE__) . 'js/pinedu-imovel-plugin-public.js', array('jquery'), $this->version, false);
     }
 
     public function register_taxonomies( ) {
