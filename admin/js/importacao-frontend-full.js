@@ -850,6 +850,7 @@ function finalizarImportacaoFrontEnd( totalImoveis, messagePre = 'Finalizando Im
     , error = errorDoPost;
     const args = {
         imoveis_importados: totalImoveis
+        , token: PineduAjax.token
     };
     doPost( 'FINALIZA_IMPORTACAO', args, success, error, before, null );
 }
@@ -927,6 +928,39 @@ function iniciarApagarImoveis( ) {
     doPost( 'IMPORTA_FRONTEND_SELECIONAR_APAGAR_TODOS_IMOVEIS', args, success, error, before, null );
 }
 function preLoginApagarImoveis( progresso ) {
+    if ( PineduAjax?.environment === 'development' ) console.log( 'preLogin' );
+    preparaObjetoAjax( );
+    const before = function ( ) {
+        escondeFechar( );
+        inicializaOverlay( );
+        alteraInfo( 'Autorização de Importação...' );
+        alteraMessage( 'Solicitando conexão com o servidor Remoto.' );
+        alteraProgresso( progresso );
+    } , success = function ( data ) {
+        const info = 'Sucesso!';
+        const message = 'Autorização de Importação concedida!';
+        if ( data.success === true ) {
+            alteraInfo( info );
+            alteraMessage( message );
+            alteraProgresso( progresso );
+            data.urlServidor = PineduAjax.urlServidor;
+            PineduAjax.token = data.token;
+            PineduAjax.expiracaoToken = data.expiracaoToken;
+            posLoginApagarImoveis( data, 100 );
+        } else {
+            alteraInfo( 'Erro!' );
+            alteraMessage( data.message ?? 'Não foi possível conectar ao servidor remoto. Volte novamente mais tarde.' );
+            alteraProgresso( 0 );
+        }
+    } , error = errorDoPost;
+    const parametros = {
+        empresa: PineduAjax.empresa
+        , username: PineduAjax.tokenUsername
+        , password: PineduAjax.tokenPassword
+    };
+    doRemotePost( 'login', parametros, success, error, before, null );
+}
+function posLoginApagarImoveis( dadosLogin, progresso ) {
     if ( PineduAjax?.environment === 'development' ) console.log( 'preLoginApagarImoveis' );
     preparaObjetoAjax( );
     const before = function ( ) {
@@ -942,17 +976,13 @@ function preLoginApagarImoveis( progresso ) {
             alteraInfo( info );
             alteraMessage( message );
             alteraProgresso( progresso );
-            data.urlServidor = PineduAjax.urlServidor;
-            PineduAjax.token = data.token;
-            PineduAjax.expiracaoToken = data.expiracaoToken;
-            posLoginApagarImoveis( data, 50 );
+            selecionarApagarImoveis( data, 50 );
         } else {
             alteraInfo( 'Erro!' );
             alteraMessage( data.message ?? 'Não foi possível conectar ao servidor remoto. Volte novamente mais tarde.' );
             alteraProgresso( 0 );
         }
-    }
-        , error = errorDoPost;
+    } , error = errorDoPost;
     const parametros = {
         empresa: PineduAjax.empresa
         , username: PineduAjax.tokenUsername
@@ -960,7 +990,7 @@ function preLoginApagarImoveis( progresso ) {
     };
     doPost( 'IMPORTACAO_PRELOGIN', {}, success, error, before, null );
 }
-function posLoginApagarImoveis( dadosLogin, progresso ) {
+function selecionarApagarImoveis( dadosLogin, progresso ) {
     if ( PineduAjax?.environment === 'development' ) console.log( 'posLoginApagarImoveis' );
 
     const before = function ( ) {
@@ -998,7 +1028,7 @@ function excluirImoveisFrontEnd( listaIds, total, progresso, callBackFunction ) 
             const avanco = ( ( ( progresso + 1 ) / total ) * 100 );
             alteraProgresso( avanco, progresso + ' / ' + parseInt( total ) );
             if ( (progresso + 1) < total ) {
-                excluirImoveisFrontEnd( listaIds, total, ++progresso );
+                excluirImoveisFrontEnd( listaIds, total, ++progresso, callBackFunction );
             } else {
                 if ( typeof callBackFunction == 'function' ) {
                     callBackFunction();
@@ -1058,4 +1088,6 @@ document.addEventListener( 'DOMContentLoaded', function ( ) {
             finalizaOverlay( );
         } );
     }
+    if ( PineduAjax?.environment === 'development' ) console.log(PineduAjax);
+
 } );

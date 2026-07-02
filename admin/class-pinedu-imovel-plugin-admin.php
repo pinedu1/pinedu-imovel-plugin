@@ -140,20 +140,6 @@ class Pinedu_Imovel_Plugin_Admin {
         }
         $url_servidor = $options['url_servidor'];
 
-
-/*
-        wp_localize_script('importacao-frontend', 'PineduAjax', [
-                'url' => admin_url('admin-ajax.php'),
-                'ultimaAtualizacao' => isset($options['ultima_atualizacao'])? formataData_iso8601( $options['ultima_atualizacao'] ): null,
-                'max' => intval($imoveis_importar_lote),
-                'maxDestaques' => intval($imagem_destaque_importar_lote),
-                'atrasarRequisicao' => intval($atrasar_requisicao),
-                'environment' => is_development_mode() ? 'development' : 'production',
-                'token' => $token,
-                'tokenUsername' => $token_username,
-                'tokenPassword' => $token_password
-        ]);
-*/
         wp_localize_script('importacao-frontend-full', 'PineduAjax', [
             'url' => admin_url('admin-ajax.php'),
             'ultimaAtualizacao' => isset($options['ultima_atualizacao'])? formataData_iso8601( $options['ultima_atualizacao'] ): '1980-01-01T00:00:00.000Z',
@@ -165,7 +151,7 @@ class Pinedu_Imovel_Plugin_Admin {
             'tokenUsername' => $token_username,
             'tokenPassword' => $token_password,
             'urlServidor' => $url_servidor,
-        'empresa' => 1,
+            'empresa' => 1,
             'pathRemoto' => '/wordpress/'
         ]);
 	}

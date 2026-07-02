@@ -52,7 +52,6 @@ class PineduImportarFrontEnd {
         add_action( self::PREFIXO_ADMIN . self::HOOK_INICIALIZAR, [ __CLASS__, 'testar_server' ], 10 );
         add_action( self::PREFIXO_ADMIN . self::HOOK_IMPORTACAO_PRELOGIN, [ __CLASS__, 'pre_login' ], 10 );
         add_action( self::PREFIXO_ADMIN . self::HOOK_IMPORTACAO_POSLOGIN, [ __CLASS__, 'pos_login' ], 10 );
-        add_action( self::PREFIXO_ADMIN . self::HOOK_INICIALIZAR, [ __CLASS__, 'testar_server' ], 10 );
         add_action( self::PREFIXO_ADMIN . self::HOOK_PREPARAR_BASICOS, [ __CLASS__, 'importar_basicos' ], 10 );
         add_action( self::PREFIXO_ADMIN . self::HOOK_PREPARAR_IMOVEIS, [ __CLASS__, 'preparar_imoveis' ], 10 );
         add_action( self::PREFIXO_ADMIN . self::HOOK_IMPORTAR_IMOVEIS, [ __CLASS__, 'importar_imoveis' ], 10 );
@@ -664,7 +663,6 @@ class PineduImportarFrontEnd {
     }
     public static function testar_server( ) {
         $options = get_option( 'pinedu_imovel_options', [ ] );
-        $options['fotos_demanda'] = 'on';
         $options['importacao_andamento'] = true;
         update_option( 'pinedu_imovel_options', $options );
         if ( isset( $_POST[ 'url_servidor' ] ) ) {
@@ -705,7 +703,6 @@ class PineduImportarFrontEnd {
             error_log( 'PineduImportarFrontEnd:pos_login' );
         }
         $options = get_option( 'pinedu_imovel_options', [ ] );
-        //$options['fotos_demanda'] = 'on';
         $options['importacao_andamento'] = true;
 
         if ( isset( $_POST[ 'urlServidor' ] ) ) {
