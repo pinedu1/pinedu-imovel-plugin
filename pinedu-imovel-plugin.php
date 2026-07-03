@@ -8,6 +8,8 @@
  * registers the activation and deactivation functions, and defines a function
  * that starts the plugin.
  *
+ * Generated using the WordPress Plugin Boilerplate: https://wppb.me/
+ *
  * @link              https://www.pinedu.com.br
  * @since             1.0.0
  * @package           Pinedu_Imovel_Plugin

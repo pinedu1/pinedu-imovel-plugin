@@ -157,6 +157,14 @@ class Pinedu_Imovel_Plugin {
         $this->loader->add_action( 'before_delete_post', $plugin_public, 'excluir_fotos_ao_apagar_post', 0 );
         $this->loader->add_action( 'template_redirect', $plugin_public, 'forcar_argumento_pesquisa_imovel', 10 );
         $this->loader->add_action( 'template_redirect', $plugin_public, 'forcar_404_se_vazio', 20 );
+        //
+        $this->loader->add_filter( 'option_medium_size_w', $plugin_public, 'forcar_largura_medium' );
+        $this->loader->add_filter( 'option_medium_size_h', $plugin_public, 'forcar_altura_medium' );
+        $this->loader->add_filter( 'option_medium_crop', $plugin_public, 'forcar_crop_medium' );
+        $this->loader->add_filter( 'option_large_size_w', $plugin_public, 'forcar_largura_large' );
+        $this->loader->add_filter( 'option_large_size_h', $plugin_public, 'forcar_altura_large' );
+        $this->loader->add_filter( 'option_large_crop', $plugin_public, 'forcar_crop_large' );
+        $this->loader->add_filter( 'wp_editor_set_quality', $plugin_public, 'ajustar_qualidade_imagem' );
     }
     public function run() {
         $this->loader->run();
@@ -170,4 +178,4 @@ class Pinedu_Imovel_Plugin {
     public function get_version() {
         return $this->version;
     }
-}
+ }

@@ -219,4 +219,30 @@ class Pinedu_Imovel_Plugin_Public {
             }
         }
     }
+    /**
+     * Força a configuração do tamanho médio de imagens na memória
+     */
+    public function forcar_largura_medium() {
+        return 640;
+    }
+    public function forcar_altura_medium() {
+        return 480;
+    }
+    public function forcar_crop_medium() {
+        return 0;
+    }
+    public function forcar_largura_large() {
+        return 1366;
+    }
+
+    public function forcar_altura_large() {
+        return 900;
+    }
+
+    public function forcar_crop_large() {
+        return 0;
+    }
+    public function ajustar_qualidade_imagem() {
+        return 75;
+    }
 }
