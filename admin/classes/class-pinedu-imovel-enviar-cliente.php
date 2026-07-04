@@ -3,6 +3,7 @@
 class Pinedu_Imovel_Enviar_Cliente {
     const ENDPOINT = '/wordpress/contatoCliente';
     const ENDPOINTVISITA     = '/wordpress/solicitarVisita';
+    const ENDPOINTVISITAOPINAR     = '/wordpress/opinarVisita';
 	private $nome;
 	private $telefone;
 	private $email;
@@ -66,6 +67,35 @@ class Pinedu_Imovel_Enviar_Cliente {
         }
 
         $fullUrl = trailingslashit( $url ) . ltrim( self::ENDPOINTVISITA, '/' );
+
+        // 1. Prepara apenas os dados de negócio.
+        // Não precisa injetar username/password aqui, a PineduRequest já faz isso.
+        $argumentos = [
+            'nome'       => sanitize_text_field( $this->nome ),
+            'telefone'   => sanitize_text_field( $this->telefone ),
+            'email'      => sanitize_text_field( $this->email ),
+            'cookie'     => sanitize_text_field( $this->cookie ),
+            'mensagem'   => sanitize_text_field( $this->mensagem ),
+            'referencia' => sanitize_text_field( $this->referencia ),
+            'corretor'   => sanitize_text_field( $this->corretor )
+        ];
+
+        // 2. Chama a fábrica de requisições enviando $isHook = true
+        // Se o refresh_token falhar, a própria PineduRequest encerra o processo com wp_send_json_error.
+        $data = PineduRequest::post( $fullUrl, $argumentos, true );
+
+        return $data;
+    }
+    public function opinar_visita( ) {
+        $options = get_option( 'pinedu_imovel_options', [] );
+        $url = $options[ 'url_servidor' ] ?? '';
+
+        if ( !filter_var( $url, FILTER_VALIDATE_URL ) ) {
+            wp_send_json_error( ['message' => 'URL inválida.'] );
+            return false;
+        }
+
+        $fullUrl = trailingslashit( $url ) . ltrim( self::ENDPOINTVISITAOPINAR, '/' );
 
         // 1. Prepara apenas os dados de negócio.
         // Não precisa injetar username/password aqui, a PineduRequest já faz isso.

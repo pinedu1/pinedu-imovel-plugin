@@ -35,35 +35,45 @@ class CookieUtil {
 	 * @param $telefone
 	 * @return: string Id do Cookie
 	 */
-	public static function update_cookie( $nome, $telefone, $email ) {
-		if ( isset( $_COOKIE[ self::NOME_COOKIE ] ) ) {
-			$dados = json_decode( $_COOKIE[ self::NOME_COOKIE ], true );
-			if ( ! is_array( $dados ) ) {
-				$dados = [ 'id' => str_replace('-', '', wp_generate_uuid4( ) ) ];
-			}
-		} else {
-			$dados = [ 'id' => str_replace('-', '', wp_generate_uuid4( ) ) ];
-		}
-		$dados['nome'] = sanitize_text_field( $nome );
-		$dados['email'] = sanitize_email( $email );
-		$dados['telefone'] = sanitize_text_field( $telefone );
+    /**
+     * @param $nome
+     * @param $email
+     * @param $telefone
+     * @return: string Id do Cookie
+     */
+    public static function update_cookie( $nome, $telefone, $email ) {
+        if ( isset( $_COOKIE[ self::NOME_COOKIE ] ) ) {
+            // CORREÇÃO: Limpar os escapes nativos do WordPress antes de decodificar
+            $valor_cookie = stripslashes( $_COOKIE[ self::NOME_COOKIE ] );
+            $dados = json_decode( $valor_cookie, true );
 
-		$expira = time() + (24 * 60 * 60 * self::DIAS_VALIDADE_COOKIE);
-		setcookie(
-			self::NOME_COOKIE,
-			json_encode( $dados ),
-			[
-				'expires' => $expira,
-				'path' => COOKIEPATH,
-				'domain' => COOKIE_DOMAIN,
-				'secure' => is_ssl(),
-				'httponly' => true,
-				'samesite' => 'Lax'
-			]
-		);
-		return $dados['id'];
-	}
-	/**
+            if ( ! is_array( $dados ) ) {
+                $dados = [ 'id' => str_replace('-', '', wp_generate_uuid4( ) ) ];
+            }
+        } else {
+            $dados = [ 'id' => str_replace('-', '', wp_generate_uuid4( ) ) ];
+        }
+
+        $dados['nome'] = sanitize_text_field( $nome );
+        $dados['email'] = sanitize_email( $email );
+        $dados['telefone'] = sanitize_text_field( $telefone );
+
+        $expira = time() + (24 * 60 * 60 * self::DIAS_VALIDADE_COOKIE);
+        setcookie(
+            self::NOME_COOKIE,
+            json_encode( $dados ),
+            [
+                'expires' => $expira,
+                'path' => COOKIEPATH,
+                'domain' => COOKIE_DOMAIN,
+                'secure' => is_ssl(),
+                'httponly' => true,
+                'samesite' => 'Lax'
+            ]
+        );
+        return $dados['id'];
+    }
+    /**
 	 * Cria um novo cookie para o visitante
 	 * @return string Valor do cookie criado
 	 */

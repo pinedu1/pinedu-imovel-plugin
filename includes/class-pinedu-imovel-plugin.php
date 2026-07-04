@@ -127,7 +127,8 @@ class Pinedu_Imovel_Plugin {
             if ( ! empty( $corpo_email_html ) ) {
                 $args['message'] = $corpo_email_html;
             }
-        } else if ( strpos( $args['subject'], 'Solicitação de Visita no Imóvel Ref' ) !== false ) {
+            //
+        } else if (( strpos( $args['subject'], 'Solicitação de Visita no Imóvel Ref' ) !== false ) || ( strpos( $args['subject'], 'Opinião da Visita - Ref' ) !== false )) {
             $mensagem_original = $args['message'];
 
             // Extrai as variáveis da string original gerada no formulário
