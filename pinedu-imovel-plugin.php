@@ -122,35 +122,48 @@ function lista_faixa_valor_valores( $contrato ) {
     return $l;
 }
 function registra_visita_imovel( $post = 0 ) {
-	$post = get_post( $post );
-	$post_id = $post->ID;
-	$current_clicks = get_post_meta( $post_id, 'clicks', true );
-	$current_visitas = get_post_meta( $post_id, 'visitas', false );
-	$cookieId = getCookieId( );
-	$busca_cookie = function( $clicks, $cookie ) {
-		foreach ( $clicks as $click_entry ) {
-			if ( is_array( $click_entry ) && isset( $click_entry['cookie'] ) ) {
-				if ( $click_entry['cookie'] == $cookie ) {
-					return $click_entry;
-				}
-			}
-		}
-		return null;
-	};
-	if ( $cookieId ) {
-		if ( empty( $current_clicks ) ) {
-			$pm = add_post_meta( $post_id, 'clicks', 1, true );
-		} else {
-			$pm = update_post_meta( $post_id, 'clicks', $current_clicks + 1 );
-		}
-		$my_cookie = $busca_cookie( $current_visitas, $cookieId );
-		if ( $my_cookie ) {
-			$valor = ( $my_cookie[ 'clicks' ] + 1 );
-			$pm = update_post_meta( $post_id, 'visitas', [ 'cookie' => $cookieId, 'clicks' => $valor ] );
-		} else {
-			$pm = add_post_meta( $post_id, 'visitas', [ 'cookie' => $cookieId, 'clicks' => 1 ], false );
-		}
-	}
+    $post = get_post( $post );
+    if ( ! $post ) return; // Prevenção de erro caso o post não exista
+
+    $post_id = $post->ID;
+    $current_clicks = get_post_meta( $post_id, 'clicks', true );
+    $current_visitas = get_post_meta( $post_id, 'visitas', false );
+    $cookieId = getCookieId( );
+
+    $busca_cookie = function( $clicks, $cookie ) {
+        foreach ( $clicks as $click_entry ) {
+            if ( is_array( $click_entry ) && isset( $click_entry['cookie'] ) ) {
+                if ( $click_entry['cookie'] == $cookie ) {
+                    return $click_entry;
+                }
+            }
+        }
+        return null;
+    };
+
+    if ( $cookieId ) {
+        // 1. Atualiza o contador geral (Histórico)
+        if ( empty( $current_clicks ) ) {
+            $pm = add_post_meta( $post_id, 'clicks', 1, true );
+        } else {
+            $pm = update_post_meta( $post_id, 'clicks', $current_clicks + 1 );
+        }
+
+        // 2. Atualiza o contador agrupado do Cookie (Histórico)
+        $my_cookie = $busca_cookie( $current_visitas, $cookieId );
+        if ( $my_cookie ) {
+            $valor = ( $my_cookie[ 'clicks' ] + 1 );
+            // Passando $my_cookie no 4º parâmetro blinda o WP para não apagar os outros cookies
+            $pm = update_post_meta( $post_id, 'visitas', [ 'cookie' => $cookieId, 'clicks' => $valor ], $my_cookie );
+        } else {
+            $pm = add_post_meta( $post_id, 'visitas', [ 'cookie' => $cookieId, 'clicks' => 1 ], false );
+        }
+
+        // 3. NOVO: Fila de processamento individual por evento com data
+        // Cria um registro unitário que servirá exclusivamente para consumo da API
+        $data_evento = (new \DateTime('now', new \DateTimeZone('America/Sao_Paulo')))->format('Y-m-d\TH:i:sO');
+        add_post_meta( $post_id, 'visita_evento', [ 'cookie' => $cookieId, 'data' => $data_evento ], false );
+    }
 }
 function getCookie( ) {
 	require_once plugin_dir_path( __FILE__ ) . './includes/classes/class-pinedu-imovel-cookie.php';

@@ -5,19 +5,24 @@ require_once plugin_dir_path(__FILE__) . '../admin/classes/class-pinedu-imovel-i
 
 class PineduReceiverRest extends PineduRequest {
     private static $instance = null;
+
     private function __construct() {
         // Construtor privado
     }
+
     private function __clone() {}
+
     public function __wakeup() {
         throw new \Exception("Cannot unserialize a singleton.");
     }
+
     private static function getInstance(): PineduReceiverRest {
         if (self::$instance === null) {
             self::$instance = new self();
         }
         return self::$instance;
     }
+
     public static function instala_rest_end_point() {
         register_rest_route('pinedu-imovel/v1', 'inicializar', array(
             'methods' => 'POST',
@@ -39,7 +44,70 @@ class PineduReceiverRest extends PineduRequest {
             'callback' => array( __CLASS__, 'receber_imoveis' ),
             'permission_callback' => array( __CLASS__, 'verify_credentials' ),
         ));
+
+        // Rota de Cliques
+        register_rest_route('pinedu-imovel/v1', 'clicks', array(
+            'methods' => 'GET',
+            'callback' => array( __CLASS__, 'enviar_clicks' ),
+            'permission_callback' => array( __CLASS__, 'verify_credentials' ),
+        ));
     }
+
+    public static function enviar_clicks( $request ) {
+        global $wpdb;
+
+        // Query SQL para buscar os eventos isolados e seus meta_ids (para exclusão segura posterior)
+        $query = "
+            SELECT 
+                ref.meta_value AS referencia,
+                vis.meta_value AS evento_dados,
+                vis.meta_id AS meta_id
+            FROM {$wpdb->posts} p
+            INNER JOIN {$wpdb->postmeta} ref 
+                ON p.ID = ref.post_id AND ref.meta_key = 'referencia'
+            INNER JOIN {$wpdb->postmeta} vis 
+                ON p.ID = vis.post_id AND vis.meta_key = 'visita_evento'
+            WHERE p.post_type = 'imovel'
+              AND p.post_status = 'publish'
+        ";
+
+        $resultados = $wpdb->get_results( $query );
+        $clicks_formatados = [];
+        $meta_ids_para_excluir = [];
+
+        if ( ! empty( $resultados ) ) {
+            foreach ( $resultados as $linha ) {
+                $dados = maybe_unserialize( $linha->evento_dados );
+
+                if ( is_array( $dados ) && isset( $dados['cookie'] ) && isset( $dados['data'] ) ) {
+                    $clicks_formatados[] = [
+                        'referencia' => $linha->referencia,
+                        'data'       => $dados['data'],
+                        'cookie'     => $dados['cookie'],
+                        'clicks'     => 1 // É um registro unitário na fila de eventos
+                    ];
+                    // Guarda a chave primária da wp_postmeta para a exclusão
+                    $meta_ids_para_excluir[] = $linha->meta_id;
+                }
+            }
+        }
+
+        // Exclui APENAS os registros que acabamos de colocar no JSON.
+        // Isso previne que um clique que ocorreu enquanto este script rodava seja apagado acidentalmente.
+        if ( ! empty( $meta_ids_para_excluir ) ) {
+            // Monta uma string como "105,106,107" com blindagem de inteiros para segurança
+            $ids_imploded = implode( ',', array_map( 'intval', $meta_ids_para_excluir ) );
+            $wpdb->query( "DELETE FROM {$wpdb->postmeta} WHERE meta_id IN ($ids_imploded)" );
+        }
+
+        $response = [
+            'success' => count( $clicks_formatados ) > 0,
+            'clicks'  => $clicks_formatados
+        ];
+
+        return rest_ensure_response( $response );
+    }
+
     public static function inicializar_atualizacao( $request ) {
         $options = get_option('pinedu_imovel_options', []);
         if ( isset( $options['importacao_andamento'] ) && 'on' === $options['importacao_andamento'] ) {
@@ -69,6 +137,7 @@ class PineduReceiverRest extends PineduRequest {
             'ultima_atualizacao' => formataData_iso8601( $options[ 'ultima_atualizacao' ] )
         ] );
     }
+
     public static function encerrar_atualizacao( $request ) {
         $json_string = $request->get_body();
         $data = json_decode( $json_string, true );
@@ -89,7 +158,7 @@ class PineduReceiverRest extends PineduRequest {
         $options[ 'token' ] = $token;
         $options[ 'importacao_andamento' ] = false;
         update_option( 'pinedu_imovel_options', $options );
-        /* Enviar estes dados para o Servidor */
+
         wp_send_json( [
             'inicio_importacao' => formataData_iso8601( $options['inicio_importacao'] ),
             'dataAtualizacao' => formataData_iso8601( $options[ 'ultima_atualizacao' ] ),
@@ -121,6 +190,7 @@ class PineduReceiverRest extends PineduRequest {
         ];
         return $data;
     }
+
     public static function receber_imoveis( $request ) {
         $json_string = $request->get_body();
         $data = json_decode( $json_string, true );
@@ -128,6 +198,7 @@ class PineduReceiverRest extends PineduRequest {
         $result = $importa_imoveis->importar_callback( $data );
         return $result;
     }
+
     public static function verify_credentials( $request ) {
         $auth_header = $request->get_header('Authorization');
         if (is_development_mode()) {
@@ -147,6 +218,7 @@ class PineduReceiverRest extends PineduRequest {
         error_log('Invalid Authorization format');
         return false;
     }
+
     private static function validate_bearer_token( $token ): bool {
         $options = get_option( 'pinedu_imovel_options', [] );
         if ( isset( $options['token'] ) && $options['token'] === $token ) {
