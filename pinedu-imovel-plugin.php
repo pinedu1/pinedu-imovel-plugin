@@ -193,6 +193,11 @@ function enviarCliente( $nome, $telefone, $email, $mensagem, $cookieId, $referen
 	$enviar = new Pinedu_Imovel_Enviar_Cliente( $nome, $telefone, $email, $mensagem, $cookieId, $referencia, $corretor );
 	return $enviar->contato_cliente( );
 }
+function solicitarVisita( $nome, $telefone, $email, $mensagem, $cookieId, $referencia = null, $corretor = null ) {
+    require_once plugin_dir_path( __FILE__ ) . './admin/classes/class-pinedu-imovel-enviar-cliente.php';
+    $enviar = new Pinedu_Imovel_Enviar_Cliente( $nome, $telefone, $email, $mensagem, $cookieId, $referencia, $corretor );
+    return $enviar->solicitar_visita( );
+}
 function formataData_iso8601( $data ) {
 	$timestamp = match( true ) {
 		is_numeric( $data ) => ( int )$data,

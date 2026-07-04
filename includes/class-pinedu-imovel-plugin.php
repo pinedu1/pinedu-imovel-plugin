@@ -127,6 +127,74 @@ class Pinedu_Imovel_Plugin {
             if ( ! empty( $corpo_email_html ) ) {
                 $args['message'] = $corpo_email_html;
             }
+        } else if ( strpos( $args['subject'], 'Solicitação de Visita no Imóvel Ref' ) !== false ) {
+            $mensagem_original = $args['message'];
+
+            // Extrai as variáveis da string original gerada no formulário
+            $nome     = preg_match( '/Nome:\s*(.*)/i', $mensagem_original, $matches ) ? trim( $matches[1] ) : '-';
+            $email    = preg_match( '/Email:\s*(.*)/i', $mensagem_original, $matches ) ? trim( $matches[1] ) : '-';
+            $telefone = preg_match( '/Telefone:\s*(.*)/i', $mensagem_original, $matches ) ? trim( $matches[1] ) : '-';
+            $referencia = preg_match( '/Referência:\s*(.*)/i', $mensagem_original, $matches ) ? trim( $matches[1] ) : '-';
+            $corretor = preg_match( '/Corretor Associado:\s*(.*)/i', $mensagem_original, $matches ) ? trim( $matches[1] ) : '-';
+
+            $texto_mensagem = $mensagem_original;
+            if ( preg_match( '/Mensagem:\s*(.*)/is', $mensagem_original, $matches ) ) {
+                $texto_mensagem = trim( $matches[1] );
+            }
+
+            // Prepara o array de dados para enviar ao arquivo do tema
+            $dados_template = [
+                'nome'         => $nome
+                , 'email'      => $email
+                , 'telefone'   => $telefone
+                , 'mensagem'   => $texto_mensagem
+                , 'referencia'   => $referencia
+                , 'corretor'   => $corretor
+            ];
+
+            // Inicia o buffer para não imprimir o HTML na tela do usuário
+            ob_start();
+            get_template_part( 'template-parts/empresa/template-email', 'imovel', $dados_template );
+            $corpo_email_html = ob_get_clean();
+
+            // Fallback de segurança
+            if ( ! empty( $corpo_email_html ) ) {
+                $args['message'] = $corpo_email_html;
+            }
+        } else if ( strpos( $args['subject'], 'Interesse no Imóvel Ref' ) !== false ) {
+            $mensagem_original = $args['message'];
+
+            // Extrai as variáveis da string original gerada no formulário
+            $nome     = preg_match( '/Nome:\s*(.*)/i', $mensagem_original, $matches ) ? trim( $matches[1] ) : '-';
+            $email    = preg_match( '/Email:\s*(.*)/i', $mensagem_original, $matches ) ? trim( $matches[1] ) : '-';
+            $telefone = preg_match( '/Telefone:\s*(.*)/i', $mensagem_original, $matches ) ? trim( $matches[1] ) : '-';
+            $referencia = preg_match( '/Referência:\s*(.*)/i', $mensagem_original, $matches ) ? trim( $matches[1] ) : '-';
+            $corretor = preg_match( '/Corretor Associado:\s*(.*)/i', $mensagem_original, $matches ) ? trim( $matches[1] ) : '-';
+
+            $texto_mensagem = $mensagem_original;
+            if ( preg_match( '/Mensagem:\s*(.*)/is', $mensagem_original, $matches ) ) {
+                $texto_mensagem = trim( $matches[1] );
+            }
+
+            // Prepara o array de dados para enviar ao arquivo do tema
+            $dados_template = [
+                'nome'         => $nome
+                , 'email'      => $email
+                , 'telefone'   => $telefone
+                , 'mensagem'   => $texto_mensagem
+                , 'referencia'   => $referencia
+                , 'corretor'   => $corretor
+            ];
+
+            // Inicia o buffer para não imprimir o HTML na tela do usuário
+            ob_start();
+            get_template_part( 'template-parts/empresa/template-email', 'email', $dados_template );
+            $corpo_email_html = ob_get_clean();
+
+            // Fallback de segurança
+            if ( ! empty( $corpo_email_html ) ) {
+                $args['message'] = $corpo_email_html;
+            }
         }
 
         return $args;
