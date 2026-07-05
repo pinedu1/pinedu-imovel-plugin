@@ -142,30 +142,38 @@ class PineduReceiverRest extends PineduRequest {
         $json_string = $request->get_body();
         $data = json_decode( $json_string, true );
 
-        if ( isset( $data[ 'token' ] ) ) {
-            $token = sanitize_text_field( $data[ 'token' ] );
-        }
-        if ( isset( $data[ 'imoveis_importados' ] ) ) {
-            $imoveis_importados = sanitize_text_field( $data[ 'imoveis_importados' ] );
-        }
-        $options = get_option( 'pinedu_imovel_options', [ ] );
-        $options[ 'ultima_atualizacao' ] = new DateTime( );
+        $token = isset( $data['token'] ) ? sanitize_text_field( $data['token'] ) : '';
+        $imoveis_importados = isset( $data['imoveis_importados'] ) ? sanitize_text_field( $data['imoveis_importados'] ) : 0;
+
+        $options = get_option( 'pinedu_imovel_options', [] );
+        $options['ultima_atualizacao'] = new DateTime();
         if ( isset( $options['inicio_importacao'] ) && $options['inicio_importacao'] instanceof DateTime ) {
-            $intervalo = $options['inicio_importacao']->diff( $options['ultima_atualizacao'] );
-            $options['tempo_utilizado'] = $intervalo;
+            $options['tempo_utilizado'] = $options['inicio_importacao']->diff( $options['ultima_atualizacao'] );
         }
-        $options[ 'imoveis_importados' ] = $imoveis_importados;
-        $options[ 'token' ] = $token;
-        $options[ 'importacao_andamento' ] = false;
+        $options['imoveis_importados'] = $imoveis_importados;
+        $options['token'] = $token;
+        $options['importacao_andamento'] = false;
         update_option( 'pinedu_imovel_options', $options );
 
-        wp_send_json( [
-            'inicio_importacao' => formataData_iso8601( $options['inicio_importacao'] ),
-            'dataAtualizacao' => formataData_iso8601( $options[ 'ultima_atualizacao' ] ),
-            'importacao_andamento' => $options['importacao_andamento']
-        ] );
+        $resposta = [
+            'status' => 'sucesso',
+            'dataAtualizacao' => formataData_iso8601( $options['ultima_atualizacao'] ),
+            'importacao_andamento' => false
+        ];
+        if ( isset( $data['POST_PROCESS_ACTION'] ) ) {
+            $action = sanitize_text_field( $data['POST_PROCESS_ACTION'] );
+            if ( function_exists( 'fastcgi_finish_request' ) ) {
+                wp_send_json( $resposta );
+                fastcgi_finish_request();
+                pinedu_trigger_action_callback( $action );
+            } else {
+                wp_schedule_single_event( time(), 'pinedu_trigger_action', [ $action ] );
+                wp_send_json( $resposta );
+            }
+        } else {
+            wp_send_json( $resposta );
+        }
     }
-
     public static function receber_basicos( $request ) {
         $json_string = $request->get_body();
         if (is_development_mode()) {
@@ -218,7 +226,6 @@ class PineduReceiverRest extends PineduRequest {
         error_log('Invalid Authorization format');
         return false;
     }
-
     private static function validate_bearer_token( $token ): bool {
         $options = get_option( 'pinedu_imovel_options', [] );
         if ( isset( $options['token'] ) && $options['token'] === $token ) {
@@ -226,5 +233,77 @@ class PineduReceiverRest extends PineduRequest {
         }
         error_log('Invalid Token');
         return false;
+    }
+    function pinedu_trigger_action_callback($action) {
+        switch ($action) {
+            case 'OPTIMIZE_TABLES':
+                PineduReceiverRest::optimize_tables();
+                break;
+            case 'GENERATE_SITE_MAP':
+                PineduReceiverRest::generate_site_map();
+                break;
+            case 'GENERATE_JSON_LD':
+                PineduReceiverRest::generate_json_ld();
+                break;
+            case 'GENERATE_FEED':
+                PineduReceiverRest::generate_feed();
+                break;
+        }
+    }
+    public static function optimize_tables() {
+        global $wpdb;
+        $wpdb->query("OPTIMIZE TABLE {$wpdb->posts}, {$wpdb->postmeta}, {$wpdb->options}");
+    }
+
+    public static function generate_site_map() {
+        $query = new WP_Query(['post_type' => 'imovel', 'posts_per_page' => -1, 'post_status' => 'publish']);
+        $xml = new SimpleXMLElement('<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"></urlset>');
+        while ($query->have_posts()) {
+            $query->the_post();
+            $url = $xml->addChild('url');
+            $url->addChild('loc', esc_url(get_permalink()));
+            $url->addChild('lastmod', get_the_modified_date('c'));
+            $url->addChild('changefreq', 'daily');
+        }
+        file_put_contents(ABSPATH . 'sitemap_imoveis.xml', $xml->asXML());
+        wp_reset_postdata();
+    }
+
+    public static function generate_json_ld() {
+        $query = new WP_Query(['post_type' => 'imovel', 'posts_per_page' => -1, 'post_status' => 'publish']);
+        $items = [];
+        while ($query->have_posts()) {
+            $query->the_post();
+            $id = get_the_ID();
+            $items[] = [
+                '@context' => 'https://schema.org',
+                '@type' => 'Accommodation',
+                'name' => get_the_title(),
+                'url' => get_permalink(),
+                'sku' => get_post_meta($id, 'referencia', true),
+                'price' => get_post_meta($id, 'vendaValor', true)
+            ];
+        }
+        file_put_contents(ABSPATH . 'catalog_data.json', json_encode($items));
+        wp_reset_postdata();
+    }
+
+    public static function generate_feed() {
+        $query = new WP_Query(['post_type' => 'imovel', 'posts_per_page' => -1, 'post_status' => 'publish']);
+        $xml = new SimpleXMLElement('<?xml version="1.0" encoding="UTF-8"?><rss version="2.0" xmlns:g="http://base.google.com/ns/1.0"></rss>');
+        $channel = $xml->addChild('channel');
+        while ($query->have_posts()) {
+            $query->the_post();
+            $id = get_the_ID();
+            $item = $channel->addChild('item');
+            $item->addChild('g:id', get_post_meta($id, 'referencia', true));
+            $item->addChild('g:title', htmlspecialchars(get_the_title()));
+            $item->addChild('g:link', get_permalink());
+            $item->addChild('g:image_link', get_the_post_thumbnail_url($id, 'full'));
+            $item->addChild('g:price', get_post_meta($id, 'vendaValor', true) . ' BRL');
+            $item->addChild('g:availability', 'in stock');
+        }
+        file_put_contents(ABSPATH . 'feed_catalog.xml', $xml->asXML());
+        wp_reset_postdata();
     }
 }
