@@ -643,3 +643,8 @@ function pinedu_exibir_meus_endpoints( ) {
     }
     echo '</div>';
 }
+// Remove os links de RSS e Feeds
+remove_action( 'wp_head', 'feed_links_extra', 3 );
+remove_action( 'wp_head', 'feed_links', 2 );
+// Remove a versão do WordPress (item de segurança extra)
+remove_action( 'wp_head', 'wp_generator' );

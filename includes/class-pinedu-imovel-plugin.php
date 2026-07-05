@@ -37,6 +37,7 @@ class Pinedu_Imovel_Plugin {
         require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-pinedu-imovel-plugin-i18n.php';
         require_once plugin_dir_path( dirname( __FILE__ ) ) . 'admin/class-pinedu-imovel-plugin-admin.php';
         require_once plugin_dir_path( dirname( __FILE__ ) ) . 'public/class-pinedu-imovel-plugin-public.php';
+        require_once plugin_dir_path( dirname( __FILE__ ) ) . 'rest/PineduReceiverRest.php';
         $this->loader = new Pinedu_Imovel_Plugin_Loader();
     }
     private function define_admin_hooks() {
