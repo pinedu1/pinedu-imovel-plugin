@@ -4,6 +4,7 @@ class PrettyUrl {
 	const CACHE_URL_AMIGAVEL = 'CACHE_PRETTY_URL';
 	const INDEX_CACHE = 'index.php?post_type=imovel&tipo_pesquisa_submit=imovel';
 	private $delete_cache = false;
+
 	public function __construct( $delete_cache = false ) {
 		if ( wp_get_environment_type() === 'development' ) {
 			$delete_cache = true;
@@ -12,7 +13,118 @@ class PrettyUrl {
 		if ( $delete_cache === true )	{
 			$this->clear();
 		}
+
+		// O GATILHO QUE SALVA VIDAS: Redireciona links com acento para a URL limpa (SEO)
+		add_action( 'template_redirect', [$this, 'redirecionar_acentos'] );
 	}
+
+	public function redirecionar_acentos() {
+		// Só atua se o WordPress não encontrar a página (Erro 404)
+		if ( is_404() ) {
+			$uri = $_SERVER['REQUEST_URI'];
+			$parsed = parse_url($uri);
+			$path = isset($parsed['path']) ? $parsed['path'] : '';
+
+			// Decodifica a URL (Ex: transforma %C3%A7atuba de volta para araçatuba)
+			$decoded_path = urldecode($path);
+
+			// Remove os acentos e cedilhas (Ex: transforma araçatuba em aracatuba)
+			$clean_path = remove_accents($decoded_path);
+			$clean_path = strtolower( str_replace([' ', '%20'], '-', $clean_path) );
+
+			// Se o caminho limpo for diferente do que foi digitado, faz o redirecionamento 301
+			if ( $clean_path !== strtolower($decoded_path) ) {
+				$new_url = home_url( $clean_path );
+				if ( !empty($parsed['query']) ) {
+					$new_url .= '?' . $parsed['query'];
+				}
+				wp_redirect( $new_url, 301 );
+				exit;
+			}
+		}
+	}
+
+    // =========================================================================
+    // ROTA DE SEO: Gera URLs de Alta Intenção de Compra e Locação
+    // =========================================================================
+    private function url_seo_landing_pages( $tax_contrato, $tax_tipo_imovel, $tax_cidade ) {
+        $rule = [];
+
+        $chave_venda = 'venda';
+        $chave_locacao = 'locacao';
+
+        foreach (array_keys($tax_contrato) as $key) {
+            if (strpos($key, 'vend') !== false || strpos($key, 'compr') !== false) $chave_venda = $key;
+            if (strpos($key, 'loca') !== false || strpos($key, 'alug') !== false) $chave_locacao = $key;
+        }
+
+        $mapa_prefixos = [
+            'venda'   => $chave_venda,
+            'comprar' => $chave_venda,
+            'vender'  => $chave_venda,
+            'aluguel' => $chave_locacao,
+            'alugar'  => $chave_locacao,
+            'locar'   => $chave_locacao
+        ];
+
+        foreach ($tax_cidade as $slug_cidade => $data_cidade) {
+
+            $aliases_base = ['imoveis', 'imobiliaria'];
+            foreach ($aliases_base as $alias) {
+                $rule[] = [
+                    'regex' => ( '^' . $alias . '-' . $slug_cidade . '/page/([0-9]{1,3})/?$' ),
+                    'rule' => ( self::INDEX_CACHE . '&' . $this->tupla( $data_cidade['tax'], $data_cidade['slug'] ) . '&' . $this->tupla( 'paged', '$matches[1]' ) ),
+                    'hierarchical' => 'top'
+                ];
+                $rule[] = [
+                    'regex' => ( '^' . $alias . '-' . $slug_cidade . '/?$' ),
+                    'rule' => ( self::INDEX_CACHE . '&' . $this->tupla( $data_cidade['tax'], $data_cidade['slug'] ) ),
+                    'hierarchical' => 'top'
+                ];
+            }
+
+            foreach ($tax_tipo_imovel as $slug_tipo => $data_tipo) {
+                $prefixo_pluralizado = $slug_tipo . 's?';
+
+                $regra_base = self::INDEX_CACHE
+                            . '&' . $this->tupla( $data_tipo['tax'], $data_tipo['slug'] )
+                            . '&' . $this->tupla( $data_cidade['tax'], $data_cidade['slug'] );
+
+                $rule[] = [
+                    'regex' => ( '^' . $prefixo_pluralizado . '-' . $slug_cidade . '/page/([0-9]{1,3})/?$' ),
+                    'rule' => ( $regra_base . '&' . $this->tupla( 'paged', '$matches[1]' ) ),
+                    'hierarchical' => 'top'
+                ];
+                $rule[] = [
+                    'regex' => ( '^' . $prefixo_pluralizado . '-' . $slug_cidade . '/?$' ),
+                    'rule' => ( $regra_base ),
+                    'hierarchical' => 'top'
+                ];
+
+                foreach ($mapa_prefixos as $verbo => $alvo_contrato) {
+                    $regra_intencao = $regra_base;
+
+                    if ( isset( $tax_contrato[$alvo_contrato] ) ) {
+                        $data_contrato = $tax_contrato[$alvo_contrato];
+                        $regra_intencao .= '&' . $this->tupla( $data_contrato['tax'], $data_contrato['slug'] );
+                    }
+
+                    $rule[] = [
+                        'regex' => ( '^' . $verbo . '-' . $prefixo_pluralizado . '-' . $slug_cidade . '/page/([0-9]{1,3})/?$' ),
+                        'rule' => ( $regra_intencao . '&' . $this->tupla( 'paged', '$matches[1]' ) ),
+                        'hierarchical' => 'top'
+                    ];
+                    $rule[] = [
+                        'regex' => ( '^' . $verbo . '-' . $prefixo_pluralizado . '-' . $slug_cidade . '/?$' ),
+                        'rule' => ( $regra_intencao ),
+                        'hierarchical' => 'top'
+                    ];
+                }
+            }
+        }
+        return $rule;
+    }
+
 	private function url_one( $taxonomy_mapping ) {
 		$rule = [];
 		foreach ($taxonomy_mapping as $slug => $data) {
@@ -35,6 +147,7 @@ class PrettyUrl {
 		}
 		return $rule;
 	}
+
 	private function url_two( $taxonomy_one, $taxonomy_two ) {
 		$rule = [];
 		foreach ($taxonomy_one as $slug1 => $data1) {
@@ -64,9 +177,11 @@ class PrettyUrl {
 		}
 		return $rule;
 	}
+
 	private function tupla( $parameter, $value ) {
 		return ( $parameter . '=' . $value );
 	}
+
 	private function url_tree( $taxonomy_one, $taxonomy_two, $taxonomy_tree ) {
 		$rule = [];
 		foreach ($taxonomy_one as $slug1 => $data1) {
@@ -102,9 +217,9 @@ class PrettyUrl {
 		}
 		return $rule;
 	}
+
 	private function url_four( $taxonomy_one, $taxonomy_two, $taxonomy_tree, $taxonomy_four ) {
 		$rule = [];
-
 		foreach ( $taxonomy_one as $slug1 => $data1 ) {
 			foreach ( $taxonomy_two as $slug2 => $data2 ) {
 				foreach ( $taxonomy_tree as $slug3 => $data3 ) {
@@ -141,9 +256,9 @@ class PrettyUrl {
 				}
 			}
 		}
-
 		return $rule;
 	}
+
 	private function register( $rules ) {
 		foreach ($rules as $rule) {
 			add_rewrite_rule( $rule[ 'regex' ], $rule[ 'rule' ], $rule[ 'hierarchical' ] );
@@ -152,19 +267,19 @@ class PrettyUrl {
 			flush_rewrite_rules( );
 		}
 	}
+
 	private function cria( $tax_contrato, $tax_tipo_imovel, $tax_cidade ) {
 		$rules = array_merge(
-			$this->url_one( $tax_contrato )
+            $this->url_seo_landing_pages( $tax_contrato, $tax_tipo_imovel, $tax_cidade )
+			, $this->url_one( $tax_contrato )
 			, $this->url_one( $tax_tipo_imovel )
 			, $this->url_one( $tax_cidade )
-			//
 			, $this->url_two( $tax_contrato, $tax_tipo_imovel )
 			, $this->url_two( $tax_contrato, $tax_cidade )
 			, $this->url_two( $tax_tipo_imovel, $tax_contrato )
 			, $this->url_two( $tax_tipo_imovel, $tax_cidade )
 			, $this->url_two( $tax_cidade, $tax_contrato )
 			, $this->url_two( $tax_cidade, $tax_tipo_imovel )
-			//
 			, $this->url_tree( $tax_contrato, $tax_tipo_imovel, $tax_cidade )
 			, $this->url_tree( $tax_contrato, $tax_cidade, $tax_tipo_imovel )
 			, $this->url_tree( $tax_tipo_imovel, $tax_contrato, $tax_cidade )
@@ -174,6 +289,7 @@ class PrettyUrl {
 		);
 		return $rules;
 	}
+
 	public function do() {
 		$rules = get_transient( self::CACHE_URL_AMIGAVEL );
 
@@ -196,6 +312,7 @@ class PrettyUrl {
 
 		$this->register( $rules );
 	}
+
 	public function clear() {
 		delete_transient( self::CACHE_URL_AMIGAVEL );
 	}
