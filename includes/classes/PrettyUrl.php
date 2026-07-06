@@ -3,7 +3,6 @@
 class PrettyUrl {
 	const CACHE_URL_AMIGAVEL = 'CACHE_PRETTY_URL';
 	const INDEX_CACHE = 'index.php?post_type=imovel&tipo_pesquisa_submit=imovel';
-	private $delete_cache = false;
     // Troque a const por este método estático
     public static function get_mapa_tipo_imovel() {
         return [
@@ -27,12 +26,14 @@ class PrettyUrl {
             ]),
         ];
     }
+    public static function get_mapa_contrato() {
+        return [
+            'venda' => ['venda', 'comprar', 'vender']
+            , 'locacao' => ['aluguel', 'alugar', 'locar', 'locação', 'arrendar']
+        ];
+    }
 	public function __construct( $delete_cache = false ) {
-		if ( is_development_mode() ) {
-			$delete_cache = true;
-		}
-		$this->delete_cache = $delete_cache;
-		if ( $delete_cache === true )	{
+		if ( is_development_mode() )	{
 			$this->clear();
 		}
 		add_action( 'template_redirect', [$this, 'redirecionar_acentos'] );
