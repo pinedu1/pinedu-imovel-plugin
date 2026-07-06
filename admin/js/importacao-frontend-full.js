@@ -26,7 +26,6 @@ function doRemotePost( endPoint, argumentos, callbackSuccess, callbackError, cal
         } )
         .then( data => {
             if ( typeof callbackSuccess === 'function' ) {
-                // Agora, callbackSuccess recebe o objeto 'data' final e pronto para uso
                 if ( parseInt( PineduAjax.atrasarRequisicao ) > 0 ) {
                     setTimeout( ( ) => {
                         callbackSuccess( data );
@@ -40,7 +39,6 @@ function doRemotePost( endPoint, argumentos, callbackSuccess, callbackError, cal
             console.error( '❌ Erro na requisição:', argumentos );
             console.error( '❌ Erro na requisição:', err );
             if ( typeof callbackError === 'function' ) {
-                // Passe o objeto de erro para o callback de erro
                 callbackError( err );
             }
         } )
@@ -50,8 +48,9 @@ function doRemotePost( endPoint, argumentos, callbackSuccess, callbackError, cal
             }
         } );
 }
+
 function doPost( action, argumentos, callbackSuccess, callbackError, callbackPre, callbackPost ) {
-    const data = {action, ...( argumentos || {} )}; // <== Este troço mescla a string com o JSON
+    const data = {action, ...( argumentos || {} )};
     if ( typeof callbackPre === 'function' ) {
         callbackPre( );
     }
@@ -65,17 +64,13 @@ function doPost( action, argumentos, callbackSuccess, callbackError, callbackPre
         body: new URLSearchParams( data )
     } )
         .then( response => {
-            // 1. PRIMEIRO THEN: Verifica o status HTTP
             if ( !response.ok ) {
-                // Se status 4xx ou 5xx, lança erro para ir ao .catch( )
                 throw new Error( `HTTP error! status: ${response.status}` );
             }
-            // Retorna a Promise para ler o corpo como JSON
             return response.json( );
         } )
         .then( data => {
             if ( typeof callbackSuccess === 'function' ) {
-                // Agora, callbackSuccess recebe o objeto 'data' final e pronto para uso
                 if ( parseInt( PineduAjax.atrasarRequisicao ) > 0 ) {
                     setTimeout( ( ) => {
                         callbackSuccess( data );
@@ -84,39 +79,21 @@ function doPost( action, argumentos, callbackSuccess, callbackError, callbackPre
                     callbackSuccess( data );
                 }
             }
-            // Você não precisa de um 'return' aqui a menos que queira encadear mais Promises
         } )
         .catch( err => {
             console.error( '❌ Erro na requisição:', argumentos );
-            // O .catch( ) lida com erros de rede OU o Error lançado no primeiro .then( )
             console.error( '❌ Erro na requisição:', err );
-            // MELHOR LUGAR PARA O CALLBACK DE ERRO:
             if ( typeof callbackError === 'function' ) {
-                // Passe o objeto de erro para o callback de erro
                 callbackError( err );
             }
         } )
         .finally( ( ) => {
-            // NOVO: EXECUÇÃO DE posPost ( SEMPRE, APÓS SUCESSO OU ERRO )
-            // Este é o equivalente moderno e limpo do 'complete' do jQuery.
             if ( typeof callbackPost === 'function' ) {
                 callbackPost( );
             }
-            // Ideal para esconder o spinner, reabilitar o botão, etc.
         } );
 }
-/**
- * Cria a URL final para uma requisição, tratando os parâmetros.
- * Para GET, anexa como query string. Para POST, retorna a URL base.
- *
- * @param {object} urlParts - Objeto com as partes da URL.
- * @param {string} urlParts.server - Ex: "https://www.example.com/service/"
- * @param {string} urlParts.path - Ex: "/apiService/"
- * @param {string} urlParts.endPoint - Ex: "/fazAlgo/"
- * @param {object} urlParts.parametros - Objeto com os parâmetros. Ex: {nome: 'jose', idade: 30}
- * @param {string} method - Método HTTP ( 'GET' ou 'POST' ).
- * @returns {string} A URL final.
- */
+
 function construirUrl( urlParts, method ) {
     const fullPath = `${urlParts.server.replace( /\/$/, '' )}${urlParts.path}${urlParts.endPoint}`.replace( /\/{2,}/g, '/' );
     const url = new URL( fullPath );
@@ -151,6 +128,38 @@ function preparaObjetoAjax( ) {
 
     Object.assign( PineduAjax, atualizacoes );
 }
+
+// ====================================================================
+// NOVO: Função Handler para Criação dos Arquivos de SEO (Modelo inicializar)
+// ====================================================================
+function gerarArquivosSeo( ) {
+    if ( PineduAjax?.environment === 'development' ) console.log( 'gerarArquivosSeo' );
+
+    const before = function ( ) {
+        escondeFechar( );
+        inicializaOverlay( );
+        alteraInfo( 'Gerando Arquivos...' );
+        alteraMessage( 'Criando Sitemap de imóveis, Catálogo JSON e Feed de Anúncios.' );
+        alteraProgresso( 50 ); // Mostra metade do progresso para feedback visual
+    }
+    , success = function ( data ) {
+        if ( data.success === true ) {
+            alteraInfo( 'Sucesso!' );
+            alteraMessage( 'Arquivos SEO gerados com sucesso!' );
+            alteraProgresso( 100 );
+        } else {
+            alteraInfo( 'Erro!' );
+            alteraMessage( data.message ?? 'Não foi possível gerar os arquivos.' );
+            alteraProgresso( 0 );
+        }
+    }
+    , error = errorDoPost
+    // O callbackPost força o 'exibeFechar' após a promessa ser cumprida ou rejeitada
+    , post = exibeFechar;
+
+    doPost( 'GERAR_ARQUIVOS_SEO', {}, success, error, before, post );
+}
+
 function inicializar( ) {
     if ( PineduAjax?.environment === 'development' ) console.log( 'inicializar' );
     const before = function ( ) {
@@ -179,6 +188,7 @@ function inicializar( ) {
 
     doPost( 'IMPORTACAO_PRELOGIN', {}, success, error, before, null );
 }
+
 function posLogin( dadosLogin, progresso ) {
     if ( PineduAjax?.environment === 'development' ) console.log( 'posLogin' );
 
@@ -207,6 +217,7 @@ function posLogin( dadosLogin, progresso ) {
     , error = errorDoPost;
     doPost( 'IMPORTACAO_POSLOGIN', dadosLogin, success, error, before, null );
 }
+
 function preLogin( progresso ) {
     if ( PineduAjax?.environment === 'development' ) console.log( 'preLogin' );
     preparaObjetoAjax( );
@@ -283,6 +294,7 @@ function inicializaOverlay( ) {
         }
     }
 }
+
 function alteraInfo( info ) {
     const infoElement = document.getElementById( 'importacao-info' );
     if ( infoElement ) {
@@ -368,6 +380,7 @@ function importarEmpresa( empresa, dadosBasicos, progresso ) {
     const args = {empresa: JSON.stringify( empresa )};
     doPost( 'IMPORTA_FRONTEND_IMPORTAR_EMPRESA', args, success, error, before, null );
 }
+
 function importarLoja( lojas, dadosBasicos, progresso ) {
     if ( PineduAjax?.environment === 'development' ) console.log( 'importarLoja' );
     const before = function ( ) {
@@ -393,6 +406,7 @@ function importarLoja( lojas, dadosBasicos, progresso ) {
     const args = {lojas: JSON.stringify( lojas )};
     doPost( 'IMPORTA_FRONTEND_IMPORTAR_LOJA', args, success, error, before, null );
 }
+
 function importarParametrosEmpresa( parametros, dadosBasicos, progresso ) {
     if ( PineduAjax?.environment === 'development' ) console.log( 'importarParametrosEmpresa' );
     const before = function ( ) {
@@ -574,6 +588,7 @@ function importarTipoContrato( tipoContratos, dadosBasicos, progresso ) {
     const args = {tipo_contratos: JSON.stringify( tipoContratos )};
     doPost( 'IMPORTA_FRONTEND_IMPORTAR_CONTRATO', args, success, error, before, null );
 }
+
 function recuperaPostsExcluir( referenciasExcluir ) {
     if ( PineduAjax?.environment === 'development' ) console.log( 'recuperaPostsExcluir' );
     const before = function ( ) {
@@ -588,7 +603,6 @@ function recuperaPostsExcluir( referenciasExcluir ) {
             alteraInfo( info );
             alteraMessage( message );
             alteraProgresso( 100 );
-            //excluirImoveis( data.ids );
             excluirImoveisFrontEnd( data.ids, data.total, 0, function() {prepararImportarImoveis({})} );
         } else {
             prepararImportarImoveis( {} );
@@ -598,6 +612,7 @@ function recuperaPostsExcluir( referenciasExcluir ) {
     const args = {forcar: ( ( document?.forcar === true ) ? true : false ), excluidos: JSON.stringify( referenciasExcluir )};
     doPost( 'RECUPERA_EXCLUIDOS_FROM_JSON', args, success, error, before, null );
 }
+
 function prepararExcluirImoveis( parametrosExcluir ) {
     if ( PineduAjax?.environment === 'development' ) console.log( 'prepararExcluirImoveis' );
     const before = function ( ) {
@@ -628,6 +643,7 @@ function prepararExcluirImoveis( parametrosExcluir ) {
     Object.assign( args, parametrosExcluir );
     doRemotePost( 'listaExcluidos', args, success, error, before, null );
 }
+
 function chunkArray( lista, tamanho ) {
     return lista.reduce( ( acc, item, index ) => {
         if ( index % tamanho === 0 ) {
@@ -638,6 +654,7 @@ function chunkArray( lista, tamanho ) {
         return acc;
     }, [] );
 }
+
 function prepararImportarImoveis( parametrosImportarImoveis ) {
     if ( PineduAjax?.environment === 'development' ) console.log( 'prepararImportarImoveis' );
     const before = function ( ) {
@@ -666,6 +683,7 @@ function prepararImportarImoveis( parametrosImportarImoveis ) {
     Object.assign( args, parametrosImportarImoveis );
     doRemotePost( 'preparaImportacao', args, success, error, before, null );
 }
+
 function recuperarLoteImoveis( listaReferencias, slice, max, offset, total, progresso, retornados ) {
     if ( PineduAjax?.environment === 'development' ) console.log( 'recuperarLoteImoveis' );
     const before = function ( ) {
@@ -700,6 +718,7 @@ function recuperarLoteImoveis( listaReferencias, slice, max, offset, total, prog
     if ( PineduAjax?.environment === 'development' ) console.log( args );
     doRemotePost( 'imoveisByRefs', args, success, error, before, null );
 }
+
 function importarImoveisFrontEnd( listaReferencias, slice, imoveis, max, offset, total, progresso, retornados ) {
     if ( PineduAjax?.environment === 'development' ) console.log( 'importarImoveis' );
     offset = parseInt( offset ) + parseInt( max );
@@ -730,6 +749,7 @@ function importarImoveisFrontEnd( listaReferencias, slice, imoveis, max, offset,
     };
     doPost( 'IMPORTA_FRONTEND_IMPORTAR_IMOVEIS_JSON', args, success, error, before, null );
 }
+
 function prepararImportarImagemDestaque( totalImoveis, isRetificar = false ) {
     if ( PineduAjax?.environment === 'development' ) console.log( 'prepararImportarImagemDestaque' );
     const before = function ( ) {
@@ -764,8 +784,8 @@ function prepararImportarImagemDestaque( totalImoveis, isRetificar = false ) {
     } , error = errorDoPost;
     const args = {};
     doPost( 'PREPARA_IMAGEM_DESTAQUE', args, success, error, before, null );
-
 }
+
 function importarImagemDestaque( totalImoveis, ids, offset, totalDestaques, progresso, retornados, isRetificar = false ) {
     if ( PineduAjax?.environment === 'development' ) console.log( 'importarImagemDestaque' );
     const before = function ( ) {
@@ -803,6 +823,7 @@ function importarImagemDestaque( totalImoveis, ids, offset, totalDestaques, prog
     };
     doPost( 'IMPORTA_IMAGEM_DESTAQUE', args, success, error, before, null );
 }
+
 function finalizarImportacaoDestaques( totalImoveis, isRetificar = false ) {
     if ( PineduAjax?.environment === 'development' ) console.log( 'finalizarImportacaoDestaques' );
 
@@ -826,6 +847,7 @@ function finalizarImportacaoDestaques( totalImoveis, isRetificar = false ) {
     , error = errorDoPost;
     doPost( 'FINALIZA_IMAGEM_DESTAQUE', {}, success, error, before, null );
 }
+
 function finalizarImportacaoFrontEnd( totalImoveis, messagePre = 'Finalizando Importação.', messagePos = 'Importação de Dados e Imóveis realizada com sucesso!' ) {
     if ( PineduAjax?.environment === 'development' ) console.log( 'finalizarImportacaoFrontEnd' );
 
@@ -854,9 +876,7 @@ function finalizarImportacaoFrontEnd( totalImoveis, messagePre = 'Finalizando Im
     };
     doPost( 'FINALIZA_IMPORTACAO', args, success, error, before, null );
 }
-/**
- * Escuta o clique no botão
- */
+
 function retificarDestaque( ) {
     const before = function ( ) {
         escondeFechar( );
@@ -904,6 +924,7 @@ function apagarImoveis( ) {
     , error = errorDoPost;
     doPost( 'IMPORTA_FRONTEND_APAGAR_TODOS_IMOVEIS', {}, success, error, before, null );
 }
+
 function iniciarApagarImoveis( ) {
     if ( PineduAjax?.environment === 'development' ) console.log( 'prepararImportarImoveis' );
     const before = function ( ) {
@@ -927,6 +948,7 @@ function iniciarApagarImoveis( ) {
     const args = {};
     doPost( 'IMPORTA_FRONTEND_SELECIONAR_APAGAR_TODOS_IMOVEIS', args, success, error, before, null );
 }
+
 function preLoginApagarImoveis( progresso ) {
     if ( PineduAjax?.environment === 'development' ) console.log( 'preLogin' );
     preparaObjetoAjax( );
@@ -960,6 +982,7 @@ function preLoginApagarImoveis( progresso ) {
     };
     doRemotePost( 'login', parametros, success, error, before, null );
 }
+
 function posLoginApagarImoveis( dadosLogin, progresso ) {
     if ( PineduAjax?.environment === 'development' ) console.log( 'preLoginApagarImoveis' );
     preparaObjetoAjax( );
@@ -990,6 +1013,7 @@ function posLoginApagarImoveis( dadosLogin, progresso ) {
     };
     doPost( 'IMPORTACAO_PRELOGIN', {}, success, error, before, null );
 }
+
 function selecionarApagarImoveis( dadosLogin, progresso ) {
     if ( PineduAjax?.environment === 'development' ) console.log( 'posLoginApagarImoveis' );
 
@@ -1016,6 +1040,7 @@ function selecionarApagarImoveis( dadosLogin, progresso ) {
     const args = {};
     doPost( 'IMPORTA_FRONTEND_SELECIONAR_APAGAR_TODOS_IMOVEIS', args, success, error, before, null );
 }
+
 function excluirImoveisFrontEnd( listaIds, total, progresso, callBackFunction ) {
     if ( PineduAjax?.environment === 'development' ) console.log( 'excluirImoveisFrontEnd' );
     const before = function ( ) {
@@ -1050,12 +1075,26 @@ function excluirImoveisFrontEnd( listaIds, total, progresso, callBackFunction ) 
     doPost( 'IMPORTA_FRONTEND_APAGAR_IMOVEL', args, success, error, before, null );
 }
 
+// ====================================================================
+// EVENT LISTENERS DOMContentLoaded
+// ====================================================================
 document.addEventListener( 'DOMContentLoaded', function ( ) {
     const btnImportarForcado = document.getElementById( 'btnImportarForcadoFrontEnd' );
     const btnImportar = document.getElementById( 'btnImportarFrontEnd' );
     const btnFechar = document.getElementById( 'btnFechar' );
     const btnRetificar = document.getElementById( 'btnRetificarDestaqueFrontEnd' );
     const btnImportarFrontEndApagarImoveis = document.getElementById( 'btnImportarFrontEndApagarImoveis' );
+
+    // NOVO: Captura do botão de gerar SEO
+    const btnGerarArquivosSeo = document.getElementById( 'btnGerarArquivosSeoFrontEnd' );
+
+    if ( btnGerarArquivosSeo ) {
+        btnGerarArquivosSeo.addEventListener( 'click', function ( e ) {
+            e.preventDefault( );
+            gerarArquivosSeo( );
+        } );
+    }
+
     if ( btnImportarFrontEndApagarImoveis ) {
         btnImportarFrontEndApagarImoveis.addEventListener( 'click', function ( e ) {
             e.preventDefault( );
@@ -1088,6 +1127,6 @@ document.addEventListener( 'DOMContentLoaded', function ( ) {
             finalizaOverlay( );
         } );
     }
-    if ( PineduAjax?.environment === 'development' ) console.log(PineduAjax);
 
+    if ( PineduAjax?.environment === 'development' ) console.log(PineduAjax);
 } );

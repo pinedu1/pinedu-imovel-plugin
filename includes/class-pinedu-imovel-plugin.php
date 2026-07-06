@@ -5,16 +5,18 @@
  * A class definition that includes attributes and functions used across both the
  * public-facing side of the site and the admin area.
  *
- * @link	   https://www.pinedu.com.br
- * @since	  1.0.0
+ * @link       https://www.pinedu.com.br
+ * @since      1.0.0
  *
- * @package	Pinedu_Imovel_Plugin
+ * @package    Pinedu_Imovel_Plugin
  * @subpackage Pinedu_Imovel_Plugin/includes
  */
 class Pinedu_Imovel_Plugin {
+
     protected $loader;
     protected $plugin_name;
     protected $version;
+
     public function __construct() {
         if ( defined( 'PINEDU_IMOVEL_PLUGIN_VERSION' ) ) {
             $this->version = PINEDU_IMOVEL_PLUGIN_VERSION;
@@ -22,11 +24,13 @@ class Pinedu_Imovel_Plugin {
             $this->version = '1.0.0';
         }
         $this->plugin_name = 'pinedu-imovel-plugin';
+
         $this->load_dependencies();
         $this->set_locale();
         $this->define_admin_hooks();
         $this->define_public_hooks();
     }
+
     private function load_dependencies() {
         require_once plugin_dir_path( __FILE__ ) . 'classes/Posttypes.php';
         require_once plugin_dir_path( __FILE__ ) . 'classes/Taxonomias.php';
@@ -40,20 +44,23 @@ class Pinedu_Imovel_Plugin {
         require_once plugin_dir_path( dirname( __FILE__ ) ) . 'rest/PineduReceiverRest.php';
         $this->loader = new Pinedu_Imovel_Plugin_Loader();
     }
+
     private function define_admin_hooks() {
         $plugin_admin = new Pinedu_Imovel_Plugin_Admin( $this->get_plugin_name(), $this->get_version() );
         $this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_styles' );
         $this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_scripts' );
     }
+
     private function define_public_hooks() {
         $plugin_public = new Pinedu_Imovel_Plugin_Public( $this->get_plugin_name(), $this->get_version() );
         $pretty_url = new PrettyUrl( true );
-        // CORREÇÃO E INTERCEPTAÇÃO: Usando $this para referenciar os métodos da própria classe
+
         $this->loader->add_action( 'phpmailer_init', $this, 'config_wp_mail', 0 );
         $this->loader->add_action( 'pinedu_trigger_action', 'PineduReceiverRest', 'pinedu_trigger_action_callback', 10, 1 );
         $this->loader->add_filter( 'wp_mail', $this, 'aplicar_template_email', 10 );
         $this->loader->add_filter( 'pre_get_document_title', $this, 'controlar_titulo_seo' );
         $this->loader->add_action( 'wp_head', $this, 'injetar_metas_seo', 1 );
+
         $this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_styles', 5 );
         $this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_scripts', 10 );
         $this->loader->add_action( 'init', $plugin_public, 'register_posttypes', 6 );
@@ -65,7 +72,27 @@ class Pinedu_Imovel_Plugin {
         $this->loader->add_action( 'before_delete_post', $plugin_public, 'excluir_fotos_ao_apagar_post', 0 );
         $this->loader->add_action( 'template_redirect', $plugin_public, 'forcar_argumento_pesquisa_imovel', 10 );
         $this->loader->add_action( 'template_redirect', $plugin_public, 'forcar_404_se_vazio', 20 );
-        //
+
+        // Configurações e substituições dinâmicas de SEO baseadas no painel
+        // 1. Desliga as funções do Yoast SEO
+        $this->loader->add_filter( 'wpseo_metadesc', $this, 'override_yoast_seo' );
+        $this->loader->add_filter( 'wpseo_opengraph', $this, 'override_yoast_seo' );
+        $this->loader->add_filter( 'wpseo_twitter', $this, 'override_yoast_seo' );
+
+        // 2. Desliga as funções do Rank Math
+        $this->loader->add_filter( 'rank_math/frontend/description', $this, 'override_rankmath_seo' );
+        $this->loader->add_filter( 'rank_math/opengraph/facebook', $this, 'override_rankmath_seo' );
+        $this->loader->add_filter( 'rank_math/opengraph/twitter', $this, 'override_rankmath_seo' );
+
+        // 3. Desliga as funções do All in One SEO (AIOSEO)
+        $this->loader->add_filter( 'aioseo_disable_title', $this, 'override_aioseo_seo' );
+        $this->loader->add_filter( 'aioseo_disable_description', $this, 'override_aioseo_seo' );
+
+        // Migalhas do Sitemap
+        $this->loader->add_filter( 'robots_txt', $this, 'pinedu_adicionar_sitemap_robots_txt', 10, 2 );
+        $this->loader->add_filter( 'wpseo_sitemap_index', $this, 'pinedu_adicionar_sitemap_yoast' );
+        $this->loader->add_filter( 'rank_math/sitemap/index', $this, 'pinedu_adicionar_sitemap_rankmath' );
+
         $this->loader->add_filter( 'option_medium_size_w', $plugin_public, 'forcar_largura_medium' );
         $this->loader->add_filter( 'option_medium_size_h', $plugin_public, 'forcar_altura_medium' );
         $this->loader->add_filter( 'option_medium_crop', $plugin_public, 'forcar_crop_medium' );
@@ -74,6 +101,7 @@ class Pinedu_Imovel_Plugin {
         $this->loader->add_filter( 'option_large_crop', $plugin_public, 'forcar_crop_large' );
         $this->loader->add_filter( 'wp_editor_set_quality', $plugin_public, 'ajustar_qualidade_imagem' );
     }
+
     public function run() {
         $this->loader->run();
     }
@@ -86,28 +114,58 @@ class Pinedu_Imovel_Plugin {
     public function get_version() {
         return $this->version;
     }
+
+    // =================================================================================
+    // MÉTODOS DE CONTROLE SEO DINÂMICO
+    // =================================================================================
+
     /**
-     * Intercepta o envio a nível de servidor/SMTP e força o HTML
+     * Retorna "false" e bloqueia a injeção do Yoast se a opção estiver marcada
      */
+    public function override_yoast_seo( $value ) {
+        $options = get_option( 'pinedu_imovel_options', [] );
+        if ( isset( $options['desativar_yoast'] ) && $options['desativar_yoast'] === 'on' ) {
+            return false;
+        }
+        return $value;
+    }
+
+    /**
+     * Retorna "false" e bloqueia a injeção do Rank Math se a opção estiver marcada
+     */
+    public function override_rankmath_seo( $value ) {
+        $options = get_option( 'pinedu_imovel_options', [] );
+        if ( isset( $options['desativar_rankmath'] ) && $options['desativar_rankmath'] === 'on' ) {
+            return false;
+        }
+        return $value;
+    }
+
+    /**
+     * Retorna "true" para afirmar o desligamento do AIOSEO se a opção estiver marcada
+     */
+    public function override_aioseo_seo( $value ) {
+        $options = get_option( 'pinedu_imovel_options', [] );
+        if ( isset( $options['desativar_aioseo'] ) && $options['desativar_aioseo'] === 'on' ) {
+            return true;
+        }
+        return $value;
+    }
+
+    // =================================================================================
+    // FUNÇÕES DE EMAIL E ROTINAS PADRÃO
+    // =================================================================================
+
     public function config_wp_mail( $phpmailer ) {
-        // Força globalmente o tipo de conteúdo como HTML
         $phpmailer->isHTML( true );
         require_once plugin_dir_path( __FILE__ ) . 'classes/MailConfig.php';
         MailConfig::config_wp_mail( $phpmailer );
     }
-    /**
-     * Intercepta o conteúdo do e-mail antes de passar para o PHPMailer e aplica o Template
-     */
-    /**
-     * Intercepta o conteúdo do e-mail antes de passar para o PHPMailer e busca o Template no Tema
-     */
-    public function aplicar_template_email( $args ) {
 
+    public function aplicar_template_email( $args ) {
         // 1. Interceptação: Formulário de Contato Padrão
         if ( strpos( $args['subject'], 'Contato via Site' ) !== false ) {
             $mensagem_original = $args['message'];
-
-            // Extrai as variáveis da string original gerada no formulário
             $nome     = preg_match( '/Nome:\s*(.*)/i', $mensagem_original, $matches ) ? trim( $matches[1] ) : '-';
             $email    = preg_match( '/Email:\s*(.*)/i', $mensagem_original, $matches ) ? trim( $matches[1] ) : '-';
             $telefone = preg_match( '/Telefone:\s*(.*)/i', $mensagem_original, $matches ) ? trim( $matches[1] ) : '-';
@@ -117,7 +175,6 @@ class Pinedu_Imovel_Plugin {
                 $texto_mensagem = trim( $matches[1] );
             }
 
-            // Prepara o array de dados para enviar ao arquivo do tema
             $dados_template = [
                 'nome'         => $nome
                 , 'email'      => $email
@@ -125,22 +182,17 @@ class Pinedu_Imovel_Plugin {
                 , 'mensagem'   => $texto_mensagem
             ];
 
-            // Inicia o buffer para não imprimir o HTML na tela do usuário
             ob_start();
             get_template_part( 'template-parts/empresa/template-email', 'email', $dados_template );
             $corpo_email_html = ob_get_clean();
 
-            // Fallback de segurança
             if ( ! empty( $corpo_email_html ) ) {
                 $args['message'] = $corpo_email_html;
             }
         }
-
         // 2. Interceptação: Formulário Trabalhe Conosco
         elseif ( strpos( $args['subject'], 'Trabalhe Conosco' ) !== false ) {
             $mensagem_original = $args['message'];
-
-            // Extrai as variáveis baseadas no padrão montado no arquivo trabalhe-conosco.php
             $nome     = preg_match( '/Nome:\s*(.*)/i', $mensagem_original, $matches ) ? trim( $matches[1] ) : '-';
             $email    = preg_match( '/Email:\s*(.*)/i', $mensagem_original, $matches ) ? trim( $matches[1] ) : '-';
             $celular  = preg_match( '/Telefone:\s*(.*)/i', $mensagem_original, $matches ) ? trim( $matches[1] ) : '-';
@@ -153,7 +205,6 @@ class Pinedu_Imovel_Plugin {
                 $texto_mensagem = trim( $matches[1] );
             }
 
-            // Empacota os dados extras para o RH
             $dados_template = [
                 'nome'       => $nome
                 , 'email'    => $email
@@ -164,21 +215,15 @@ class Pinedu_Imovel_Plugin {
                 , 'mensagem' => $texto_mensagem
             ];
 
-            // Inicia o buffer e chama a nova template de RH
             ob_start();
-            // Nota: Certifique-se de que o arquivo criado se chama "template-email-trabalhe-conosco.php"
-            // e está dentro da mesma pasta "template-parts/empresa/"
             get_template_part( 'template-parts/empresa/template-email', 'trabalhe-conosco', $dados_template );
             $corpo_email_html = ob_get_clean();
 
             if ( ! empty( $corpo_email_html ) ) {
                 $args['message'] = $corpo_email_html;
             }
-            //
         } else if (( strpos( $args['subject'], 'Solicitação de Visita no Imóvel Ref' ) !== false ) || ( strpos( $args['subject'], 'Opinião da Visita - Ref' ) !== false )) {
             $mensagem_original = $args['message'];
-
-            // Extrai as variáveis da string original gerada no formulário
             $nome     = preg_match( '/Nome:\s*(.*)/i', $mensagem_original, $matches ) ? trim( $matches[1] ) : '-';
             $email    = preg_match( '/Email:\s*(.*)/i', $mensagem_original, $matches ) ? trim( $matches[1] ) : '-';
             $telefone = preg_match( '/Telefone:\s*(.*)/i', $mensagem_original, $matches ) ? trim( $matches[1] ) : '-';
@@ -190,7 +235,6 @@ class Pinedu_Imovel_Plugin {
                 $texto_mensagem = trim( $matches[1] );
             }
 
-            // Prepara o array de dados para enviar ao arquivo do tema
             $dados_template = [
                 'nome'         => $nome
                 , 'email'      => $email
@@ -200,19 +244,15 @@ class Pinedu_Imovel_Plugin {
                 , 'corretor'   => $corretor
             ];
 
-            // Inicia o buffer para não imprimir o HTML na tela do usuário
             ob_start();
             get_template_part( 'template-parts/empresa/template-email', 'imovel', $dados_template );
             $corpo_email_html = ob_get_clean();
 
-            // Fallback de segurança
             if ( ! empty( $corpo_email_html ) ) {
                 $args['message'] = $corpo_email_html;
             }
         } else if ( strpos( $args['subject'], 'Interesse no Imóvel Ref' ) !== false ) {
             $mensagem_original = $args['message'];
-
-            // Extrai as variáveis da string original gerada no formulário
             $nome     = preg_match( '/Nome:\s*(.*)/i', $mensagem_original, $matches ) ? trim( $matches[1] ) : '-';
             $email    = preg_match( '/Email:\s*(.*)/i', $mensagem_original, $matches ) ? trim( $matches[1] ) : '-';
             $telefone = preg_match( '/Telefone:\s*(.*)/i', $mensagem_original, $matches ) ? trim( $matches[1] ) : '-';
@@ -224,7 +264,6 @@ class Pinedu_Imovel_Plugin {
                 $texto_mensagem = trim( $matches[1] );
             }
 
-            // Prepara o array de dados para enviar ao arquivo do tema
             $dados_template = [
                 'nome'         => $nome
                 , 'email'      => $email
@@ -234,27 +273,22 @@ class Pinedu_Imovel_Plugin {
                 , 'corretor'   => $corretor
             ];
 
-            // Inicia o buffer para não imprimir o HTML na tela do usuário
             ob_start();
             get_template_part( 'template-parts/empresa/template-email', 'email', $dados_template );
             $corpo_email_html = ob_get_clean();
 
-            // Fallback de segurança
             if ( ! empty( $corpo_email_html ) ) {
                 $args['message'] = $corpo_email_html;
             }
         }
-
         return $args;
     }
+
     private function set_locale() {
         $plugin_i18n = new Pinedu_Imovel_Plugin_i18n();
         $this->loader->add_action( 'plugins_loaded', $plugin_i18n, 'load_plugin_textdomain' );
     }
-    /**
-     * PASSO B: Intercepta e controla a tag <title> de forma dinâmica.
-     * Arquitetura baseada em Closures e Roteamento de Condições.
-     */
+
     function controlar_titulo_seo( $title ) {
         $gerar_titulo_home = function() {
             $desc = get_bloginfo( 'description' );
@@ -405,53 +439,18 @@ class Pinedu_Imovel_Plugin {
             }
             return $title;
         };
-/*
-        $is_development_mode = ( defined( 'WP_DEBUG' ) && WP_DEBUG ) || wp_get_environment_type() === 'development';
-        if ( $is_development_mode ) {
-            $debug = "DEBUG | ";
-            $debug .= "is_front_page: " . ( is_front_page() ? 'true' : 'false' ) . " | ";
-            $debug .= "is_home: " . ( is_home() ? 'true' : 'false' ) . " | ";
-            $debug .= "is_singular('imovel'): " . ( is_singular( 'imovel' ) ? 'true' : 'false' ) . " | ";
-            $debug .= "is_search: " . ( is_search() ? 'true' : 'false' ) . " | ";
-            $debug .= "is_page('pesquisa'): " . ( is_page( 'pesquisa' ) ? 'true' : 'false' ) . " | ";
-            $debug .= "is_singular('post'): " . ( is_singular( 'post' ) ? 'true' : 'false' ) . " | ";
-            $debug .= "is_page: " . ( is_page() ? 'true' : 'false' ) . " | ";
-            $debug .= "is_tax: " . ( is_tax() ? 'true' : 'false' ) . " | ";
-            $debug .= "is_category: " . ( is_category() ? 'true' : 'false' ) . " | ";
-            $debug .= "is_archive: " . ( is_archive() ? 'true' : 'false' ) . " | ";
-            $debug .= "is_post_type_archive('imovel'): " . ( is_post_type_archive( 'imovel' ) ? 'true' : 'false' );
-            var_dump( $debug );
-        }
- */
-        // ==============================================================
-        // 2. ROTEAMENTO (Avaliação e Invocação)
-        // ==============================================================
+
+        // ROTEAMENTO
         $eh_pesquisa = is_search() || is_page( 'pesquisa' ) || ( ( is_home() || is_front_page() ) && isset( $_GET['tipo_pesquisa_submit'] ) );
-        if ( $eh_pesquisa ) {
-            return $gerar_titulo_pesquisa();
-        }
-        if ( is_tax() || is_category() ) {
-            return $gerar_titulo_taxonomia();
-        }
-        if ( is_front_page() || is_home() ) {
-            return $gerar_titulo_home();
-        }
-        if ( is_singular( 'imovel' ) ) {
-            return $gerar_titulo_imovel();
-        }
-        if ( is_singular( 'post' ) ) {
-            return $gerar_titulo_post();
-        }
-        if ( is_page() ) {
-            return $gerar_titulo_pagina();
-        }
+        if ( $eh_pesquisa ) return $gerar_titulo_pesquisa();
+        if ( is_tax() || is_category() ) return $gerar_titulo_taxonomia();
+        if ( is_front_page() || is_home() ) return $gerar_titulo_home();
+        if ( is_singular( 'imovel' ) ) return $gerar_titulo_imovel();
+        if ( is_singular( 'post' ) ) return $gerar_titulo_post();
+        if ( is_page() ) return $gerar_titulo_pagina();
         return $title;
     }
 
-    /**
-     * PASSO C: Injeção de Meta Description e Open Graph
-     * Arquitetura baseada em Closures e Roteamento de Condições.
-     */
     function injetar_metas_seo() {
         $renderizar_og_imovel = function() {
             global $post;
@@ -490,7 +489,7 @@ class Pinedu_Imovel_Plugin {
                 $preco_fmt = '';
                 if ( $valor > 0 ) {
                     $preco_fmt = $prefixo_preco . ' R$ ' . number_format( $valor, 2, ',', '.' );
-                    $preco_fmt = str_replace( ',00', '', $preco_fmt ); // Encurta valores redondos
+                    $preco_fmt = str_replace( ',00', '', $preco_fmt );
                 }
                 $mecanica = $tipo_imovel_fmt;
                 if ( !empty($regiao_fmt) ) $mecanica .= " em {$regiao_fmt}";
@@ -685,7 +684,7 @@ class Pinedu_Imovel_Plugin {
             $descricao = "Especializada em imóveis de {$cidade} e região. Encontre a casa, apartamento ou imóvel comercial ideal com a segurança e transparência que a sua família merece.";
             $url = home_url( '/' );
             $site_name = get_bloginfo( 'name' );
-            $imagem = get_template_directory_uri() . '/images/logofinal.png'; // Caminho da sua logo
+            $imagem = get_template_directory_uri() . '/images/logofinal.png';
 
             echo "\n<!-- Meta Tags SEO e Open Graph (Home) -->\n";
             echo '<meta name="description" content="' . esc_attr( $descricao ) . '" />' . "\n";
@@ -709,10 +708,8 @@ class Pinedu_Imovel_Plugin {
         };
         $renderizar_og_pesquisa = function() {
             $titulo = wp_get_document_title();
-            // Remove o nome da empresa do título para criar uma descrição limpa
             $termo_pesquisa = trim( str_replace( ' | ' . get_bloginfo( 'name' ), '', $titulo ) );
             $descricao = "Confira as melhores opções para " . $termo_pesquisa . ". A Haddad Imóveis tem o imóvel perfeito para você com segurança e transparência.";
-
             $url = home_url( $_SERVER['REQUEST_URI'] );
             $site_name = get_bloginfo( 'name' );
             $imagem = get_template_directory_uri() . '/images/logofinal.png';
@@ -751,7 +748,6 @@ class Pinedu_Imovel_Plugin {
 
             if ( isset( $termo_atual->taxonomy ) && isset( $termo_atual->name ) && !empty( $termo_atual->name ) ) {
                 $nome_formatado = mb_convert_case( $termo_atual->name, MB_CASE_TITLE, 'UTF-8' );
-
                 switch ( $termo_atual->taxonomy ) {
                     case 'tipo-imovel':
                         $descricao = "Buscando por {$nome_formatado}? Confira nossa seleção de imóveis exclusivos na {$site_name}.";
@@ -760,7 +756,6 @@ class Pinedu_Imovel_Plugin {
                         $descricao = "Encontre seu imóvel ideal em {$nome_formatado}. As melhores opções de compra e locação na {$site_name}.";
                         break;
                     case 'regiao':
-                        // Usa o cruzamento para descobrir a cidade, igual fizemos no título
                         $parent_slug = get_term_meta( $termo_atual->term_id, 'parent_id', true );
                         if ( !empty( $parent_slug ) ) {
                             $cidade_term = get_term_by( 'slug', $parent_slug, 'cidade' );
@@ -807,7 +802,6 @@ class Pinedu_Imovel_Plugin {
             $url = get_permalink();
             $imagem = get_template_directory_uri() . '/images/logofinal.png';
 
-            // Gatilhos comerciais específicos para as páginas institucionais
             $slug = isset( $post->post_name ) ? $post->post_name : '';
             if ( $slug === 'contato' ) {
                 $descricao = "Fale com a equipe da {$site_name}. Tire suas dúvidas, solicite atendimento e encontre as melhores oportunidades no mercado imobiliário.";
@@ -816,7 +810,6 @@ class Pinedu_Imovel_Plugin {
             } elseif ( $slug === 'trabalhe-conosco' ) {
                 $descricao = "Faça parte da equipe {$site_name}! Confira nossas oportunidades e venha construir uma carreira de sucesso no mercado imobiliário.";
             } else {
-                // Fallback para outras páginas (ex: Sobre Nós, Política de Privacidade)
                 $descricao = has_excerpt() ? wp_strip_all_tags( get_the_excerpt() ) : wp_trim_words( wp_strip_all_tags( $post->post_content ), 25, '...' );
                 if ( empty( $descricao ) ) {
                     $descricao = "Saiba mais informações sobre a {$site_name}, sua parceira de confiança em negócios imobiliários.";
@@ -846,29 +839,44 @@ class Pinedu_Imovel_Plugin {
             echo '<meta name="twitter:image" content="' . esc_url( $imagem ) . '" />' . "\n";
             echo "<!-- End Open Graph Meta Tags -->\n\n";
         };
-        // ==============================================================
-        // 2. ROTEAMENTO (Avaliação e Invocação)
-        // ==============================================================
+
+        // ROTEAMENTO
         $eh_pesquisa = is_search() || is_page( 'pesquisa' ) || ( ( is_home() || is_front_page() ) && isset( $_GET['tipo_pesquisa_submit'] ) );
-        if ( $eh_pesquisa ) {
-            return $renderizar_og_pesquisa();
-        }
-        if ( is_tax() || is_category() ) {
-            return $renderizar_og_taxonomia();
-        }
-        if ( is_front_page() || is_home() ) {
-            return $renderizar_og_home();
-        }
-        if ( is_singular( 'imovel' ) ) {
-            return $renderizar_og_imovel();
-        }
-        if ( is_singular( 'post' ) ) {
-            return $renderizar_og_post_padrao();
-        }
-        if ( is_page() ) {
-            return $renderizar_og_pagina();
-        }
+        if ( $eh_pesquisa ) return $renderizar_og_pesquisa();
+        if ( is_tax() || is_category() ) return $renderizar_og_taxonomia();
+        if ( is_front_page() || is_home() ) return $renderizar_og_home();
+        if ( is_singular( 'imovel' ) ) return $renderizar_og_imovel();
+        if ( is_singular( 'post' ) ) return $renderizar_og_post_padrao();
+        if ( is_page() ) return $renderizar_og_pagina();
     }
 
+    function pinedu_adicionar_sitemap_yoast( $sitemap_custom_items ) {
+        $sitemap_url = home_url( '/sitemap_imoveis.xml' );
+        $file_path = ABSPATH . 'sitemap_imoveis.xml';
+        $lastmod = file_exists( $file_path ) ? date( 'c', filemtime( $file_path ) ) : date( 'c' );
+        $sitemap_custom_items .= "<sitemap>\n";
+        $sitemap_custom_items .= "\t<loc>" . esc_url( $sitemap_url ) . "</loc>\n";
+        $sitemap_custom_items .= "\t<lastmod>" . $lastmod . "</lastmod>\n";
+        $sitemap_custom_items .= "</sitemap>\n";
+        return $sitemap_custom_items;
+    }
 
+    function pinedu_adicionar_sitemap_rankmath( $xml ) {
+        $sitemap_url = home_url( '/sitemap_imoveis.xml' );
+        $file_path = ABSPATH . 'sitemap_imoveis.xml';
+        $lastmod = file_exists( $file_path ) ? date( 'c', filemtime( $file_path ) ) : date( 'c' );
+        $xml .= "<sitemap>\n";
+        $xml .= "\t<loc>" . esc_url( $sitemap_url ) . "</loc>\n";
+        $xml .= "\t<lastmod>" . $lastmod . "</lastmod>\n";
+        $xml .= "</sitemap>\n";
+        return $xml;
+    }
+
+    function pinedu_adicionar_sitemap_robots_txt( $output, $public ) {
+        if ( '0' != $public ) {
+            $sitemap_url = home_url( '/sitemap_imoveis.xml' );
+            $output .= "\nSitemap: " . esc_url( $sitemap_url ) . "\n";
+        }
+        return $output;
+    }
 }

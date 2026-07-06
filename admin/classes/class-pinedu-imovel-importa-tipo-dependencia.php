@@ -18,9 +18,6 @@ class Pinedu_Imovel_Importa_Tipo_Dependencia extends Pinedu_Importa_Taxonomia_Ba
 			$ordem = $tipo['ordem'];
 			$tipo_campo = $tipo['tipo'];
             $pai = strtolower( trim( $tipo['pai'] ) );
-            if ($pai == 'cv') {
-                error_log('pai: ' . print_r($tipo, true));
-            }
 			$key = $sigla;
 			$nome = sanitize_text_field( $nome );
 			$term = $this->salva( $key, $nome, 'tipo-dependencia' );

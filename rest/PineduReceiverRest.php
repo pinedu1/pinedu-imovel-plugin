@@ -110,11 +110,6 @@ require_once plugin_dir_path(__FILE__) . '../admin/classes/class-pinedu-imovel-i
 
     public static function inicializar_atualizacao( $request ) {
         $options = get_option('pinedu_imovel_options', []);
-        if ( isset( $options['importacao_andamento'] ) && 'on' === $options['importacao_andamento'] ) {
-            $options['importacao_andamento'] = true;
-        } else {
-            $options['importacao_andamento'] = false;
-        }
         if ( $options['importacao_andamento'] === true ) {
             wp_send_json_error( [
                 'message' => 'Importação em andamento por outro processo. Tente novamente mais tarde!',

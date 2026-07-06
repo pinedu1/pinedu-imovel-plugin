@@ -47,6 +47,7 @@ class PineduImportarFrontEnd {
     const HOOK_IMPORTAR_APAGAR_TODOS_IMOVEIS = 'IMPORTA_FRONTEND_APAGAR_TODOS_IMOVEIS';
     const HOOK_IMPORTA_FRONTEND_SELECIONAR_APAGAR_TODOS_IMOVEIS = 'IMPORTA_FRONTEND_SELECIONAR_APAGAR_TODOS_IMOVEIS';
     const HOOK_IMPORTA_FRONTEND_APAGAR_IMOVEL = 'IMPORTA_FRONTEND_APAGAR_IMOVEL';
+    const HOOK_GERAR_ARQUIVOS_SEO = 'GERAR_ARQUIVOS_SEO';
     public static function init( ) {
         if ( !is_admin( ) ) return;
         add_action( self::PREFIXO_ADMIN . self::HOOK_INICIALIZAR, [ __CLASS__, 'testar_server' ], 10 );
@@ -76,6 +77,7 @@ class PineduImportarFrontEnd {
         add_action( self::PREFIXO_ADMIN . self::HOOK_IMPORTAR_APAGAR_TODOS_IMOVEIS, [ __CLASS__, 'apagar_todos_imoveis' ], 10 );
         add_action( self::PREFIXO_ADMIN . self::HOOK_IMPORTA_FRONTEND_SELECIONAR_APAGAR_TODOS_IMOVEIS, [ __CLASS__, 'selecionar_apagar_todos_imoveis' ], 10 );
         add_action( self::PREFIXO_ADMIN . self::HOOK_IMPORTA_FRONTEND_APAGAR_IMOVEL, [ __CLASS__, 'apagar_post_imovel' ], 10 );
+        add_action( self::PREFIXO_ADMIN . self::HOOK_GERAR_ARQUIVOS_SEO, [ __CLASS__, 'gerar_arquivos_seo' ], 10 );
         add_filter( 'heartbeat_settings', [ __CLASS__, 'custom_heartbeat_settings'] );
     }
     //selecionar_apagar_todos_imoveis
@@ -135,9 +137,11 @@ class PineduImportarFrontEnd {
         // 1. Apaga a imagem destacada (thumbnail), se existir
         $thumbnail_id = get_post_thumbnail_id( $id );
         if ( $thumbnail_id ) {
+/*
             if ( is_development_mode() ) {
                 error_log('PineduImportarFrontEnd:apagar_imovel_from_id:wp_delete_attachment: ' . print_r($thumbnail_id, true));
             }
+ */
             wp_delete_attachment( $thumbnail_id, true );
         }
 
@@ -145,9 +149,11 @@ class PineduImportarFrontEnd {
         $fotografias_imovel = get_post_meta( $id, 'fotografias', false );
         if ( ! empty( $fotografias_imovel ) ) {
             foreach ( $fotografias_imovel as $fotografia ) {
+/*
                 if ( is_development_mode() ) {
                     error_log('PineduImportarFrontEnd:apagar_imovel_from_id:fotografia: ' . print_r($fotografia, true));
                 }
+ */
                 if ( isset( $fotografia['id'] ) ) {
                     $attachment_id = (int) $fotografia['id'];
                     if ( $attachment_id ) {
@@ -799,13 +805,17 @@ class PineduImportarFrontEnd {
         $imoveis = [];
         if ( isset( $_POST['imoveis'] ) && is_string( $_POST['imoveis'] ) ) {
             $imoveis_string = wp_unslash( $_POST['imoveis'] );
+/*
             if (is_development_mode()) {
                 error_log( 'PineduImportarFrontEnd:importar_imoveis_json:imoveis_string:' . $imoveis_string );
             }
+ */
             $imoveis = json_decode( $imoveis_string, true );
+/*
             if (is_development_mode()) {
                 error_log( 'PineduImportarFrontEnd:importar_imoveis_json:imoveis:' . print_r( $imoveis, true ) );;
             }
+ */
         }
         if ( empty( $imoveis ) ) {
             wp_send_json( [
@@ -956,5 +966,39 @@ class PineduImportarFrontEnd {
     }
     public static function get_agendamento_info( ):string {
         return self::getImportador( )->get_agendamento_info( );
+    }
+    // ====================================================================
+    // NOVO: Backend Handler para a Requisição de Geração de SEO
+    // ====================================================================
+    public static function gerar_arquivos_seo() {
+        try {
+            // Verifica se a classe que contém os métodos de geração existe no momento da requisição
+            if ( class_exists('\PineduReceiverRest') ) {
+                \PineduReceiverRest::generate_site_map();
+                \PineduReceiverRest::generate_json_ld();
+                \PineduReceiverRest::generate_feed();
+
+                wp_send_json([ 'success' => true ]);
+            } else {
+                wp_send_json([ 'success' => false, 'message' => 'Classe de geração de SEO não encontrada no servidor.' ]);
+            }
+        } catch ( Throwable $e ) { // <-- 'Throwable' captura Exception E erros fatais do PHP
+            // Monta um pacote completo com o rastro do erro
+            $debug_info = [
+                'error' => $e->getMessage(),
+                'file'  => $e->getFile(),
+                'line'  => $e->getLine(),
+                'trace' => $e->getTraceAsString()
+            ];
+            // 1. Grava no debug.log do servidor por segurança (se o WP_DEBUG estiver true)
+            error_log( 'Falha no Gerador de SEO: ' . print_r( $debug_info, true ) );
+            // 2. Devolve tudo mastigado para o JavaScript ler no Console / Network tab
+            wp_send_json([
+                'success' => false,
+                'message' => 'Erro durante a geração: ' . $e->getMessage(),
+                'debug'   => $debug_info
+            ]);
+        }
+        wp_die();
     }
 }

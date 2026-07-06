@@ -64,6 +64,9 @@
                 <li>
                     <button id="btnRetificarDestaqueFrontEnd" class="button secondary" style="display: none" <?php echo $importacao_andamento?'disabled':'' ?>>Retificar Destaques</button>
                 </li>
+                <li>
+                    <button id="btnGerarArquivosSeoFrontEnd" class="button button-primary" <?php echo $importacao_andamento?'disabled':'' ?>>Gerar Arquivos SEO</button>
+                </li>
             </ul>
         </div>
     </form>
