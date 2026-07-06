@@ -416,30 +416,48 @@ class Pinedu_Imovel_Plugin {
         };
         $gerar_titulo_taxonomia = function() use ( $title ) {
             $termo_atual = get_queried_object();
+
             if ( isset( $termo_atual->taxonomy ) && isset( $termo_atual->name ) && !empty( $termo_atual->name ) ) {
                 $nome_formatado = mb_convert_case( $termo_atual->name, MB_CASE_TITLE, 'UTF-8' );
+
+                // Determina os prefixos dinamicamente com base no parâmetro GET 'contrato'
+                // Regra aplicada para todas as taxonomias
+                $prefixo_tipo  = "Comprar ou Alugar ";
+                $prefixo_local = "Comprar ou Alugar Imóveis em ";
+                if ( isset( $_GET['contrato'] ) ) {
+                    $contrato = sanitize_text_field( $_GET['contrato'] );
+                    if ( $contrato === '1' ) {
+                        $prefixo_tipo  = "Comprar ";
+                        $prefixo_local = "Comprar Imóveis em ";
+                    } elseif ( $contrato === '2' ) {
+                        $prefixo_tipo  = "Alugar ";
+                        $prefixo_local = "Alugar Imóveis em ";
+                    } elseif ( $contrato === '3' ) {
+                        $prefixo_tipo  = "Lançamentos de ";
+                        $prefixo_local = "Lançamentos de Imóveis em ";
+                    }
+                }
                 switch ( $termo_atual->taxonomy ) {
                     case 'tipo-imovel':
-                        return $nome_formatado . " | " . get_bloginfo( 'name' );
+                        return $prefixo_tipo . $nome_formatado . " | " . get_bloginfo( 'name' );
                     case 'cidade':
-                        return "Imóveis em " . $nome_formatado . " | " . get_bloginfo( 'name' );
+                        return $prefixo_local . $nome_formatado . " | " . get_bloginfo( 'name' );
                     case 'regiao':
                         $parent_slug = get_term_meta( $termo_atual->term_id, 'parent_id', true );
                         if ( !empty( $parent_slug ) ) {
                             $cidade_term = get_term_by( 'slug', $parent_slug, 'cidade' );
                             if ( $cidade_term && !is_wp_error( $cidade_term ) ) {
                                 $cidade_nome = mb_convert_case( $cidade_term->name, MB_CASE_TITLE, 'UTF-8' );
-                                return "Imóveis em {$cidade_nome} • {$nome_formatado} | " . get_bloginfo( 'name' );
+                                return $prefixo_local . "{$cidade_nome} • {$nome_formatado} | " . get_bloginfo( 'name' );
                             }
                         }
-                        return "Imóveis em " . $nome_formatado . " | " . get_bloginfo( 'name' );
+                        return $prefixo_local . $nome_formatado . " | " . get_bloginfo( 'name' );
                     default:
-                        return "Imóveis em " . $nome_formatado . " | " . get_bloginfo( 'name' );
+                        return $prefixo_local . $nome_formatado . " | " . get_bloginfo( 'name' );
                 }
             }
             return $title;
         };
-
         // ROTEAMENTO
         $eh_pesquisa = is_search() || is_page( 'pesquisa' ) || ( ( is_home() || is_front_page() ) && isset( $_GET['tipo_pesquisa_submit'] ) );
         if ( $eh_pesquisa ) return $gerar_titulo_pesquisa();
@@ -546,6 +564,7 @@ class Pinedu_Imovel_Plugin {
                 }
             }
             echo "\n<!-- Meta Tags SEO e Open Graph (Facebook/Instagram/LinkedIn) -->\n";
+            echo '<link rel="canonical" href="' . esc_url( $og_url ) . '" />' . "\n";
             echo '<meta name="description" content="' . esc_attr( $og_description ) . '" />' . "\n";
             echo '<meta name="author" content="' . esc_attr( $og_site_name ) . '" />' . "\n";
             echo '<meta property="og:locale" content="pt_BR" />' . "\n";
@@ -659,6 +678,7 @@ class Pinedu_Imovel_Plugin {
             $og_site_name = get_bloginfo( 'name' );
             $og_image = has_post_thumbnail() ? get_the_post_thumbnail_url( $post->ID, 'full' ) : '';
             echo "\n<!-- Meta Tags SEO e Open Graph -->\n";
+            echo '<link rel="canonical" href="' . esc_url( $og_url ) . '" />' . "\n";
             echo '<meta name="description" content="' . esc_attr( $og_description ) . '" />' . "\n";
             echo '<meta name="author" content="' . esc_attr( $og_site_name ) . '" />' . "\n";
             echo '<meta property="og:locale" content="pt_BR" />' . "\n";
@@ -681,12 +701,13 @@ class Pinedu_Imovel_Plugin {
                     $cidade = mb_convert_case( $cid->name, MB_CASE_TITLE, 'UTF-8' );
                 }
             }
-            $descricao = "Especializada em imóveis de {$cidade} e região. Encontre a casa, apartamento ou imóvel comercial ideal com a segurança e transparência que a sua família merece.";
+            $descricao = "Especializada em imóveis de {$cidade} e região. Encontre a casa, apartamento ou imóvel comercial que a sua família merece.";
             $url = home_url( '/' );
             $site_name = get_bloginfo( 'name' );
             $imagem = get_template_directory_uri() . '/images/logofinal.png';
 
             echo "\n<!-- Meta Tags SEO e Open Graph (Home) -->\n";
+            echo '<link rel="canonical" href="' . esc_url( $url ) . '" />' . "\n";
             echo '<meta name="description" content="' . esc_attr( $descricao ) . '" />' . "\n";
             echo '<meta name="author" content="' . esc_attr( $site_name ) . '" />' . "\n";
             echo '<meta property="og:locale" content="pt_BR" />' . "\n";
@@ -711,10 +732,13 @@ class Pinedu_Imovel_Plugin {
             $termo_pesquisa = trim( str_replace( ' | ' . get_bloginfo( 'name' ), '', $titulo ) );
             $descricao = "Confira as melhores opções para " . $termo_pesquisa . ". A Haddad Imóveis tem o imóvel perfeito para você com segurança e transparência.";
             $url = home_url( $_SERVER['REQUEST_URI'] );
+
+            $url_limpa_canonical = strtok($url, '?');
             $site_name = get_bloginfo( 'name' );
             $imagem = get_template_directory_uri() . '/images/logofinal.png';
 
             echo "\n<!-- Meta Tags SEO e Open Graph (Pesquisa Dinâmica) -->\n";
+            echo '<link rel="canonical" href="' . esc_url( $url_limpa_canonical ) . '" />' . "\n";
             echo '<meta name="description" content="' . esc_attr( $descricao ) . '" />' . "\n";
             echo '<meta name="author" content="' . esc_attr( $site_name ) . '" />' . "\n";
             echo '<meta property="og:locale" content="pt_BR" />' . "\n";
@@ -737,6 +761,7 @@ class Pinedu_Imovel_Plugin {
             echo '<meta name="twitter:image" content="' . esc_url( $imagem ) . '" />' . "\n";
             echo "<!-- End Open Graph Meta Tags -->\n\n";
         };
+
         $renderizar_og_taxonomia = function() {
             $termo_atual = get_queried_object();
             $titulo = wp_get_document_title();
@@ -773,6 +798,7 @@ class Pinedu_Imovel_Plugin {
             }
 
             echo "\n<!-- Meta Tags SEO e Open Graph (Taxonomia) -->\n";
+            echo '<link rel="canonical" href="' . esc_url( $url ) . '" />' . "\n";
             echo '<meta name="description" content="' . esc_attr( $descricao ) . '" />' . "\n";
             echo '<meta name="author" content="' . esc_attr( $site_name ) . '" />' . "\n";
             echo '<meta property="og:locale" content="pt_BR" />' . "\n";
@@ -795,6 +821,7 @@ class Pinedu_Imovel_Plugin {
             echo '<meta name="twitter:image" content="' . esc_url( $imagem ) . '" />' . "\n";
             echo "<!-- End Open Graph Meta Tags -->\n\n";
         };
+
         $renderizar_og_pagina = function() {
             global $post;
             $titulo = wp_get_document_title();
@@ -817,6 +844,8 @@ class Pinedu_Imovel_Plugin {
             }
 
             echo "\n<!-- Meta Tags SEO e Open Graph (Páginas Institucionais) -->\n";
+            echo '<link rel="canonical" href="' . esc_url( $url ) . '" />' . "\n";
+
             echo '<meta name="description" content="' . esc_attr( $descricao ) . '" />' . "\n";
             echo '<meta name="author" content="' . esc_attr( $site_name ) . '" />' . "\n";
             echo '<meta property="og:locale" content="pt_BR" />' . "\n";
@@ -839,7 +868,6 @@ class Pinedu_Imovel_Plugin {
             echo '<meta name="twitter:image" content="' . esc_url( $imagem ) . '" />' . "\n";
             echo "<!-- End Open Graph Meta Tags -->\n\n";
         };
-
         // ROTEAMENTO
         $eh_pesquisa = is_search() || is_page( 'pesquisa' ) || ( ( is_home() || is_front_page() ) && isset( $_GET['tipo_pesquisa_submit'] ) );
         if ( $eh_pesquisa ) return $renderizar_og_pesquisa();
