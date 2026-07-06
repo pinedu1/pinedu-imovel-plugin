@@ -92,7 +92,7 @@ class Pinedu_Imovel_Plugin {
         $this->loader->add_filter( 'robots_txt', $this, 'pinedu_adicionar_sitemap_robots_txt', 10, 2 );
         $this->loader->add_filter( 'wpseo_sitemap_index', $this, 'pinedu_adicionar_sitemap_yoast' );
         $this->loader->add_filter( 'rank_math/sitemap/index', $this, 'pinedu_adicionar_sitemap_rankmath' );
-
+        $this->loader->add_filter( 'wp_sitemaps_enabled', $this, '__return_false' );
         $this->loader->add_filter( 'option_medium_size_w', $plugin_public, 'forcar_largura_medium' );
         $this->loader->add_filter( 'option_medium_size_h', $plugin_public, 'forcar_altura_medium' );
         $this->loader->add_filter( 'option_medium_crop', $plugin_public, 'forcar_crop_medium' );
@@ -907,4 +907,5 @@ class Pinedu_Imovel_Plugin {
         }
         return $output;
     }
+    function __return_false() { return false; }
 }
