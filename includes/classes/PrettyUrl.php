@@ -4,17 +4,37 @@ class PrettyUrl {
 	const CACHE_URL_AMIGAVEL = 'CACHE_PRETTY_URL';
 	const INDEX_CACHE = 'index.php?post_type=imovel&tipo_pesquisa_submit=imovel';
 	private $delete_cache = false;
-
+    // Troque a const por este método estático
+    public static function get_mapa_tipo_imovel() {
+        return [
+            'apartamento' => array_flip([
+                'apartamento', 'flat', 'loft', 'duplex', 'triplex', 'apartamento flat', 'apartamento loft', 'apartamento duplex', 'apartamento triplex', 'cobertura', 'apartamento cobertura', 'kitnet', 'kit', 'studio', 'penthouse', 'garden'
+            ]),
+            'imovel-comercial' => array_flip([
+                'imovel comercial', 'loja', 'sobreloja', 'sobre loja', 'salão', 'sala', 'barracão', 'galpão', 'consultório', 'escritório', 'bar', 'bodega', 'restaurante', 'lanchonete', 'box', 'ponto comercial', 'depósito', 'pavilhão', 'prédio comercial', 'centro comercial', 'loja térrea'
+            ]),
+            'casa' => array_flip([
+                'casa', 'casa térra', 'sobrado', 'assobradado', 'assobradada', 'residência', 'casa em condomínio', 'mansão', 'edícula', 'casa de vila', 'bangalô', 'chalé', 'casa geminada'
+            ]),
+            'rural' => array_flip([
+                'rural', 'chácara', 'sítio', 'fazenda', 'propriedade', 'granja', 'estância', 'pomar', 'horta', 'haras', 'pousada', 'área rural'
+            ]),
+            'lazer' => array_flip([
+                'lazer', 'rancho', 'balneário', 'clubinho', 'clube', 'chácara', 'quadra', 'casa de campo', 'centro de eventos', 'área de lazer', 'salão de festas', 'retiro'
+            ]),
+            'terreno-ou-area' => array_flip([
+                'terreno ou área', 'área', 'área industrial', 'área incorporação', 'terreno', 'lote', 'gleba', 'loteamento', 'área comercial', 'recinto', 'recinto de exposiçao', 'área para rodeio', 'estacionamento'
+            ]),
+        ];
+    }
 	public function __construct( $delete_cache = false ) {
-		if ( wp_get_environment_type() === 'development' ) {
+		if ( is_development_mode() ) {
 			$delete_cache = true;
 		}
 		$this->delete_cache = $delete_cache;
 		if ( $delete_cache === true )	{
 			$this->clear();
 		}
-
-		// O GATILHO QUE SALVA VIDAS: Redireciona links com acento para a URL limpa (SEO)
 		add_action( 'template_redirect', [$this, 'redirecionar_acentos'] );
 	}
 
@@ -64,7 +84,9 @@ class PrettyUrl {
             'vender'  => $chave_venda,
             'aluguel' => $chave_locacao,
             'alugar'  => $chave_locacao,
-            'locar'   => $chave_locacao
+            'locar'   => $chave_locacao,
+            'locação' => $chave_locacao,
+            'arrendar' => $chave_locacao
         ];
 
         foreach ($tax_cidade as $slug_cidade => $data_cidade) {
