@@ -72,7 +72,7 @@ class Pinedu_Imovel_Plugin {
         $this->loader->add_action( 'before_delete_post', $plugin_public, 'excluir_fotos_ao_apagar_post', 0 );
         $this->loader->add_action( 'template_redirect', $plugin_public, 'forcar_argumento_pesquisa_imovel', 10 );
         $this->loader->add_action( 'template_redirect', $plugin_public, 'forcar_404_se_vazio', 20 );
-        $this->loader->add_action( 'template_redirect', $plugin_public, 'redirecionar_sitemap_nativo', 1 );
+        $this->loader->add_action( 'template_redirect', $this, 'redirecionar_sitemap_nativo', 1 );
         // Configurações e substituições dinâmicas de SEO baseadas no painel
         // 1. Desliga as funções do Yoast SEO
         $this->loader->add_filter( 'wpseo_metadesc', $this, 'override_yoast_seo' );
