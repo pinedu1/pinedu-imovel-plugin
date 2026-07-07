@@ -326,8 +326,8 @@ class Pinedu_Imovel_Plugin_Admin {
         <?php
     }
     public function exibir_cidade_padrao() {
-        $options = get_option( 'pinedu_imovel_options', [] );
-        $cidade_padrao = $options['cidade']??'';
+            $options = get_option( 'pinedu_imovel_options', [] );
+            $cidade_padrao = $options['cidade']??'';
         $terms_cidade = lista_cidade( );
         ?>
         <select id="cidade" name="pinedu_imovel_options[cidade]">
