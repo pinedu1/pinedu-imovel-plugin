@@ -3,7 +3,7 @@ require_once plugin_dir_path(__FILE__) . '../admin/classes/PineduRequest.php';
 require_once plugin_dir_path(__FILE__) . '../admin/classes/class-pinedu-imovel-importar-basicos.php';
 require_once plugin_dir_path(__FILE__) . '../admin/classes/class-pinedu-imovel-importar-imoveis.php';
 
-    class PineduReceiverRest extends PineduRequest {
+class PineduReceiverRest extends PineduRequest {
     private static $instance = null;
 
     private function __construct() {
@@ -58,14 +58,14 @@ require_once plugin_dir_path(__FILE__) . '../admin/classes/class-pinedu-imovel-i
 
         // Query SQL para buscar os eventos isolados e seus meta_ids (para exclusão segura posterior)
         $query = "
-            SELECT 
+            SELECT
                 ref.meta_value AS referencia,
                 vis.meta_value AS evento_dados,
                 vis.meta_id AS meta_id
             FROM {$wpdb->posts} p
-            INNER JOIN {$wpdb->postmeta} ref 
+            INNER JOIN {$wpdb->postmeta} ref
                 ON p.ID = ref.post_id AND ref.meta_key = 'referencia'
-            INNER JOIN {$wpdb->postmeta} vis 
+            INNER JOIN {$wpdb->postmeta} vis
                 ON p.ID = vis.post_id AND vis.meta_key = 'visita_evento'
             WHERE p.post_type = 'imovel'
               AND p.post_status = 'publish'
@@ -159,21 +159,30 @@ require_once plugin_dir_path(__FILE__) . '../admin/classes/class-pinedu-imovel-i
             'importacao_andamento' => false
         ];
 
+        // Se houver comando, executa de forma SÍNCRONA antes de responder
         if ( isset( $data['POST_PROCESS_ACTION'] ) ) {
             $action = sanitize_text_field( $data['POST_PROCESS_ACTION'] );
-            if ( function_exists( 'fastcgi_finish_request' ) ) {
-                wp_send_json( $resposta );
-                fastcgi_finish_request();
-                // CORRIGIDO: Chamada como método estático da classe
-                self::pinedu_trigger_action_callback( $action );
-            } else {
-                wp_schedule_single_event( time(), 'pinedu_trigger_action', [ $action ] );
-                wp_send_json( $resposta );
-            }
-        } else {
-            wp_send_json( $resposta );
+            self::pinedu_trigger_action_callback( $action );
         }
+
+        wp_send_json( $resposta );
     }
+
+    /**
+     * Verifica se o arquivo precisa ser atualizado (mais velho que 03:50:00).
+     */
+    private static function arquivo_necessita_atualizacao( $file_path ) {
+        // Se não existe, precisa rodar agora
+        if ( ! file_exists( $file_path ) ) {
+            return true;
+        }
+
+        $idade_segundos = time() - filemtime( $file_path );
+        $limite_segundos = ( 3 * 3600 ) + ( 50 * 60 ); // 3 horas e 50 min (13800 segundos)
+
+        return $idade_segundos > $limite_segundos;
+    }
+
     public static function receber_basicos( $request ) {
         $json_string = $request->get_body();
         if (is_development_mode()) {
@@ -206,32 +215,69 @@ require_once plugin_dir_path(__FILE__) . '../admin/classes/class-pinedu-imovel-i
 
     public static function verify_credentials( $request ) {
         $auth_header = $request->get_header('Authorization');
+
         if (is_development_mode()) {
             error_log('Authorization Header: ' . $auth_header);
         }
+
+        // Se não recebeu token/header: false
         if (empty($auth_header)) {
             error_log('Authorization header missing');
             return false;
         }
+
+        // Verifica se é um token Bearer
         if (preg_match('/Bearer\s+(.*)$/i', $auth_header, $matches)) {
             $bearer_token = trim($matches[1]);
+
             if (is_development_mode()) {
-                error_log('Bearer Token: ' . $bearer_token);
+                error_log('Bearer Token recebido: ' . $bearer_token);
             }
-            return self::validate_bearer_token($bearer_token);
+
+            // Captura username e password enviados na requisição (via Headers)
+            $username = $request->get_header('Username');
+            $password = $request->get_header('Password');
+
+            // Passa o trio para validação
+            return self::validate_bearer_token($bearer_token, $username, $password);
         }
+
         error_log('Invalid Authorization format');
         return false;
     }
-    private static function validate_bearer_token( $token ): bool {
+
+    private static function validate_bearer_token( $token, $req_username, $req_password ): bool {
         $options = get_option( 'pinedu_imovel_options', [] );
+
+        // 1. Tenta validar o token existente primeiro (caminho feliz e mais rápido)
         if ( isset( $options['token'] ) && $options['token'] === $token ) {
             return true;
         }
-        error_log('Invalid Token');
+
+        // 2. Se o token não existir ou for diferente, verifica as credenciais
+        // Estamos assumindo que username e password válidos estão armazenados em 'pinedu_imovel_options'
+        $saved_username = $options['username'] ?? '';
+        $saved_password = $options['password'] ?? '';
+
+        if ( !empty($req_username) && !empty($req_password) &&
+             $req_username === $saved_username && $req_password === $saved_password ) {
+
+            // 3. Credenciais conferem! Atualiza o option com o novo token
+            $options['token'] = $token;
+            update_option( 'pinedu_imovel_options', $options );
+
+            if (is_development_mode()) {
+                error_log('Novo Token validado e registrado com sucesso via Username/Password.');
+            }
+
+            return true;
+        }
+
+        error_log('Invalid Token and Invalid Credentials');
         return false;
     }
-    // CORRIGIDO: Transformado em método estático e público para ser acessado pelo add_action e internamente
+
+    // Transformado em método estático e público
     public static function pinedu_trigger_action_callback($action) {
         switch ($action) {
             case 'OPTIMIZE_TABLES':
@@ -249,8 +295,47 @@ require_once plugin_dir_path(__FILE__) . '../admin/classes/class-pinedu-imovel-i
         }
     }
     public static function optimize_tables() {
+        $dia_semana = (int) wp_date('w'); // 0 = Domingo
+        $hora_atual = (int) wp_date('H');
+
+        // Somente aos domingos, e entre as 06:00:00 até 06:59:59
+        if ( $dia_semana !== 0 || $hora_atual !== 6 ) {
+            return;
+        }
+
+        $options = get_option( 'pinedu_imovel_options', [] );
+        $ultima_otimizacao = isset( $options['ultima_otimizacao'] ) ? (int) $options['ultima_otimizacao'] : 0;
+        $idade_segundos = time() - $ultima_otimizacao;
+
+        // Se a última otimização ocorreu há menos de 2 horas (7200 segundos),
+        // significa que já rodou hoje dentro desta janela das 6h. Sai fora!
+        if ( $idade_segundos < 7200 ) {
+            if (is_development_mode()) {
+                error_log('OPTIMIZE TABLE ignorado: Já foi executado recentemente nesta janela.');
+            }
+            return;
+        }
+
         global $wpdb;
-        $wpdb->query("OPTIMIZE TABLE {$wpdb->posts}, {$wpdb->postmeta}, {$wpdb->options}");
+
+        // Senta o aço: Busca TODAS as tabelas com o prefixo do seu WordPress
+        $tabelas = $wpdb->get_col("SHOW TABLES LIKE '{$wpdb->prefix}%'");
+
+        if ( ! empty( $tabelas ) ) {
+            // Junta o array de tabelas em uma string separada por vírgulas
+            $tabelas_string = implode(', ', $tabelas);
+
+            // Executa a otimização em massa num comando só
+            $wpdb->query("OPTIMIZE TABLE {$tabelas_string}");
+        }
+
+        // Registra o momento exato em que a otimização acabou de ocorrer
+        $options['ultima_otimizacao'] = time();
+        update_option( 'pinedu_imovel_options', $options );
+
+        if (is_development_mode()) {
+            error_log('OPTIMIZE TABLE executado com sucesso para TODAS as tabelas no domingo às ' . wp_date('H:i:s'));
+        }
     }
     /**
      * Consulta centralizada e otimizada (apenas 1 hit no banco)
@@ -301,9 +386,23 @@ require_once plugin_dir_path(__FILE__) . '../admin/classes/class-pinedu-imovel-i
         ";
         return $wpdb->get_results( $query );
     }
+
     public static function generate_site_map() {
-        $resultados = self::obter_dados_imoveis_ativos();
+        $hora_atual = (int) wp_date('H');
+
+        // 00:00 até 00:59:59 e 12:00 até 12:59:59
+        if ( $hora_atual !== 0 && $hora_atual !== 12 ) {
+            return;
+        }
+
         $file_path = ABSPATH . 'sitemap_imoveis.xml';
+
+        // Verifica se o arquivo é mais velho que 3h50m
+        if ( ! self::arquivo_necessita_atualizacao( $file_path ) ) {
+            return;
+        }
+
+        $resultados = self::obter_dados_imoveis_ativos();
         $handle = fopen( $file_path, 'w' );
         if ( ! $handle ) {
             error_log( 'Não foi possível abrir sitemap_imoveis.xml para gravação.' );
@@ -327,9 +426,23 @@ require_once plugin_dir_path(__FILE__) . '../admin/classes/class-pinedu-imovel-i
         fwrite( $handle, '</urlset>' );
         fclose( $handle );
     }
+
     public static function generate_json_ld() {
-        $resultados = self::obter_dados_imoveis_ativos();
+        $hora_atual = (int) wp_date('H');
+
+        // 04:00 até 04:59:59 e 16:00 até 16:59:59
+        if ( $hora_atual !== 4 && $hora_atual !== 16 ) {
+            return;
+        }
+
         $file_path = ABSPATH . 'catalog_data.json';
+
+        // Verifica se o arquivo é mais velho que 3h50m
+        if ( ! self::arquivo_necessita_atualizacao( $file_path ) ) {
+            return;
+        }
+
+        $resultados = self::obter_dados_imoveis_ativos();
         $handle = fopen( $file_path, 'w' );
 
         if ( ! $handle ) {
@@ -419,8 +532,21 @@ require_once plugin_dir_path(__FILE__) . '../admin/classes/class-pinedu-imovel-i
     }
 
     public static function generate_feed() {
-        $resultados = self::obter_dados_imoveis_ativos();
+        $hora_atual = (int) wp_date('H');
+
+        // 08:00 até 08:59:59 e 20:00 até 20:59:59
+        if ( $hora_atual !== 8 && $hora_atual !== 20 ) {
+            return;
+        }
+
         $file_path = ABSPATH . 'feed_catalog.xml';
+
+        // Verifica se o arquivo é mais velho que 3h50m
+        if ( ! self::arquivo_necessita_atualizacao( $file_path ) ) {
+            return;
+        }
+
+        $resultados = self::obter_dados_imoveis_ativos();
         $handle = fopen( $file_path, 'w' );
 
         if ( ! $handle ) {

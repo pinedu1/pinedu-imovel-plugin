@@ -203,7 +203,11 @@ class Pinedu_Imovel_Importar_Basicos {
 		$this->faixa_valor->importa( $faixa_lancamento );
 	}
 	private function importa_tipo_dependencia( $data ) {
-        error_log( 'Importa Tipo Dependencia' . print_r(  $data, true ) );
+/*
+	    if ( is_development_mode() ) {
+            error_log( 'Importa Tipo Dependencia' . print_r(  $data, true ) );
+	    }
+ */
 		if ( !isset( $data['tipoDependencias'] ) || !is_array( $data['tipoDependencias'] ) || empty( $data['tipoDependencias'] ) ) {
 			wp_send_json_error( ['message' => 'Nó tipoDependencias não encontrado ou vazio no JSON'] );
 			return false;
