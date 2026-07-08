@@ -23,17 +23,33 @@ class Pinedu_Imovel_Importa_Cidade extends Pinedu_Importa_Taxonomia_Base {
 			}
 		}
 	}
-	public static function list( ) {
-		if ( !taxonomy_exists( 'cidade' ) ) {
-			wp_send_json_error( ['message' => 'Taxonomia Cidade não existe!.'] );
-			return false;
-		}
-		$args = array(
-			'taxonomy'   => 'cidade'
-			, 'hide_empty' => true
-			, 'orderby'    => 'name'
-			, 'order'      => 'ASC'
-		);
-		return get_terms($args);
-	}
+    public static function list( ) {
+        if ( !taxonomy_exists( 'cidade' ) ) {
+           wp_send_json_error( ['message' => 'Taxonomia Cidade não existe!.'] );
+           return false;
+        }
+
+        // 1. Chave única para o cache
+        $transient_key = 'pnd_list_cidade';
+        $terms = get_transient( $transient_key );
+
+        // 2. Se o cache existir, retorna imediatamente (Zero Queries)
+        if ( false !== $terms ) {
+            return $terms;
+        }
+
+        // 3. Se não existir, faz a busca
+        $args = array(
+           'taxonomy'   => 'cidade'
+           , 'hide_empty' => true
+           , 'orderby'    => 'name'
+           , 'order'      => 'ASC'
+        );
+        $terms = get_terms($args);
+
+        // 4. Salva o resultado no cache por 1 hora
+        set_transient( $transient_key, $terms, 1 * HOUR_IN_SECONDS );
+
+        return $terms;
+    }
 }

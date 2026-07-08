@@ -5,6 +5,8 @@
 class ImovelSearchService {
 
     public static function apply($query) {
+        $query->set('update_post_meta_cache', true);
+        $query->set('update_post_term_cache', true);
         $query->set('post_type', 'imovel');
         $max = (int) self::get_param('max', 12);
         $query->set('posts_per_page', $max > 0 ? $max : 12);

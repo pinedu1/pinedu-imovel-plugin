@@ -32,24 +32,43 @@ class Pinedu_Imovel_Importa_Regiao extends Pinedu_Importa_Taxonomia_Base {
 			}
 		}
 	}
-	public static function list( $cidade ) {
-		if ( !taxonomy_exists( 'regiao' ) ) {
-			wp_send_json_error( ['message' => 'Taxonomia Regiao não existe!.'] );
-			return false;
-		}
-		$args = array(
-			'taxonomy' => 'regiao'
-		, 'hide_empty' => false
-		, 'orderby' => 'slug'
-		, 'order' => 'ASC'
-		, 'meta_query' => [
-				[
-					'key' => 'parent_id'
-					, 'value' => str_pad($cidade, 4, '0', STR_PAD_LEFT)
-					, 'compare' => '='
-				]
-			]
-		);
-		return get_terms($args);
-	}
+    public static function list( $cidade ) {
+        if ( !taxonomy_exists( 'regiao' ) ) {
+           wp_send_json_error( ['message' => 'Taxonomia Regiao não existe!.'] );
+           return false;
+        }
+
+        // 1. Gera uma chave única para esta cidade específica
+        $cidade_id = str_pad($cidade, 4, '0', STR_PAD_LEFT);
+        $transient_key = 'pnd_list_regiao_' . $cidade_id;
+
+        // 2. Tenta buscar do cache
+        $terms = get_transient( $transient_key );
+
+        if ( false !== $terms ) {
+            return $terms;
+        }
+
+        // 3. Se não houver cache, realiza a busca
+        $args = array(
+           'taxonomy' => 'regiao'
+           , 'hide_empty' => false
+           , 'orderby' => 'slug'
+           , 'order' => 'ASC'
+           , 'meta_query' => [
+                 [
+                    'key' => 'parent_id'
+                    , 'value' => $cidade_id
+                    , 'compare' => '='
+                 ]
+              ]
+        );
+
+        $terms = get_terms($args);
+
+        // 4. Salva o resultado no cache por 1 hora
+        set_transient( $transient_key, $terms, 1 * HOUR_IN_SECONDS );
+
+        return $terms;
+    }
 }

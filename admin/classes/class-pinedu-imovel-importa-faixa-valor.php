@@ -62,6 +62,19 @@ class Pinedu_Imovel_Importa_Faixa_Valor extends Pinedu_Importa_Taxonomia_Base {
             wp_send_json_error( ['message' => 'Taxonomia Faixa de Valor não existe!.'] );
             return false;
         }
+
+        // 1. Gera uma chave única baseada no contrato (ou 'all' se estiver vazio)
+        $contrato_key = !empty($contrato) ? sanitize_title($contrato) : 'all';
+        $transient_key = 'pnd_lista_faixa_valor_' . $contrato_key;
+
+        // 2. Tenta buscar o array já formatado no cache
+        $cached_fx = get_transient( $transient_key );
+
+        if ( false !== $cached_fx ) {
+            return $cached_fx;
+        }
+
+        // 3. Se não houver cache, processa a lógica
         $args = [
             'taxonomy'   => 'faixa-valor'
             , 'hide_empty' => false
@@ -69,20 +82,26 @@ class Pinedu_Imovel_Importa_Faixa_Valor extends Pinedu_Importa_Taxonomia_Base {
             , 'meta_key' => 'valor-inicial'
             , 'order'   => 'ASC'
         ];
+
         if ( !empty( $contrato ) ) {
             $args[ 'meta_query' ] = [ [ 'key' => 'tipo-contrato', 'value' => $contrato, 'compare' => '=' ] ];
         }
+
         $terms = get_terms($args);
         $fx = [];
+
         foreach ($terms as $term) {
             $id_term = $term->term_id;
             $fx[] = [
-                'id'=>$id_term
-                , 'nome'=>(string)$term->name
-                , 'valor-inicial'=>get_term_meta( $id_term, 'valor-inicial')
-                , 'valor-final'=>get_term_meta( $id_term, 'valor-final')
+                'id'            => $id_term
+                , 'nome'        => (string)$term->name
+                , 'valor-inicial'=> get_term_meta( $id_term, 'valor-inicial')
+                , 'valor-final'  => get_term_meta( $id_term, 'valor-final')
             ];
         }
+
+        // 4. Salva o array resultante no cache por 1 hora
+        set_transient( $transient_key, $fx, 1 * HOUR_IN_SECONDS );
 
         return $fx;
     }
