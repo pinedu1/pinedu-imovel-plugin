@@ -468,6 +468,7 @@ class Pinedu_Imovel_Plugin {
         if ( is_page() ) return $gerar_titulo_pagina();
         return $title;
     }
+
     function injetar_metas_seo() {
         // -----------------------------------------------------------------------------
         // HELPER: Função padronizada para imprimir tags de imagem (Foco no WhatsApp)
@@ -492,6 +493,7 @@ class Pinedu_Imovel_Plugin {
                 echo '<meta property="og:image:height" content="630" />' . "\n";
             }
         };
+
         $renderizar_og_imovel = function() use ( $print_image_tags ) {
             global $post;
             $og_title = get_the_title();
@@ -505,6 +507,7 @@ class Pinedu_Imovel_Plugin {
                 $regiao_fmt = trim( strtr( ' ' . $regiao_fmt . ' ', $excecoes ) );
             }
             $texto_base_manual = has_excerpt() ? wp_strip_all_tags( get_the_excerpt() ) : wp_trim_words( strip_tags( get_the_content() ), 40, '' );
+
             $gerador_descricao_inteligente = function( $texto_manual ) use ( $post, $tipo_imovel_fmt, $regiao_fmt, $cidade_fmt ) {
                 $quartos = ''; $vagas = ''; $suites = '';
                 if ( function_exists('get_meta_value') ) {
@@ -566,6 +569,7 @@ class Pinedu_Imovel_Plugin {
                 }
                 return $descricao_final;
             };
+
             $og_description = $gerador_descricao_inteligente( $texto_base_manual );
             $og_url = get_permalink();
             $og_type = 'product.item';
@@ -585,7 +589,8 @@ class Pinedu_Imovel_Plugin {
                     }
                 }
             }
-            echo "\n<!-- Meta Tags SEO e Open Graph (Facebook/Instagram/LinkedIn) -->\n";
+
+            echo "\n\n";
             echo '<link rel="canonical" href="' . esc_url( $og_url ) . '" />' . "\n";
             echo '<meta name="description" content="' . esc_attr( $og_description ) . '" />' . "\n";
             echo '<meta name="author" content="' . esc_attr( $og_site_name ) . '" />' . "\n";
@@ -595,27 +600,33 @@ class Pinedu_Imovel_Plugin {
             echo '<meta property="og:type" content="' . esc_attr( $og_type ) . '" />' . "\n";
             echo '<meta property="og:site_name" content="' . esc_attr( $og_site_name ) . '" />' . "\n";
             echo '<meta property="og:description" content="' . esc_attr( $og_description ) . '" />' . "\n";
+
             // Renderiza as tags robustas de imagem
             $print_image_tags( $og_image, $image_id );
+
             $options = get_option( 'pinedu_imovel_options', [] );
             if ( isset( $options['facebook_app_id'] ) && !empty( $options['facebook_app_id'] ) ) {
                 echo '<meta property="fb:app_id" content="' . esc_attr( $options['facebook_app_id'] ) . '" />' . "\n";
             }
-            echo "\n<!-- Twitter Card Meta Tags -->\n";
+
+            echo "\n\n";
             echo '<meta name="twitter:card" content="summary_large_image" />' . "\n";
             echo '<meta name="twitter:title" content="' . esc_attr( $og_title ) . '" />' . "\n";
             echo '<meta name="twitter:description" content="' . esc_attr( $og_description ) . '" />' . "\n";
             if ( !empty( $og_image ) ) {
                 echo '<meta name="twitter:image" content="' . esc_url( $og_image ) . '" />' . "\n";
             }
+
             echo '<meta property="product:retailer_item_id" content="' . esc_attr( $post->referencia ) . '" />' . "\n";
             if ( isset( $post->novo ) && !empty( $post->novo ) && '1' == $post->novo ) {
                 echo '<meta property="product:condition" content="new" />' . "\n";
             }
+
             if ( function_exists('getEmpresa') ) {
                 $empresa = getEmpresa( 1 );
                 if ( !empty( $empresa ) ) echo '<meta property="product:brand" content="' . esc_attr( $empresa->codNome ) . '" />' . "\n";
             }
+
             $preco = '';
             if ( isset( $post->ativarVenda ) && '1' == $post->ativarVenda && !empty( $post->vendaValor ) ) {
                 $preco = $post->vendaValor;
@@ -629,6 +640,7 @@ class Pinedu_Imovel_Plugin {
             }
             echo '<meta property="og:property:status" content="Disponível" />' . "\n";
             echo '<meta property="product:availability" content="in stock" />' . "\n";
+
             $matriz = [
                 [ 'tag' => 'og:property:bedrooms', 'label' => 'dormitorio' ],
                 [ 'tag' => 'og:property:bedrooms', 'label' => 'quartos' ],
@@ -640,6 +652,7 @@ class Pinedu_Imovel_Plugin {
                 [ 'tag' => 'og:property:floor', 'label' => 'numero do andar' ],
                 [ 'tag' => 'og:property:total_floors', 'label' => 'andares' ]
             ];
+
             if ( function_exists('get_meta_value') ) {
                 foreach ( $matriz as $m ) {
                     $area_struct = get_meta_value( $post, $m['label'] );
@@ -659,10 +672,12 @@ class Pinedu_Imovel_Plugin {
                     }
                 }
             }
+
             if ( !empty( $preco ) ) {
                 echo '<meta property="og:price:amount" content="' . esc_attr( $preco ) . '" />' . "\n";
                 echo '<meta property="og:price:currency" content="BRL" />' . "\n";
             }
+
             $ano = isset($post->anoConstrucao) ? $post->anoConstrucao : '';
             if ( !empty( $ano ) ) echo '<meta property="og:property:year_built" content="' . esc_attr( $ano ) . '" />' . "\n";
             $condominio = isset($post->valorCondominio) ? $post->valorCondominio : '';
@@ -679,8 +694,49 @@ class Pinedu_Imovel_Plugin {
             }
             if ( !empty( $tipo_imovel_fmt ) ) echo '<meta property="product:category" content="' . esc_attr( $tipo_imovel_fmt ) . '" />' . "\n";
             if ( isset( $post->referencia ) ) echo '<meta property="product:item_group_id" content="' . esc_attr( $post->referencia ) . '" />' . "\n";
-            echo "<!-- End Open Graph Meta Tags -->\n\n";
+
+            // =========================================================================
+            // NOVO BLOCO: Schema.org JSON-LD (Resolve o erro do Google Search Console)
+            // =========================================================================
+            if ( !empty( $preco ) ) {
+                $schema_json = [
+                    '@context'    => 'https://schema.org/',
+                    '@type'       => 'Product',
+                    'name'        => $og_title,
+                    'image'       => [ $og_image ],
+                    'description' => $og_description,
+                    'sku'         => isset( $post->referencia ) ? $post->referencia : '',
+                    'offers'      => [
+                        '@type'         => 'Offer',
+                        'url'           => $og_url,
+                        'priceCurrency' => 'BRL',
+                        // number_format garante o formato correto (ex: 250000.00) sem pontos de milhar
+                        'price'         => number_format( floatval( $preco ), 2, '.', '' ),
+                        'availability'  => 'https://schema.org/InStock',
+                    ],
+                ];
+
+                // Adiciona a marca (Brand) se a empresa existir (opcional para o Google, mas bom para SEO)
+                if ( function_exists('getEmpresa') ) {
+                    $empresa = getEmpresa( 1 );
+                    if ( !empty( $empresa ) && isset($empresa->codNome) ) {
+                        $schema_json['brand'] = [
+                            '@type' => 'Brand',
+                            'name'  => $empresa->codNome
+                        ];
+                    }
+                }
+
+                echo "\n\n";
+                echo '<script type="application/ld+json">' . "\n";
+                // Transforma o Array PHP num JSON perfeitamente formatado e sem barras escapadas
+                echo wp_json_encode( $schema_json, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT ) . "\n";
+                echo "</script>\n";
+            }
+
+            echo "\n\n";
         };
+
         $renderizar_og_post_padrao = function() use ( $print_image_tags ) {
             global $post;
             $og_title = get_the_title();
@@ -689,7 +745,8 @@ class Pinedu_Imovel_Plugin {
             $og_site_name = get_bloginfo( 'name' );
             $og_image = has_post_thumbnail() ? get_the_post_thumbnail_url( $post->ID, 'full' ) : '';
             $image_id = has_post_thumbnail() ? get_post_thumbnail_id( $post->ID ) : null;
-            echo "\n<!-- Meta Tags SEO e Open Graph -->\n";
+
+            echo "\n\n";
             echo '<link rel="canonical" href="' . esc_url( $og_url ) . '" />' . "\n";
             echo '<meta name="description" content="' . esc_attr( $og_description ) . '" />' . "\n";
             echo '<meta name="author" content="' . esc_attr( $og_site_name ) . '" />' . "\n";
@@ -699,16 +756,19 @@ class Pinedu_Imovel_Plugin {
             echo '<meta property="og:type" content="article" />' . "\n";
             echo '<meta property="og:site_name" content="' . esc_attr( $og_site_name ) . '" />' . "\n";
             echo '<meta property="og:description" content="' . esc_attr( $og_description ) . '" />' . "\n";
+
             $print_image_tags( $og_image, $image_id );
-            echo "\n<!-- Twitter Card Meta Tags -->\n";
+
+            echo "\n\n";
             echo '<meta name="twitter:card" content="summary_large_image" />' . "\n";
             echo '<meta name="twitter:title" content="' . esc_attr( $og_title ) . '" />' . "\n";
             echo '<meta name="twitter:description" content="' . esc_attr( $og_description ) . '" />' . "\n";
             if ( !empty( $og_image ) ) {
                 echo '<meta name="twitter:image" content="' . esc_url( $og_image ) . '" />' . "\n";
             }
-            echo "<!-- End Open Graph Meta Tags -->\n\n";
+            echo "\n\n";
         };
+
         $renderizar_og_home = function() use ( $print_image_tags ) {
             $titulo = wp_get_document_title();
             $options = get_option( 'pinedu_imovel_options', [] );
@@ -724,7 +784,8 @@ class Pinedu_Imovel_Plugin {
             $url = home_url( '/' );
             $site_name = get_bloginfo( 'name' );
             $imagem = get_template_directory_uri() . '/images/logofinal.png';
-            echo "\n<!-- Meta Tags SEO e Open Graph (Home) -->\n";
+
+            echo "\n\n";
             echo '<link rel="canonical" href="' . esc_url( $url ) . '" />' . "\n";
             echo '<meta name="description" content="' . esc_attr( $descricao ) . '" />' . "\n";
             echo '<meta name="author" content="' . esc_attr( $site_name ) . '" />' . "\n";
@@ -734,17 +795,21 @@ class Pinedu_Imovel_Plugin {
             echo '<meta property="og:type" content="website" />' . "\n";
             echo '<meta property="og:site_name" content="' . esc_attr( $site_name ) . '" />' . "\n";
             echo '<meta property="og:description" content="' . esc_attr( $descricao ) . '" />' . "\n";
+
             $print_image_tags( $imagem, null );
+
             if ( isset( $options['facebook_app_id'] ) && !empty( $options['facebook_app_id'] ) ) {
                 echo '<meta property="fb:app_id" content="' . esc_attr( $options['facebook_app_id'] ) . '" />' . "\n";
             }
-            echo "\n<!-- Twitter Card Meta Tags -->\n";
+
+            echo "\n\n";
             echo '<meta name="twitter:card" content="summary_large_image" />' . "\n";
             echo '<meta name="twitter:title" content="' . esc_attr( $titulo ) . '" />' . "\n";
             echo '<meta name="twitter:description" content="' . esc_attr( $descricao ) . '" />' . "\n";
             echo '<meta name="twitter:image" content="' . esc_url( $imagem ) . '" />' . "\n";
-            echo "<!-- End Open Graph Meta Tags -->\n\n";
+            echo "\n\n";
         };
+
         $renderizar_og_pesquisa = function() use ( $print_image_tags ) {
             $titulo = wp_get_document_title();
             $termo_pesquisa = trim( str_replace( ' | ' . get_bloginfo( 'name' ), '', $titulo ) );
@@ -753,7 +818,8 @@ class Pinedu_Imovel_Plugin {
             $url_limpa_canonical = strtok($url, '?');
             $site_name = get_bloginfo( 'name' );
             $imagem = get_template_directory_uri() . '/images/logofinal.png';
-            echo "\n<!-- Meta Tags SEO e Open Graph (Pesquisa Dinâmica) -->\n";
+
+            echo "\n\n";
             echo '<link rel="canonical" href="' . esc_url( $url_limpa_canonical ) . '" />' . "\n";
             echo '<meta name="description" content="' . esc_attr( $descricao ) . '" />' . "\n";
             echo '<meta name="author" content="' . esc_attr( $site_name ) . '" />' . "\n";
@@ -763,18 +829,22 @@ class Pinedu_Imovel_Plugin {
             echo '<meta property="og:type" content="website" />' . "\n";
             echo '<meta property="og:site_name" content="' . esc_attr( $site_name ) . '" />' . "\n";
             echo '<meta property="og:description" content="' . esc_attr( $descricao ) . '" />' . "\n";
+
             $print_image_tags( $imagem, null );
+
             $options = get_option( 'pinedu_imovel_options', [] );
             if ( isset( $options['facebook_app_id'] ) && !empty( $options['facebook_app_id'] ) ) {
                 echo '<meta property="fb:app_id" content="' . esc_attr( $options['facebook_app_id'] ) . '" />' . "\n";
             }
-            echo "\n<!-- Twitter Card Meta Tags -->\n";
+
+            echo "\n\n";
             echo '<meta name="twitter:card" content="summary_large_image" />' . "\n";
             echo '<meta name="twitter:title" content="' . esc_attr( $titulo ) . '" />' . "\n";
             echo '<meta name="twitter:description" content="' . esc_attr( $descricao ) . '" />' . "\n";
             echo '<meta name="twitter:image" content="' . esc_url( $imagem ) . '" />' . "\n";
-            echo "<!-- End Open Graph Meta Tags -->\n\n";
+            echo "\n\n";
         };
+
         $renderizar_og_taxonomia = function() use ( $print_image_tags ) {
             $termo_atual = get_queried_object();
             $titulo = wp_get_document_title();
@@ -782,6 +852,7 @@ class Pinedu_Imovel_Plugin {
             $url = get_term_link( $termo_atual );
             $imagem = get_template_directory_uri() . '/images/logofinal.png';
             $descricao = "Confira as melhores opções de imóveis disponíveis na " . $site_name . ".";
+
             if ( isset( $termo_atual->taxonomy ) && isset( $termo_atual->name ) && !empty( $termo_atual->name ) ) {
                 $nome_formatado = mb_convert_case( $termo_atual->name, MB_CASE_TITLE, 'UTF-8' );
                 switch ( $termo_atual->taxonomy ) {
@@ -807,7 +878,8 @@ class Pinedu_Imovel_Plugin {
                         break;
                 }
             }
-            echo "\n<!-- Meta Tags SEO e Open Graph (Taxonomia) -->\n";
+
+            echo "\n\n";
             echo '<link rel="canonical" href="' . esc_url( $url ) . '" />' . "\n";
             echo '<meta name="description" content="' . esc_attr( $descricao ) . '" />' . "\n";
             echo '<meta name="author" content="' . esc_attr( $site_name ) . '" />' . "\n";
@@ -817,18 +889,22 @@ class Pinedu_Imovel_Plugin {
             echo '<meta property="og:type" content="website" />' . "\n";
             echo '<meta property="og:site_name" content="' . esc_attr( $site_name ) . '" />' . "\n";
             echo '<meta property="og:description" content="' . esc_attr( $descricao ) . '" />' . "\n";
+
             $print_image_tags( $imagem, null );
+
             $options = get_option( 'pinedu_imovel_options', [] );
             if ( isset( $options['facebook_app_id'] ) && !empty( $options['facebook_app_id'] ) ) {
                 echo '<meta property="fb:app_id" content="' . esc_attr( $options['facebook_app_id'] ) . '" />' . "\n";
             }
-            echo "\n<!-- Twitter Card Meta Tags -->\n";
+
+            echo "\n\n";
             echo '<meta name="twitter:card" content="summary_large_image" />' . "\n";
             echo '<meta name="twitter:title" content="' . esc_attr( $titulo ) . '" />' . "\n";
             echo '<meta name="twitter:description" content="' . esc_attr( $descricao ) . '" />' . "\n";
             echo '<meta name="twitter:image" content="' . esc_url( $imagem ) . '" />' . "\n";
-            echo "<!-- End Open Graph Meta Tags -->\n\n";
+            echo "\n\n";
         };
+
         $renderizar_og_pagina = function() use ( $print_image_tags ) {
             global $post;
             $titulo = wp_get_document_title();
@@ -836,6 +912,7 @@ class Pinedu_Imovel_Plugin {
             $url = get_permalink();
             $imagem = get_template_directory_uri() . '/images/logofinal.png';
             $slug = isset( $post->post_name ) ? $post->post_name : '';
+
             if ( $slug === 'contato' ) {
                 $descricao = "Fale com a equipe da {$site_name}. Tire suas dúvidas, solicite atendimento e encontre as melhores oportunidades no mercado imobiliário.";
             } elseif ( $slug === 'deixe-seu-imovel' ) {
@@ -848,7 +925,8 @@ class Pinedu_Imovel_Plugin {
                     $descricao = "Saiba mais informações sobre a {$site_name}, sua parceira de confiança em negócios imobiliários.";
                 }
             }
-            echo "\n<!-- Meta Tags SEO e Open Graph (Páginas Institucionais) -->\n";
+
+            echo "\n\n";
             echo '<link rel="canonical" href="' . esc_url( $url ) . '" />' . "\n";
             echo '<meta name="description" content="' . esc_attr( $descricao ) . '" />' . "\n";
             echo '<meta name="author" content="' . esc_attr( $site_name ) . '" />' . "\n";
@@ -858,18 +936,22 @@ class Pinedu_Imovel_Plugin {
             echo '<meta property="og:type" content="website" />' . "\n";
             echo '<meta property="og:site_name" content="' . esc_attr( $site_name ) . '" />' . "\n";
             echo '<meta property="og:description" content="' . esc_attr( $descricao ) . '" />' . "\n";
+
             $print_image_tags( $imagem, null );
+
             $options = get_option( 'pinedu_imovel_options', [] );
             if ( isset( $options['facebook_app_id'] ) && !empty( $options['facebook_app_id'] ) ) {
                 echo '<meta property="fb:app_id" content="' . esc_attr( $options['facebook_app_id'] ) . '" />' . "\n";
             }
-            echo "\n<!-- Twitter Card Meta Tags -->\n";
+
+            echo "\n\n";
             echo '<meta name="twitter:card" content="summary_large_image" />' . "\n";
             echo '<meta name="twitter:title" content="' . esc_attr( $titulo ) . '" />' . "\n";
             echo '<meta name="twitter:description" content="' . esc_attr( $descricao ) . '" />' . "\n";
             echo '<meta name="twitter:image" content="' . esc_url( $imagem ) . '" />' . "\n";
-            echo "<!-- End Open Graph Meta Tags -->\n\n";
+            echo "\n\n";
         };
+
         // ROTEAMENTO
         $eh_pesquisa = is_search() || is_page( 'pesquisa' ) || ( ( is_home() || is_front_page() ) && isset( $_GET['tipo_pesquisa_submit'] ) );
         if ( $eh_pesquisa ) return $renderizar_og_pesquisa();
@@ -879,6 +961,7 @@ class Pinedu_Imovel_Plugin {
         if ( is_singular( 'post' ) ) return $renderizar_og_post_padrao();
         if ( is_page() ) return $renderizar_og_pagina();
     }
+
     function pinedu_adicionar_sitemap_yoast( $sitemap_custom_items ) {
         $sitemap_url = home_url( '/sitemap_imoveis.xml' );
         $file_path = ABSPATH . 'sitemap_imoveis.xml';
