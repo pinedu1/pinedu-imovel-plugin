@@ -974,9 +974,14 @@ class PineduImportarFrontEnd {
         try {
             // Verifica se a classe que contém os métodos de geração existe no momento da requisição
             if ( class_exists('\PineduReceiverRest') ) {
-                \PineduReceiverRest::generate_site_map();
-                \PineduReceiverRest::generate_json_ld();
-                \PineduReceiverRest::generate_feed();
+                if ( is_development_mode( ) ) {
+                    $options = get_option( 'pinedu_imovel_options', [ ] );
+                    error_log('PineduReceiverRest: ' . print_r($options, true));
+                }
+                \PineduReceiverRest::generate_site_map( true );
+                \PineduReceiverRest::generate_json_ld( true );
+                \PineduReceiverRest::generate_feed( true );
+                \PineduReceiverRest::optimize_tables( true );
 
                 wp_send_json([ 'success' => true ]);
             } else {
