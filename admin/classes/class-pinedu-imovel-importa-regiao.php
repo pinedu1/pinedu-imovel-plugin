@@ -67,7 +67,7 @@ class Pinedu_Imovel_Importa_Regiao extends Pinedu_Importa_Taxonomia_Base {
         $terms = get_terms($args);
 
         // 4. Salva o resultado no cache por 1 hora
-        set_transient( $transient_key, $terms, 1 * HOUR_IN_SECONDS );
+        set_transient( $transient_key, $terms, 40 * MINUTE_IN_SECONDS );
 
         return $terms;
     }

@@ -37,7 +37,7 @@ class Pinedu_Imovel_Importa_Tipo_Imovel extends Pinedu_Importa_Taxonomia_Base {
         );
         $terms = get_terms($args);
         // 4. Salva o resultado no cache por 1 hora (1 * HOUR_IN_SECONDS)
-        set_transient( $transient_key, $terms, 1 * HOUR_IN_SECONDS );
+        set_transient( $transient_key, $terms, 30 * MINUTE_IN_SECONDS );
         return $terms;
     }
 }
