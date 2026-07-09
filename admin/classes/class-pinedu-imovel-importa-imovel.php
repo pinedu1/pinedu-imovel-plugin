@@ -360,6 +360,7 @@ class Pinedu_Imovel_Importa_Metadados {
     }
 
     private function salvar_metadados_imovel() {
+        global $wpdb; // Garantir acesso ao objeto de banco de dados
         $properties = $this->recolhe_propriedades();
 
         $dados_venda = $this->processa_metadados_contrato( 'venda', $this->imovel );
@@ -402,7 +403,17 @@ class Pinedu_Imovel_Importa_Metadados {
         if ( $latitude != 0 && $longitude != 0 ) {
             add_post_meta( $this->post_id, 'latitude', $latitude, true );
             add_post_meta( $this->post_id, 'longitude', $longitude, true );
+
+            // INSERÇÃO NA TABELA DE GEODATA
+            $table_geo = $wpdb->prefix . 'pnd_geodata';
+            $wpdb->query( $wpdb->prepare(
+                "REPLACE INTO {$table_geo} (post_id, lat, lng) VALUES (%d, %s, %s)",
+                $this->post_id,
+                $latitude,
+                $longitude
+            ) );
         }
+
         if ( isset( $this->imovel['tipoImovel']['nome'] ) ) {
             add_post_meta( $this->post_id, 'tipoImovelNome', $this->imovel['tipoImovel']['nome'], true );
         }
@@ -410,17 +421,27 @@ class Pinedu_Imovel_Importa_Metadados {
             $this->salvar_dependencias( $this->imovel['dependencias'] );
         }
     }
-
     private function apagar_metadados_imovel() {
         global $wpdb;
+
+        // Verifica se o post realmente existe antes de prosseguir
         if ( !get_post( $this->post_id ) ) return 0;
+
+        // 1. Apaga os metadados padrão do WordPress (wp_postmeta)
         $wpdb->delete(
             $wpdb->postmeta,
             array( 'post_id' => $this->post_id ),
             array( '%d' )
         );
-    }
 
+        // 2. Apaga a entrada correspondente na sua tabela de geolocalização
+        $table_geo = $wpdb->prefix . 'pnd_geodata';
+        $wpdb->delete(
+            $table_geo,
+            array( 'post_id' => $this->post_id ),
+            array( '%d' )
+        );
+    }
     private function recolhe_propriedades() {
         $properties = array();
         foreach ( self::PROPRIEDADES as $propriedade ) {
