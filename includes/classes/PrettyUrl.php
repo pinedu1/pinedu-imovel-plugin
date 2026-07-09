@@ -381,13 +381,54 @@ class PrettyUrl {
 		$finalidades = [];
 		if ( '1' == $post->ativarVenda || '1' == $post->ativarLancamento ) $finalidades[] = 'venda';
 		if ( '1' == $post->ativarLocacao ) $finalidades[] = 'locacao';
-		foreach ( $finalidades as $contrato ) {
-			$path_parts = array_filter( [$contrato, $tipo_slug, $cidade_slug, $regiao_slug] );
-			$links[] = [
-				'url'   => "/" . implode( "/", $path_parts ) . "/",
-				'label' => ( $contrato == 'venda' ? "Imóveis à Venda" : "Imóveis para Locação" ) . " - " . $post->regiao
-			];
-		}
+
+        foreach ( $finalidades as $contrato ) {
+            $lbl_base = ( $contrato == 'venda' ? "Venda" : "Locação" );
+
+            // a) Somente contrato (ex: /venda/)
+            $links[] = [
+                'url'   => "/{$contrato}/",
+                'label' => $lbl_base
+            ];
+
+            // b) Somente contrato / tipoimovel (ex: /venda/casa/)
+            if ( ! empty( $tipo_slug ) ) {
+                // Pega o dado cru e aplica a conversão UTF-8
+                $raw_tipo = $post->tipoImovelNome ?? str_replace( '-', ' ', $tipo_slug );
+                $nome_tipo = mb_convert_case( $raw_tipo, MB_CASE_TITLE, 'UTF-8' );
+
+                $links[] = [
+                    'url'   => "/{$contrato}/{$tipo_slug}/",
+                    'label' => "{$lbl_base} - {$nome_tipo}"
+                ];
+
+                // c) Somente contrato / tipoimovel / cidade (ex: /venda/casa/santo-andre/)
+                if ( ! empty( $cidade_slug ) ) {
+                    $raw_cidade = $post->cidade ?? str_replace( '-', ' ', $cidade_slug );
+                    $nome_cidade = mb_convert_case( $raw_cidade, MB_CASE_TITLE, 'UTF-8' );
+
+                    $acao = ( $contrato == 'venda' ? 'Venda' : 'Locação' );
+
+                    $links[] = [
+                        'url'   => "/{$contrato}/{$tipo_slug}/{$cidade_slug}/",
+                        'label' => "{$nome_tipo} à {$acao} em {$nome_cidade}"
+                    ];
+
+                    // d) O completo (ex: /venda/casa/santo-andre/centro/)
+                    if ( ! empty( $regiao_slug ) ) {
+                        $raw_regiao = $post->regiao ?? str_replace( '-', ' ', $regiao_slug );
+                        $nome_regiao = mb_convert_case( $raw_regiao, MB_CASE_TITLE, 'UTF-8' );
+
+                        $links[] = [
+                            'url'   => "/{$contrato}/{$tipo_slug}/{$cidade_slug}/{$regiao_slug}/",
+                            'label' => "{$nome_tipo} à {$acao} em {$nome_cidade} - {$nome_regiao}"
+                        ];
+                    }
+                }
+            }
+        }
+
+
 		return $links;
 	}
 	// =========================================================================

@@ -77,9 +77,9 @@ class Pinedu_Imovel_Plugin_Activator {
 
         // Índices sugeridos
         $indices = [
-            "CREATE INDEX IF NOT EXISTS idx_pnd_meta_key_value_post ON wp_postmeta (meta_key(32), meta_value(64), post_id);"
-            , "CREATE INDEX IF NOT EXISTS idx_pnd_post_id_meta_key ON wp_postmeta (post_id, meta_key(32));"
-            , "CREATE INDEX IF NOT EXISTS idx_object_taxonomy ON wp_term_relationships (object_id, term_taxonomy_id);"
+            "CREATE INDEX IF NOT EXISTS idx_pnd_meta_key_value_post ON {$wpdb->postmeta} (meta_key(32), meta_value(64), post_id)",
+            "CREATE INDEX IF NOT EXISTS idx_pnd_post_id_meta_key ON {$wpdb->postmeta} (post_id, meta_key(32))",
+            "CREATE INDEX IF NOT EXISTS idx_object_taxonomy ON {$wpdb->term_relationships} (object_id, term_taxonomy_id)"
         ];
 
         foreach ( $indices as $index_sql ) {
