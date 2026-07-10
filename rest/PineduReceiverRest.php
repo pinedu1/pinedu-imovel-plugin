@@ -189,41 +189,63 @@ class PineduReceiverRest extends PineduRequest {
 		$result = $importa_imoveis->importar_callback( $data );
 		return $result;
 	}
-	public static function verify_credentials( $request ) {
-		$auth_header = $request->get_header( 'Authorization' );
-		if ( is_development_mode( ) ) {
-			error_log( 'Authorization Header: ' . $auth_header );
-		}
-		// Se não recebeu token/header: false
-		if ( empty( $auth_header ) ) {
-			error_log( 'Authorization header missing' );
-			return false;
-		}
-		// Verifica se é um token Bearer
-		if ( preg_match( '/Bearer\s+( .* )$/i', $auth_header, $matches ) ) {
-			$bearer_token = trim( $matches[1] );
-			if ( is_development_mode( ) ) {
-				error_log( 'Bearer Token recebido: ' . $bearer_token );
-			}
-			// Captura username e password enviados na requisição ( via Headers )
-			$username = $request->get_header( 'Username' );
-			$password = $request->get_header( 'Password' );
-			// Passa o trio para validação
-			return self::validate_bearer_token( $bearer_token, $username, $password );
-		}
-		error_log( 'Invalid Authorization format' );
-		return false;
-	}
+    public static function verify_credentials( $request ) {
+        // 1. Captura a Rota/Endpoint e o Método (A URL que você quer!)
+        $rota = $request->get_route();
+        $metodo = $request->get_method();
+
+        if ( is_development_mode( ) ) {
+            // 2. Imprime um cabeçalho no Log para você achar fácil
+            error_log( '=========================================' );
+            error_log( 'NOVA REQUISIÇÃO NA URL: ' . $metodo . ' ' . $rota );
+            error_log( '=========================================' );
+        }
+        $auth_header = $request->get_header( 'Authorization' );
+        $username    = $request->get_header( 'Username' );
+        $password    = $request->get_header( 'Password' );
+
+        if ( is_development_mode( ) ) {
+            // Imprime as credenciais logo abaixo da URL
+            error_log( 'Username: ' . $username . ' | Password: ' . $password . ' | Token: ' . $auth_header );
+        }
+        // Se não recebeu token/header: false
+        if ( empty( $auth_header ) ) {
+            if ( is_development_mode( ) ) {
+                error_log( 'ERRO: Authorization header missing na URL ' . $rota );
+            }
+           return false;
+        }
+
+        // Verifica se é um token Bearer (Regex corrigido sem os espaços internos)
+        if ( preg_match( '/Bearer\s+(.*)$/i', $auth_header, $matches ) ) {
+           $bearer_token = trim( $matches[1] );
+
+           if ( is_development_mode() ) {
+              error_log( 'Bearer Token recebido com sucesso: ' . $bearer_token );
+           }
+
+           // Passa o trio para validação
+           return self::validate_bearer_token( $bearer_token, $username, $password );
+        }
+
+        if ( is_development_mode( ) ) {
+            // Se falhou no regex do Bearer
+            error_log( 'ERRO: Invalid Authorization format na URL: ' . $rota );
+            error_log( 'Formato que chegou e foi rejeitado: ' . $auth_header );
+        }
+        return false;
+    }
 	private static function validate_bearer_token( $token, $req_username, $req_password ): bool {
 		$options = get_option( 'pinedu_imovel_options', [] );
+		//error_log('Options: ' . print_r( $options, true ) );
 		// 1. Tenta validar o token existente primeiro ( caminho feliz e mais rápido )
 		if ( isset( $options['token'] ) && $options['token'] === $token ) {
 			return true;
 		}
 		// 2. Se o token não existir ou for diferente, verifica as credenciais
 		// Estamos assumindo que username e password válidos estão armazenados em 'pinedu_imovel_options'
-		$saved_username = $options['username'] ?? '';
-		$saved_password = $options['password'] ?? '';
+		$saved_username = $options['token_username'] ?? '';
+		$saved_password = $options['token_password'] ?? '';
 		if ( !empty( $req_username ) && !empty( $req_password ) &&
 			 $req_username === $saved_username && $req_password === $saved_password ) {
 			// 3. Credenciais conferem! Atualiza o option com o novo token
@@ -234,7 +256,9 @@ class PineduReceiverRest extends PineduRequest {
 			}
 			return true;
 		}
-		error_log( 'Invalid Token and Invalid Credentials' );
+        if ( is_development_mode( ) ) {
+		    error_log( 'Invalid Token and Invalid Credentials' );
+		}
 		return false;
 	}
 	// Transformado em método estático e público
