@@ -423,7 +423,7 @@ class PineduReceiverRest extends PineduRequest {
 				$tipo_imovel_formatado = mb_convert_case( $imovel->tipoImovelNome ?? '', MB_CASE_TITLE, 'UTF-8' );
 				$cidade_formatada	  = mb_convert_case( $imovel->cidade ?? '', MB_CASE_TITLE, 'UTF-8' );
 				$bairro_formatado	  = mb_convert_case( $imovel->bairro ?? '', MB_CASE_TITLE, 'UTF-8' );
-				if ( '1' === $imovel->ativarVenda && ! empty( $imovel->vendaValor ) ) {
+				if ( ( 1 == intval( $imovel->ativarVenda ) ) && ! empty( $imovel->vendaValor ) ) {
 					$offers[] = [
 						'@type'			=> 'Offer',
 						'price'			=> $imovel->vendaValor,
@@ -431,7 +431,7 @@ class PineduReceiverRest extends PineduRequest {
 						'businessFunction' => 'http://purl.org/goodrelations/v1#Sell'
 					];
 				}
-				if ( '1' === $imovel->ativarLancamento && ! empty( $imovel->lancamentoValor ) ) {
+				if ( ( 1 == intval( $imovel->ativarLancamento ) ) && ! empty( $imovel->lancamentoValor ) ) {
 					$offers[] = [
 						'@type'			=> 'Offer',
 						'price'			=> $imovel->lancamentoValor,
@@ -439,7 +439,7 @@ class PineduReceiverRest extends PineduRequest {
 						'businessFunction' => 'http://purl.org/goodrelations/v1#Sell'
 					];
 				}
-				if ( '1' === $imovel->ativarLocacao && ! empty( $imovel->locacaoValor ) ) {
+				if ( ( 1 == intval( $imovel->ativarLocacao ) ) && ! empty( $imovel->locacaoValor ) ) {
 					$offers[] = [
 						'@type'			=> 'Offer',
 						'price'			=> $imovel->locacaoValor,
@@ -513,11 +513,11 @@ class PineduReceiverRest extends PineduRequest {
 				$cidade	  = htmlspecialchars( mb_convert_case( $imovel->cidade ?? '', MB_CASE_TITLE, 'UTF-8' ), ENT_QUOTES | ENT_XML1, 'UTF-8' );
 				$bairro	  = htmlspecialchars( mb_convert_case( $imovel->bairro ?? '', MB_CASE_TITLE, 'UTF-8' ), ENT_QUOTES | ENT_XML1, 'UTF-8' );
 				$valor_feed = '0';
-				if ( '1' === $imovel->ativarVenda && ! empty( $imovel->vendaValor ) ) {
+				if ( ( 1 == intval( $imovel->ativarVenda ) ) && ! empty( $imovel->vendaValor ) ) {
 					$valor_feed = $imovel->vendaValor;
-				} elseif ( '1' === $imovel->ativarLancamento && ! empty( $imovel->lancamentoValor ) ) {
+				} elseif ( ( 1 == intval( $imovel->ativarLancamento ) ) && ! empty( $imovel->lancamentoValor ) ) {
 					$valor_feed = $imovel->lancamentoValor;
-				} elseif ( '1' === $imovel->ativarLocacao && ! empty( $imovel->locacaoValor ) ) {
+				} elseif ( ( 1 == intval( $imovel->ativarLocacao ) ) && ! empty( $imovel->locacaoValor ) ) {
 					$valor_feed = $imovel->locacaoValor;
 				}
 				$preco = htmlspecialchars( $valor_feed, ENT_QUOTES | ENT_XML1, 'UTF-8' );

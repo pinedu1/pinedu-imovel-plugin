@@ -379,8 +379,8 @@ class PrettyUrl {
 		$tipo_slug   = sanitize_title( $post->tipoImovelNome );
 		$links = [];
 		$finalidades = [];
-		if ( '1' == $post->ativarVenda || '1' == $post->ativarLancamento ) $finalidades[] = 'venda';
-		if ( '1' == $post->ativarLocacao ) $finalidades[] = 'locacao';
+		if ( ( 1 == intval( $post->ativarVenda ) ) || ( 1 == intval( $post->ativarLancamento ) ) ) $finalidades[] = 'venda';
+		if ( ( 1 == intval( $post->ativarLocacao ) ) ) $finalidades[] = 'locacao';
 
         foreach ( $finalidades as $contrato ) {
             $lbl_base = ( $contrato == 'venda' ? "Venda" : "Locação" );

@@ -521,11 +521,11 @@ class Pinedu_Imovel_Plugin {
                 }
                 $valor = 0;
                 $prefixo_preco = 'por';
-                if ( isset( $post->ativarVenda ) && '1' == $post->ativarVenda && !empty( $post->vendaValor ) ) {
+                if ( isset( $post->ativarVenda ) && ( 1 == intval( $post->ativarVenda ) )  && !empty( $post->vendaValor ) ) {
                     $valor = floatval( $post->vendaValor );
-                } elseif ( isset( $post->ativarLancamento ) && '1' == $post->ativarLancamento && !empty( $post->lancamentoValor ) ) {
+                } elseif ( isset( $post->ativarLancamento ) && ( 1 == intval( $post->ativarLancamento ) ) && !empty( $post->lancamentoValor ) ) {
                     $valor = floatval( $post->lancamentoValor );
-                } elseif ( isset( $post->ativarLocacao ) && '1' == $post->ativarLocacao && !empty( $post->locacaoValor ) ) {
+                } elseif ( isset( $post->ativarLocacao ) && ( 1 == intval( $post->ativarLocacao ) ) && !empty( $post->locacaoValor ) ) {
                     $valor = floatval( $post->locacaoValor );
                     $prefixo_preco = 'para locação por';
                 }
@@ -628,13 +628,13 @@ class Pinedu_Imovel_Plugin {
             }
 
             $preco = '';
-            if ( isset( $post->ativarVenda ) && '1' == $post->ativarVenda && !empty( $post->vendaValor ) ) {
+            if ( isset( $post->ativarVenda ) && ( 1 == intval( $post->ativarVenda ) ) && !empty( $post->vendaValor ) ) {
                 $preco = $post->vendaValor;
                 echo '<meta property="og:availability" content="for_sale" />' . "\n";
-            } elseif ( isset( $post->ativarLancamento ) && '1' == $post->ativarLancamento && !empty( $post->lancamentoValor ) ) {
+            } elseif ( isset( $post->ativarLancamento ) && ( 1 == intval( $post->ativarLancamento ) ) && !empty( $post->lancamentoValor ) ) {
                 echo '<meta property="og:availability" content="for_sale" />' . "\n";
                 $preco = $post->lancamentoValor;
-            } elseif ( isset( $post->ativarLocacao ) && '1' == $post->ativarLocacao && !empty( $post->locacaoValor ) ) {
+            } elseif ( isset( $post->ativarLocacao ) && ( 1 == intval( $post->ativarLocacao ) ) && !empty( $post->locacaoValor ) ) {
                 echo '<meta property="og:availability" content="for_rent" />' . "\n";
                 $preco = $post->locacaoValor;
             }

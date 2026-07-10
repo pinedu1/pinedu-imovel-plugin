@@ -79,10 +79,7 @@ class Pinedu_Imovel_Importa_Tipo_Dependencia extends Pinedu_Importa_Taxonomia_Ba
 		$caracteristicas = [];
 		$infraextrutura = [];
 		if ( ! empty( $tipo_dependencias ) && ! is_wp_error( $tipo_dependencias ) ) {
-
 			// O WP já fez o Eager Load lá no self::list(),
-			// então não precisamos mais daquele bloco wp_list_pluck manual aqui.
-
 			foreach ( $tipo_dependencias as $tipo_dependencia ) {
 				$meta = get_term_meta( $tipo_dependencia->term_id );
 				$relativo = $meta['relativo'][0] ?? '';
@@ -116,7 +113,7 @@ class Pinedu_Imovel_Importa_Tipo_Dependencia extends Pinedu_Importa_Taxonomia_Ba
 			'INFRAEXTRUTURA'  => $infraextrutura
 		];
 		// 3. Salva apenas as strings limpas organizadas no Transient
-		set_transient( $transient_key, $dados_finais, 50 * MINUTE_IN_SECONDS );
+		set_transient( $transient_key, $dados_finais, 60 * MINUTE_IN_SECONDS );
 		return $dados_finais;
 	}
 }
