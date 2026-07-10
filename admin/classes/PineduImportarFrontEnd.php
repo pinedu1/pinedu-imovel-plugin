@@ -982,6 +982,7 @@ class PineduImportarFrontEnd {
                 \PineduReceiverRest::generate_json_ld( true );
                 \PineduReceiverRest::generate_feed( true );
                 \PineduReceiverRest::optimize_tables( true );
+                \PineduReceiverRest::purgar_transientes_pnd( );
 
                 wp_send_json([ 'success' => true ]);
             } else {

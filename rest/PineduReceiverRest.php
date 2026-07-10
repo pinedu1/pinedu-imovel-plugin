@@ -552,4 +552,22 @@ class PineduReceiverRest extends PineduRequest {
 		fwrite( $handle, '</rss>' );
 		fclose( $handle );
 	}
+    public static function purgar_transientes_pnd() {
+        global $wpdb;
+        // O prefixo do nome do transiente é 'pnd'.
+        // No banco, a chave do transiente é '_transient_pnd...'
+        // O timeout é '_transient_timeout_pnd...'
+        $prefixo = 'pnd';
+
+        $wpdb->query(
+            $wpdb->prepare(
+                "DELETE FROM {$wpdb->options}
+                 WHERE option_name LIKE %s
+                    OR option_name LIKE %s",
+                '_transient_' . $wpdb->esc_like($prefixo) . '%',
+                '_transient_timeout_' . $wpdb->esc_like($prefixo) . '%'
+            )
+        );
+        wp_cache_flush();
+    }
 }
