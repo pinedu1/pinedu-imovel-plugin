@@ -37,6 +37,7 @@ class Pinedu_Imovel_Plugin_Deactivator {
 		PosttypeFactory::criar('Loja')->desregistrar();
 		PosttypeFactory::criar('Corretor')->desregistrar();
 		PosttypeFactory::criar('Imovel')->desregistrar();
+		PosttypeFactory::criar('Financeira')->desregistrar();
 		//
 		TaxonomiaFactory::criar('Contrato')->desregistrar();
 		TaxonomiaFactory::criar('TipoImovel')->desregistrar();

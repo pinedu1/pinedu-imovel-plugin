@@ -199,3 +199,41 @@ class Corretor implements PosttypeInterface {
 		unregister_post_type( 'corretor' );
 	}
 }
+class Financeira implements PosttypeInterface {
+
+    private $post_type = 'financeira';
+    private $meta_key = 'link_externo';
+
+    public function registrar() {
+        $labels = array(
+            'name'                  => 'Financeiras'
+            , 'singular_name'       => 'Financeira'
+            , 'search_items'        => 'Pesquisar Financeiras'
+            , 'all_items'           => 'Todas as Financeiras'
+            , 'edit_item'           => 'Editar Financeira'
+            , 'update_item'         => 'Atualizar Financeira'
+            , 'add_new_item'        => 'Adicionar Financeira'
+            , 'new_item_name'       => 'Nova Financeira'
+            , 'menu_name'           => 'Financeira'
+        );
+
+        $args = array(
+            'labels'                => $labels
+            , 'public'              => true
+            , 'has_archive'         => false
+            // Adicionado 'excerpt' na linha abaixo
+            , 'supports'            => array( 'title', 'editor', 'thumbnail', 'custom-fields', 'excerpt' )
+            , 'show_ui'             => true
+            , 'menu_position'       => 20
+            , 'publicly_queryable'  => true
+            , 'rewrite'             => array('slug' => 'financeira')
+            , 'menu_icon'           => 'dashicons-bank' // Ícone de banco
+        );
+
+        register_post_type( $this->post_type, $args );
+
+    }
+    public function desregistrar() {
+        unregister_post_type( $this->post_type );
+    }
+}

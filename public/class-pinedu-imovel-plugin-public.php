@@ -44,6 +44,7 @@ class Pinedu_Imovel_Plugin_Public {
         PosttypeFactory::criar( 'Loja' )->registrar( );
         PosttypeFactory::criar( 'Corretor' )->registrar( );
         PosttypeFactory::criar( 'Imovel' )->registrar( );
+        PosttypeFactory::criar( 'Financeira' )->registrar( );
     }
 
     // Função auxiliar com fallback (valor default)

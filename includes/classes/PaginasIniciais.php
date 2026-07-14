@@ -51,6 +51,12 @@ class PaginasIniciais implements PaginasIniciaisInterface {
 			'post_type' => 'page',
 			'post_content' => 'ALTERE ME!',
 			'template' => 'default'
+		], [
+			'post_title' => 'Financiamento',
+			'post_status' => 'publish',
+			'post_type' => 'page',
+			'post_content' => 'ALTERE ME!',
+			'template' => 'default'
         ]
 	);
 

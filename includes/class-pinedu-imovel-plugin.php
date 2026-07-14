@@ -73,6 +73,12 @@ class Pinedu_Imovel_Plugin {
         $this->loader->add_action( 'template_redirect', $plugin_public, 'forcar_argumento_pesquisa_imovel', 10 );
         $this->loader->add_action( 'template_redirect', $plugin_public, 'forcar_404_se_vazio', 20 );
         $this->loader->add_action( 'template_redirect', $this, 'redirecionar_sitemap_nativo', 1 );
+
+
+        // Adiciona os hooks para o campo customizado
+        $this->loader->add_action('add_meta_boxes', $this, 'adicionar_meta_box_financiamento');
+        $this->loader->add_action('save_post', $this, 'salvar_meta_box_financiamento');
+
         // Configurações e substituições dinâmicas de SEO baseadas no painel
         // 1. Desliga as funções do Yoast SEO
         $this->loader->add_filter( 'wpseo_metadesc', $this, 'override_yoast_seo' );
@@ -998,4 +1004,39 @@ class Pinedu_Imovel_Plugin {
         }
     }
     function __return_false() { return false; }
+    public function adicionar_meta_box_financiamento() {
+        add_meta_box(
+            'meta_box_links_financeira',
+            'Links da Instituição',
+            array($this, 'renderizar_meta_box_financiamento'),
+            'financeira',
+            'normal',
+            'default'
+        );
+    }
+
+    public function renderizar_meta_box_financiamento($post) {
+        $link = get_post_meta($post->ID, 'link', true);
+        $link_simular = get_post_meta($post->ID, 'link_simular', true);
+        if (is_array($link)) $link = '';
+        if (is_array($link_simular)) $link_simular = '';
+        wp_nonce_field('salvar_links_financeira_nonce', 'nonce_links_financeira');
+        echo '<p><strong>Link</strong></p>';
+        echo '<input type="url" name="link" value="' . esc_url((string)$link) . '" style="width:100%; margin-bottom: 15px;" placeholder="https://exemplo.com" />';
+        echo '<p><strong>Link para simular financiamento</strong></p>';
+        echo '<input type="url" name="link_simular" value="' . esc_url((string)$link_simular) . '" style="width:100%;" placeholder="https://exemplo.com/simular" />';
+    }
+
+    public function salvar_meta_box_financiamento($post_id) {
+        if (!isset($_POST['nonce_links_financeira']) || !wp_verify_nonce($_POST['nonce_links_financeira'], 'salvar_links_financeira_nonce')) return;
+        if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) return;
+        if (isset($_POST['post_type']) && $_POST['post_type'] === 'financeira') {
+            if (isset($_POST['link'])) {
+                update_post_meta($post_id, 'link', esc_url_raw($_POST['link']));
+            }
+            if (isset($_POST['link_simular'])) {
+                update_post_meta($post_id, 'link_simular', esc_url_raw($_POST['link_simular']));
+            }
+        }
+    }
 }
