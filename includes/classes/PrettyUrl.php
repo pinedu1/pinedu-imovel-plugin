@@ -8,23 +8,14 @@ class PrettyUrl {
 		$this->delete_cache = $delete_cache;
 		add_action( 'template_redirect', [$this, 'redirecionar_acentos'], 1 );
 
-		// Registros para a rota de consulta por referência
+		// Libera as variáveis customizadas para o WordPress reconhecer na busca
 		add_filter( 'query_vars', [$this, 'liberar_query_vars_consulta'] );
-		add_action( 'init', [$this, 'registrar_rota_consulta_referencia'] );
 	}
 
 	public function liberar_query_vars_consulta( $query_vars ) {
 		$query_vars[] = 'referencia';
 		$query_vars[] = 'tipo_pesquisa_submit';
 		return $query_vars;
-	}
-
-	public function registrar_rota_consulta_referencia() {
-		add_rewrite_rule(
-			'^consulta/referencia/([0-9]+)/?$',
-			'index.php?tipo_pesquisa_submit=consulta&referencia=$matches[1]',
-			'top'
-		);
 	}
 
 	public static function get_mapa_tipo_imovel( ) {
@@ -181,8 +172,6 @@ class PrettyUrl {
 			// =================================================================
 			// TRAPACEANDO O TRAPACEADOR - REDIRECIONAMENTO DE REFERÊNCIA
 			// =================================================================
-			// A nova máscara (? :ref|referencia)-([0-9]+) captura o "ref-15509"
-			// mesmo que o link seja "aaaa/bbbb/imoveis-a-ref-15509" ou "referencia-15509"
 			if ( preg_match('/(?:ref|referencia)-([0-9]+)/i', $path_digitado_clean, $matches) ) {
 				$referencia_alvo = $matches[1];
 				global $wpdb;
@@ -733,10 +722,27 @@ class PrettyUrl {
 				return;
 			}
 			$hierarquia = self::get_mapa_hierarquico( );
+
 			$rules = array_merge(
 				$this->cria( $tax_contrato, $tax_tipo_imovel, $tax_cidade ),
 				$this->url_hierarquia_regras( $hierarquia['regioes_rules'], $tax_contrato, $tax_tipo_imovel )
-			 );
+			);
+
+			// =========================================================================
+			// INJEÇÃO DA ROTA DE CONSULTA DIRETO NO CACHE DE REWRITE RULES
+			// =========================================================================
+			$rules[] = [
+				'regex' => '^consulta/referencia/([0-9]+)/page/([0-9]{1,3})/?$',
+				'rule'  => 'index.php?post_type=imovel&tipo_pesquisa_submit=consulta&referencia=$matches[1]&paged=$matches[2]',
+				'hierarchical' => 'top'
+			];
+			$rules[] = [
+				'regex' => '^consulta/referencia/([0-9]+)/?$',
+				'rule'  => 'index.php?post_type=imovel&tipo_pesquisa_submit=consulta&referencia=$matches[1]',
+				'hierarchical' => 'top'
+			];
+			// =========================================================================
+
 			if ( !$em_desenvolvimento ) {
 				set_transient( self::CACHE_URL_AMIGAVEL, $rules, WEEK_IN_SECONDS );
 			}
