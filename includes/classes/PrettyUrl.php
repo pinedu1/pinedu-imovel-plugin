@@ -3,10 +3,30 @@ class PrettyUrl {
 	const CACHE_URL_AMIGAVEL = 'CACHE_PRETTY_URL';
 	const INDEX_CACHE = 'index.php?post_type=imovel&tipo_pesquisa_submit=imovel';
 	private $delete_cache;
+
 	public function __construct( $delete_cache = false ) {
 		$this->delete_cache = $delete_cache;
 		add_action( 'template_redirect', [$this, 'redirecionar_acentos'], 1 );
+
+		// Registros para a rota de consulta por referência
+		add_filter( 'query_vars', [$this, 'liberar_query_vars_consulta'] );
+		add_action( 'init', [$this, 'registrar_rota_consulta_referencia'] );
 	}
+
+	public function liberar_query_vars_consulta( $query_vars ) {
+		$query_vars[] = 'referencia';
+		$query_vars[] = 'tipo_pesquisa_submit';
+		return $query_vars;
+	}
+
+	public function registrar_rota_consulta_referencia() {
+		add_rewrite_rule(
+			'^consulta/referencia/([0-9]+)/?$',
+			'index.php?tipo_pesquisa_submit=consulta&referencia=$matches[1]',
+			'top'
+		);
+	}
+
 	public static function get_mapa_tipo_imovel( ) {
 		return [
 			'apartamento' => array_flip( [
@@ -29,6 +49,7 @@ class PrettyUrl {
 			] ),
 		];
 	}
+
 	public static function get_mapa_contrato( ) {
 		return [
 			'venda' => array_flip( [
@@ -45,6 +66,7 @@ class PrettyUrl {
 			] )
 		];
 	}
+
 	public static function get_ruidos( ) {
 		return [
 			'em', 'de', 'do', 'da', 'dos', 'das', 'no', 'na', 'nos', 'nas', 'com', 'para',
@@ -53,6 +75,7 @@ class PrettyUrl {
 			'gleba', 'chacara', 'chacaras', 'sitio', 'fazenda', 'estancia', 'recanto'
 		];
 	}
+
 	public static function limpar_faxina_bairro( $nome ) {
 		$nome = remove_accents( strtolower( trim( $nome ) ) );
 		$nome = preg_replace( '/^[0-9]+[a-z]?\s*( ?:-\s* )?/', '', $nome );
@@ -63,6 +86,7 @@ class PrettyUrl {
 		}
 		return trim( preg_replace( '/\s+/', ' ', $nome ) );
 	}
+
 	public static function get_mapa_hierarquico( ) {
 		global $wpdb;
 		$cache_key = 'CACHE_MAPA_HIERARQUICO_V4';
@@ -144,6 +168,7 @@ class PrettyUrl {
 		}
 		return $dados;
 	}
+
 	public function redirecionar_acentos( ) {
 		if ( is_404( ) ) {
 			remove_action( 'template_redirect', 'redirect_canonical' );
@@ -152,6 +177,31 @@ class PrettyUrl {
 			$path = isset( $parsed['path'] ) ? ltrim( $parsed['path'], '/' ) : '';
 			$path_digitado = urldecode( $path );
 			$path_digitado_clean = trim( rtrim( $path_digitado, '/' ) );
+
+			// =================================================================
+			// TRAPACEANDO O TRAPACEADOR - REDIRECIONAMENTO DE REFERÊNCIA
+			// =================================================================
+			if ( preg_match('/(?:imoveis-ref|referencia)-([0-9]+)/i', $path_digitado_clean, $matches) ) {
+				$referencia_alvo = $matches[1];
+				global $wpdb;
+
+				// Busca se o imóvel existe para dar o 301 direto pra página dele
+				$post_id = $wpdb->get_var( $wpdb->prepare(
+					"SELECT post_id FROM {$wpdb->postmeta} WHERE meta_key = 'referencia' AND meta_value = %s LIMIT 1",
+					$referencia_alvo
+				));
+
+				if ( $post_id ) {
+					wp_redirect( get_permalink( $post_id ), 301 );
+					exit;
+				} else {
+					// Se o imóvel não existe, manda para a URL amigável de consulta
+					wp_redirect( home_url( '/consulta/referencia/' . $referencia_alvo . '/' ), 301 );
+					exit;
+				}
+			}
+			// =================================================================
+
 			$clean_path = remove_accents( strtolower( $path_digitado ) );
 			$search_string = preg_replace( '/[\-\_\/\#\t\.]+/u', ' ', $clean_path );
 			$ruidos = self::get_ruidos( );
@@ -276,6 +326,7 @@ class PrettyUrl {
 			}
 		}
 	}
+
 	private function extrair_e_limpar_termo( &$string_busca, $mapa_agrupado ) {
 		if ( empty( $mapa_agrupado ) ) return null;
 		$sinonimos_achatados = [];
@@ -294,13 +345,11 @@ class PrettyUrl {
 		}
 		return null;
 	}
+
 	// =========================================================================
 	// ISCAS DE SEO ( INTERNAL LINKING )
 	// =========================================================================
-	/**
-	 * BREADCRUMB PROGRESSIVO E OTIMIZADO
-	 * Não utiliza a hierarquia completa, usa get_term_by ( O( 1 ) ) para máxima performance.
-	 */
+
 	public static function gerar_links_from_search( $params ) {
 		$links = [];
 		$partes_url = [];
@@ -372,6 +421,7 @@ class PrettyUrl {
 		}
 		return $links;
 	}
+
 	public static function gerar_links_from_post( $post ) {
 		if ( ! $post || $post->post_type !== 'imovel' ) return [];
 		$cidade_slug = sanitize_title( $post->cidade );
@@ -393,7 +443,6 @@ class PrettyUrl {
 
             // b) Somente contrato / tipoimovel (ex: /venda/casa/)
             if ( ! empty( $tipo_slug ) ) {
-                // Pega o dado cru e aplica a conversão UTF-8
                 $raw_tipo = $post->tipoImovelNome ?? str_replace( '-', ' ', $tipo_slug );
                 $nome_tipo = mb_convert_case( $raw_tipo, MB_CASE_TITLE, 'UTF-8' );
 
@@ -427,13 +476,13 @@ class PrettyUrl {
                 }
             }
         }
-
-
 		return $links;
 	}
+
 	// =========================================================================
 	// GERADOR DE REWRITE RULES HIERÁRQUICAS
 	// =========================================================================
+
 	private function url_hierarquia_regras( $hierarquia_rules, $tax_contrato, $tax_tipo_imovel ) {
 		$rules = [];
 		foreach ( $hierarquia_rules as $path => $data ) {
@@ -455,6 +504,7 @@ class PrettyUrl {
 		}
 		return $rules;
 	}
+
 	private function url_seo_landing_pages( $tax_contrato, $tax_tipo_imovel, $tax_cidade ) {
 		$rule = [];
 		$chave_venda = 'venda';
@@ -524,6 +574,7 @@ class PrettyUrl {
 		}
 		return $rule;
 	}
+
 	private function url_one( $taxonomy_mapping ) {
 		$rule = [];
 		foreach ( $taxonomy_mapping as $slug => $data ) {
@@ -540,6 +591,7 @@ class PrettyUrl {
 		}
 		return $rule;
 	}
+
 	private function url_two( $taxonomy_one, $taxonomy_two ) {
 		$rule = [];
 		foreach ( $taxonomy_one as $slug1 => $data1 ) {
@@ -560,9 +612,11 @@ class PrettyUrl {
 		}
 		return $rule;
 	}
+
 	private function tupla( $parameter, $value ) {
 		return ( $parameter . '=' . $value );
 	}
+
 	private function url_tree( $taxonomy_one, $taxonomy_two, $taxonomy_tree ) {
 		$rule = [];
 		foreach ( $taxonomy_one as $slug1 => $data1 ) {
@@ -585,6 +639,7 @@ class PrettyUrl {
 		}
 		return $rule;
 	}
+
 	private function url_four( $taxonomy_one, $taxonomy_two, $taxonomy_tree, $taxonomy_four ) {
 		$rule = [];
 		foreach ( $taxonomy_one as $slug1 => $data1 ) {
@@ -612,6 +667,7 @@ class PrettyUrl {
 		}
 		return $rule;
 	}
+
 	private function register( $rules ) {
 		foreach ( $rules as $rule ) {
 			add_rewrite_rule( $rule[ 'regex' ], $rule[ 'rule' ], $rule[ 'hierarchical' ] );
@@ -620,6 +676,7 @@ class PrettyUrl {
 			flush_rewrite_rules( );
 		}
 	}
+
 	private function cria( $tax_contrato, $tax_tipo_imovel, $tax_cidade ) {
 		$rules = array_merge(
 			$this->url_seo_landing_pages( $tax_contrato, $tax_tipo_imovel, $tax_cidade ),
@@ -641,11 +698,13 @@ class PrettyUrl {
 		 );
 		return $rules;
 	}
+
 	public function clear( ) {
 		delete_transient( self::CACHE_URL_AMIGAVEL );
 		delete_transient( 'CACHE_MAPA_HIERARQUICO_V4' );
 		flush_rewrite_rules( false );
 	}
+
 	public function do( ) {
 		if ( isset( $_GET['forcar_reset'] ) ) {
 			$this->clear( );
@@ -682,10 +741,7 @@ class PrettyUrl {
 		}
 		$this->register( $rules );
 	}
-	/**
-	 * Gera a lista de links ativos para o Mapa do Site (Sitemap HTML)
-	 * Consulta diretamente os postmetas e faz higienização usando as regras da NLP.
-	 */
+
 	public static function gerar_links_mapa_imoveis( ) {
 		global $wpdb;
 
@@ -699,7 +755,6 @@ class PrettyUrl {
 			}
 		}
 
-		// A Matriz com UNION ALL agrupando por Venda, Locação e Lançamento
 		$sql_matriz = "
 			SELECT
 				'venda' AS contrato,
@@ -780,31 +835,26 @@ class PrettyUrl {
 			];
 
 			foreach ( $combinacoes_ativas as $linha ) {
-				// Blindagem contra sujeira no banco (imóveis sem cidade ou tipo definido)
 				if ( empty( $linha['cidade'] ) || empty( $linha['tipo_imovel'] ) ) {
 					continue;
 				}
-				// 1. Normalização para os Slugs (A URL)
 				$c_slug   = $linha['contrato'];
 				$t_slug   = sanitize_title( $linha['tipo_imovel'] );
 				$cid_slug = sanitize_title( $linha['cidade'] );
-				// Utiliza a faxina existente da classe para a região
 				$reg_slug = !empty( $linha['regiao'] ) ? sanitize_title( self::limpar_faxina_bairro( $linha['regiao'] ) ) : '';
 				$partes_url = array_filter( [$c_slug, $t_slug, $cid_slug, $reg_slug] );
 				$url = "/" . implode( "/", $partes_url ) . "/";
-				// 2. Normalização para o Visual (O Label)
+
 				$nome_contrato = $mapa_nomes_contrato[$c_slug];
 				$nome_tipo     = mb_convert_case( strtolower( trim( $linha['tipo_imovel'] ) ), MB_CASE_TITLE, 'UTF-8' );
 				$nome_cidade   = mb_convert_case( strtolower( trim( $linha['cidade'] ) ), MB_CASE_TITLE, 'UTF-8' );
 				$nome_regiao   = !empty( $linha['regiao'] ) ? mb_convert_case( strtolower( trim( $linha['regiao'] ) ), MB_CASE_TITLE, 'UTF-8' ) : '';
-				// Construindo o Label semântico
+
 				$label = "{$nome_contrato} de {$nome_tipo} em {$nome_cidade}";
 				if ( $nome_regiao ) {
 					$label .= " - {$nome_regiao}";
 				}
-				// 3. Empacota tudo.
-				// Retornando a "cidade_slug" em separado, fica extremamente fácil
-				// agrupar visualmente no HTML (ex: <h2>Birigui</h2>) lá no seu shortcode.
+
 				$links[] = [
 					'url'           => $url,
 					'label'         => $label,
@@ -815,7 +865,6 @@ class PrettyUrl {
 			}
 		}
 		if ( !$em_desenvolvimento ) {
-			// Cache pesado para o sitemap: 12 horas é um excelente equilíbrio.
 			set_transient( $cache_key, $links, 12 * HOUR_IN_SECONDS );
 		}
 		return $links;

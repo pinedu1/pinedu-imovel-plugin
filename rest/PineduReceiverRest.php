@@ -3,6 +3,7 @@ require_once plugin_dir_path( __FILE__ ) . '../admin/classes/PineduRequest.php';
 require_once plugin_dir_path( __FILE__ ) . '../admin/classes/class-pinedu-imovel-importar-basicos.php';
 require_once plugin_dir_path( __FILE__ ) . '../admin/classes/class-pinedu-imovel-importar-imoveis.php';
 class PineduReceiverRest extends PineduRequest {
+    private const DEBUG = false;
 	private static $instance = null;
 	private function __construct( ) {
 		// Construtor privado
@@ -118,7 +119,7 @@ class PineduReceiverRest extends PineduRequest {
 	public static function encerrar_atualizacao( $request ) {
 		$json_string = $request->get_body( );
 		$data = json_decode( $json_string, true );
-		if ( is_development_mode( ) ) {
+		if ( self::DEBUG && is_development_mode( ) ) {
 			error_log( 'encerrar_atualizacao: ' . print_r( $data, true ) );
 		}
 		$token = isset( $data['token'] ) ? sanitize_text_field( $data['token'] ) : '';
@@ -163,7 +164,7 @@ class PineduReceiverRest extends PineduRequest {
 	}
 	public static function receber_basicos( $request ) {
 		$json_string = $request->get_body( );
-		if ( is_development_mode( ) ) {
+		if ( self::DEBUG && is_development_mode( ) ) {
 			error_log( 'JSON recebido: ' . $json_string );
 		}
 		$data = json_decode( $json_string, true );
@@ -194,7 +195,7 @@ class PineduReceiverRest extends PineduRequest {
         $rota = $request->get_route();
         $metodo = $request->get_method();
 
-        if ( is_development_mode( ) ) {
+        if ( self::DEBUG && is_development_mode( ) ) {
             // 2. Imprime um cabeçalho no Log para você achar fácil
             error_log( '=========================================' );
             error_log( 'NOVA REQUISIÇÃO NA URL: ' . $metodo . ' ' . $rota );
@@ -204,13 +205,13 @@ class PineduReceiverRest extends PineduRequest {
         $username    = $request->get_header( 'Username' );
         $password    = $request->get_header( 'Password' );
 
-        if ( is_development_mode( ) ) {
+        if ( self::DEBUG && is_development_mode( ) ) {
             // Imprime as credenciais logo abaixo da URL
             error_log( 'Username: ' . $username . ' | Password: ' . $password . ' | Token: ' . $auth_header );
         }
         // Se não recebeu token/header: false
         if ( empty( $auth_header ) ) {
-            if ( is_development_mode( ) ) {
+            if ( self::DEBUG && is_development_mode( ) ) {
                 error_log( 'ERRO: Authorization header missing na URL ' . $rota );
             }
            return false;
@@ -220,7 +221,7 @@ class PineduReceiverRest extends PineduRequest {
         if ( preg_match( '/Bearer\s+(.*)$/i', $auth_header, $matches ) ) {
            $bearer_token = trim( $matches[1] );
 
-           if ( is_development_mode() ) {
+           if ( self::DEBUG && is_development_mode( ) ) {
               error_log( 'Bearer Token recebido com sucesso: ' . $bearer_token );
            }
 
@@ -228,7 +229,7 @@ class PineduReceiverRest extends PineduRequest {
            return self::validate_bearer_token( $bearer_token, $username, $password );
         }
 
-        if ( is_development_mode( ) ) {
+        if ( self::DEBUG && is_development_mode( ) ) {
             // Se falhou no regex do Bearer
             error_log( 'ERRO: Invalid Authorization format na URL: ' . $rota );
             error_log( 'Formato que chegou e foi rejeitado: ' . $auth_header );
@@ -251,12 +252,12 @@ class PineduReceiverRest extends PineduRequest {
 			// 3. Credenciais conferem! Atualiza o option com o novo token
 			$options['token'] = $token;
 			update_option( 'pinedu_imovel_options', $options );
-			if ( is_development_mode( ) ) {
+			if ( self::DEBUG && is_development_mode( ) ) {
 				error_log( 'Novo Token validado e registrado com sucesso via Username/Password.' );
 			}
 			return true;
 		}
-        if ( is_development_mode( ) ) {
+        if ( self::DEBUG && is_development_mode( ) ) {
 		    error_log( 'Invalid Token and Invalid Credentials' );
 		}
 		return false;
@@ -291,7 +292,7 @@ class PineduReceiverRest extends PineduRequest {
 		// Se a última otimização ocorreu há menos de 2 horas ( 7200 segundos ),
 		// significa que já rodou hoje dentro desta janela das 6h. Sai fora!
 		if ( ( $forcar === false ) && ( $idade_segundos < 7200 ) ) {
-			if ( is_development_mode( ) ) {
+			if ( self::DEBUG && is_development_mode( ) ) {
 				error_log( 'OPTIMIZE TABLE ignorado: Já foi executado recentemente nesta janela.' );
 			}
 			return;
@@ -308,7 +309,7 @@ class PineduReceiverRest extends PineduRequest {
 		// Registra o momento exato em que a otimização acabou de ocorrer
 		$options['ultima_otimizacao'] = time( );
 		update_option( 'pinedu_imovel_options', $options );
-		if ( is_development_mode( ) ) {
+		if ( self::DEBUG && is_development_mode( ) ) {
 			error_log( 'OPTIMIZE TABLE executado com sucesso para TODAS as tabelas no domingo às ' . wp_date( 'H:i:s' ) );
 		}
 	}
