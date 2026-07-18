@@ -8,7 +8,6 @@ class PrettyUrl {
 		$this->delete_cache = $delete_cache;
 		add_action( 'template_redirect', [$this, 'redirecionar_acentos'], 1 );
 
-		// Mantém a query var liberada por segurança para a pesquisa fallback funcionar
 		add_filter( 'query_vars', [$this, 'liberar_query_vars_consulta'] );
 	}
 
@@ -161,40 +160,50 @@ class PrettyUrl {
 	}
 
 	public function redirecionar_acentos( ) {
-		if ( is_404( ) ) {
-			remove_action( 'template_redirect', 'redirect_canonical' );
-			$uri = $_SERVER['REQUEST_URI'];
-			$parsed = parse_url( $uri );
-			$path = isset( $parsed['path'] ) ? ltrim( $parsed['path'], '/' ) : '';
-			$path_digitado = urldecode( $path );
-			$path_digitado_clean = trim( rtrim( $path_digitado, '/' ) );
+		$uri = $_SERVER['REQUEST_URI'];
+		$parsed = parse_url( $uri );
+		$path = isset( $parsed['path'] ) ? ltrim( $parsed['path'], '/' ) : '';
+		$path_digitado = urldecode( $path );
+		$path_digitado_clean = trim( rtrim( $path_digitado, '/' ) );
 
-			// =================================================================
-			// TRAPACEANDO O TRAPACEADOR - REDIRECIONAMENTO DE REFERÊNCIA
-			// =================================================================
-			// A MÁSCARA ATUALIZADA: captura traço [-] ou barra [/] e pega o ID.
-			// Vai identificar: ref-15590, referencia-15590, ref/15590, referencia/15590
-			if ( preg_match('/(?:ref|referencia)[\-\/]([0-9]+)/i', $path_digitado_clean, $matches) ) {
-				$referencia_alvo = $matches[1];
-				global $wpdb;
+		// =================================================================
+		// 1. AVALIAÇÃO DE REFERÊNCIA ANTES DO 404
+		// =================================================================
+		if ( preg_match('/(?:ref|referencia)[\-\/]([0-9]+)/i', $path_digitado_clean, $matches) ) {
+			$referencia_alvo = $matches[1];
+			global $wpdb;
 
-				// Busca o ID interno do imóvel
-				$post_id = $wpdb->get_var( $wpdb->prepare(
-					"SELECT post_id FROM {$wpdb->postmeta} WHERE meta_key = 'referencia' AND meta_value = %s LIMIT 1",
-					$referencia_alvo
-				));
+			// Verifica a existência do imóvel
+			$post_id = $wpdb->get_var( $wpdb->prepare(
+				"SELECT post_id FROM {$wpdb->postmeta} WHERE meta_key = 'referencia' AND meta_value = %s LIMIT 1",
+				$referencia_alvo
+			));
 
-				if ( $post_id ) {
-					// Imóvel existe: Envia direto para a URL bonita gerada pelo slug do post!
-					wp_redirect( get_permalink( $post_id ), 301 );
-					exit;
-				} else {
-					// Imóvel não existe: Envia EXATAMENTE para a URL de consulta raiz que você testou e funciona
-					wp_redirect( home_url( '/index.php?post_type=imovel&tipo_pesquisa_submit=imovel&referencia=' . $referencia_alvo ), 301 );
+			if ( $post_id ) {
+				$novo_link = get_permalink( $post_id );
+
+				$path_atual = rtrim( parse_url( $uri, PHP_URL_PATH ), '/' );
+				$path_alvo  = rtrim( parse_url( $novo_link, PHP_URL_PATH ), '/' );
+
+				// TRAVA ANTI-LOOP: Redireciona APENAS se o link correto for diferente da URL atual
+				if ( $path_alvo !== $path_atual ) {
+					wp_redirect( $novo_link, 301 );
 					exit;
 				}
+			} else {
+				// TRAVA ABORTO: Imóvel não existe no banco!
+				// Se isso for um 404, damos 'return' para matar a execução antes que o NLP entre
+				// em ação tentando consertar a URL e gerando um Loop Infinito.
+				if ( is_404() ) {
+					return;
+				}
 			}
-			// =================================================================
+		}
+		// =================================================================
+
+		// 2. MOTOR DE NLP
+		if ( is_404( ) ) {
+			remove_action( 'template_redirect', 'redirect_canonical' );
 
 			$clean_path = remove_accents( strtolower( $path_digitado ) );
 			$search_string = preg_replace( '/[\-\_\/\#\t\.]+/u', ' ', $clean_path );
@@ -693,7 +702,6 @@ class PrettyUrl {
 	public function clear( ) {
 		delete_transient( self::CACHE_URL_AMIGAVEL );
 		delete_transient( 'CACHE_MAPA_HIERARQUICO_V4' );
-		// Removido o flush daqui para evitar salvar banco antes da hora
 	}
 
 	public function do( ) {
@@ -740,7 +748,6 @@ class PrettyUrl {
 
 		$this->register( $rules );
 
-		// Flush CORRETO: Só salva no banco depois que as regras foram geradas e registradas!
 		if ( $forcar_reset || $this->delete_cache === true ) {
 			flush_rewrite_rules( false );
 		}
