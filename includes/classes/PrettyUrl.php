@@ -181,7 +181,9 @@ class PrettyUrl {
 			// =================================================================
 			// TRAPACEANDO O TRAPACEADOR - REDIRECIONAMENTO DE REFERÊNCIA
 			// =================================================================
-			if ( preg_match('/(?:imoveis-ref|referencia)-([0-9]+)/i', $path_digitado_clean, $matches) ) {
+			// A nova máscara (? :ref|referencia)-([0-9]+) captura o "ref-15509"
+			// mesmo que o link seja "aaaa/bbbb/imoveis-a-ref-15509" ou "referencia-15509"
+			if ( preg_match('/(?:ref|referencia)-([0-9]+)/i', $path_digitado_clean, $matches) ) {
 				$referencia_alvo = $matches[1];
 				global $wpdb;
 
