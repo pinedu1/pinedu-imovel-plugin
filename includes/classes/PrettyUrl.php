@@ -752,132 +752,229 @@ class PrettyUrl {
 			flush_rewrite_rules( false );
 		}
 	}
-
-	public static function gerar_links_mapa_imoveis( ) {
+/*
+    public static function gerar_links_mapa_imoveis( ) {
 		global $wpdb;
-
+		// Recupera o agrupamento base de sinônimos definidos pela classe
+		$tipos_sinonimos = self::get_mapa_tipo_imovel();
+		// Estruturas de dados auxiliares para indexação O(1) de sinônimos
+		$mapa_sinonimo_slug = [];
+		$mapa_slug_para_canonico = [];
+		// Varre o mapa agrupado para construir os dicionários de tradução reversa e formatação visual
+		foreach ( $tipos_sinonimos as $canonical => $sinonimos_array ) {
+			foreach ( array_keys( $sinonimos_array ) as $sinonimo ) {
+				$slug_sinonimo = sanitize_title( $sinonimo );
+				// Mapeamento: [apartamento-flat] => "Apartamento Flat"
+				$mapa_sinonimo_slug[$slug_sinonimo] = mb_convert_case( strtolower( trim( $sinonimo ) ), MB_CASE_TITLE, 'UTF-8' );
+				// Mapeamento: [apartamento-flat] => "apartamento" (identifica o nó raiz canônico)
+				$mapa_slug_para_canonico[$slug_sinonimo] = $canonical;
+			}
+		}
+		// Gerenciamento de cache do Transients API para otimização de performance do servidor
 		$cache_key = 'CACHE_MAPA_IMOVEIS_LINKS';
 		$em_desenvolvimento = ( function_exists( 'is_development_mode' ) && is_development_mode( ) );
-
+		// Retorna os dados cacheados imediatamente se não estiver em ambiente de desenvolvimento local
 		if ( !$em_desenvolvimento ) {
 			$cached = get_transient( $cache_key );
-			if ( $cached !== false ) {
-				return $cached;
-			}
+			if ( $cached !== false ) return $cached;
 		}
-
+		// Matriz SQL consolidada: recupera combinações ativas de Venda, Locação e Lançamento
+		// A query exige que os imóveis possuam status 'D' (Disponível) e post_status 'publish'
 		$sql_matriz = "
-			SELECT
-				'venda' AS contrato,
-				pm_tipo.meta_value AS tipo_imovel,
-				pm_cidade.meta_value AS cidade,
-				pm_regiao.meta_value AS regiao,
-				COUNT( p.ID ) AS total_imoveis
-			FROM {$wpdb->posts} p
-			INNER JOIN {$wpdb->postmeta} pm_status
-				ON p.ID = pm_status.post_id AND pm_status.meta_key = 'statusImovel' AND pm_status.meta_value = 'D'
-			INNER JOIN {$wpdb->postmeta} pm_contrato
-				ON p.ID = pm_contrato.post_id AND pm_contrato.meta_key = 'ativarVenda' AND pm_contrato.meta_value = '1'
-			LEFT JOIN {$wpdb->postmeta} pm_tipo
-				ON p.ID = pm_tipo.post_id AND pm_tipo.meta_key = 'tipoImovelNome'
-			LEFT JOIN {$wpdb->postmeta} pm_cidade
-				ON p.ID = pm_cidade.post_id AND pm_cidade.meta_key = 'cidade'
-			LEFT JOIN {$wpdb->postmeta} pm_regiao
-				ON p.ID = pm_regiao.post_id AND pm_regiao.meta_key = 'regiao'
-			WHERE p.post_type = 'imovel' AND p.post_status = 'publish'
-			GROUP BY pm_tipo.meta_value, pm_cidade.meta_value, pm_regiao.meta_value
-
+			SELECT 'venda' AS contrato, pm_tipo.meta_value AS tipo_imovel, pm_cidade.meta_value AS cidade, pm_regiao.meta_value AS regiao, COUNT( p.ID ) AS total_imoveis FROM {$wpdb->posts} p
+			INNER JOIN {$wpdb->postmeta} pm_status ON p.ID = pm_status.post_id AND pm_status.meta_key = 'statusImovel' AND pm_status.meta_value = 'D'
+			INNER JOIN {$wpdb->postmeta} pm_contrato ON p.ID = pm_contrato.post_id AND pm_contrato.meta_key = 'ativarVenda' AND pm_contrato.meta_value = '1'
+			LEFT JOIN {$wpdb->postmeta} pm_tipo ON p.ID = pm_tipo.post_id AND pm_tipo.meta_key = 'tipoImovelNome'
+			LEFT JOIN {$wpdb->postmeta} pm_cidade ON p.ID = pm_cidade.post_id AND pm_cidade.meta_key = 'cidade'
+			LEFT JOIN {$wpdb->postmeta} pm_regiao ON p.ID = pm_regiao.post_id AND pm_regiao.meta_key = 'regiao'
+			WHERE p.post_type = 'imovel' AND p.post_status = 'publish' GROUP BY pm_tipo.meta_value, pm_cidade.meta_value, pm_regiao.meta_value
 			UNION ALL
-
-			SELECT
-				'locacao' AS contrato,
-				pm_tipo.meta_value AS tipo_imovel,
-				pm_cidade.meta_value AS cidade,
-				pm_regiao.meta_value AS regiao,
-				COUNT( p.ID ) AS total_imoveis
-			FROM {$wpdb->posts} p
-			INNER JOIN {$wpdb->postmeta} pm_status
-				ON p.ID = pm_status.post_id AND pm_status.meta_key = 'statusImovel' AND pm_status.meta_value = 'D'
-			INNER JOIN {$wpdb->postmeta} pm_contrato
-				ON p.ID = pm_contrato.post_id AND pm_contrato.meta_key = 'ativarLocacao' AND pm_contrato.meta_value = '1'
-			LEFT JOIN {$wpdb->postmeta} pm_tipo
-				ON p.ID = pm_tipo.post_id AND pm_tipo.meta_key = 'tipoImovelNome'
-			LEFT JOIN {$wpdb->postmeta} pm_cidade
-				ON p.ID = pm_cidade.post_id AND pm_cidade.meta_key = 'cidade'
-			LEFT JOIN {$wpdb->postmeta} pm_regiao
-				ON p.ID = pm_regiao.post_id AND pm_regiao.meta_key = 'regiao'
-			WHERE p.post_type = 'imovel' AND p.post_status = 'publish'
-			GROUP BY pm_tipo.meta_value, pm_cidade.meta_value, pm_regiao.meta_value
-
+			SELECT 'locacao' AS contrato, pm_tipo.meta_value AS tipo_imovel, pm_cidade.meta_value AS cidade, pm_regiao.meta_value AS regiao, COUNT( p.ID ) AS total_imoveis FROM {$wpdb->posts} p
+			INNER JOIN {$wpdb->postmeta} pm_status ON p.ID = pm_status.post_id AND pm_status.meta_key = 'statusImovel' AND pm_status.meta_value = 'D'
+			INNER JOIN {$wpdb->postmeta} pm_contrato ON p.ID = pm_contrato.post_id AND pm_contrato.meta_key = 'ativarLocacao' AND pm_contrato.meta_value = '1'
+			LEFT JOIN {$wpdb->postmeta} pm_tipo ON p.ID = pm_tipo.post_id AND pm_tipo.meta_key = 'tipoImovelNome'
+			LEFT JOIN {$wpdb->postmeta} pm_cidade ON p.ID = pm_cidade.post_id AND pm_cidade.meta_key = 'cidade'
+			LEFT JOIN {$wpdb->postmeta} pm_regiao ON p.ID = pm_regiao.post_id AND pm_regiao.meta_key = 'regiao'
+			WHERE p.post_type = 'imovel' AND p.post_status = 'publish' GROUP BY pm_tipo.meta_value, pm_cidade.meta_value, pm_regiao.meta_value
 			UNION ALL
-
-			SELECT
-				'lancamento' AS contrato,
-				pm_tipo.meta_value AS tipo_imovel,
-				pm_cidade.meta_value AS cidade,
-				pm_regiao.meta_value AS regiao,
-				COUNT( p.ID ) AS total_imoveis
-			FROM {$wpdb->posts} p
-			INNER JOIN {$wpdb->postmeta} pm_status
-				ON p.ID = pm_status.post_id AND pm_status.meta_key = 'statusImovel' AND pm_status.meta_value = 'D'
-			INNER JOIN {$wpdb->postmeta} pm_contrato
-				ON p.ID = pm_contrato.post_id AND pm_contrato.meta_key = 'ativarLancamento' AND pm_contrato.meta_value = '1'
-			LEFT JOIN {$wpdb->postmeta} pm_tipo
-				ON p.ID = pm_tipo.post_id AND pm_tipo.meta_key = 'tipoImovelNome'
-			LEFT JOIN {$wpdb->postmeta} pm_cidade
-				ON p.ID = pm_cidade.post_id AND pm_cidade.meta_key = 'cidade'
-			LEFT JOIN {$wpdb->postmeta} pm_regiao
-				ON p.ID = pm_regiao.post_id AND pm_regiao.meta_key = 'regiao'
-			WHERE p.post_type = 'imovel' AND p.post_status = 'publish'
-			GROUP BY pm_tipo.meta_value, pm_cidade.meta_value, pm_regiao.meta_value
+			SELECT 'lancamento' AS contrato, pm_tipo.meta_value AS tipo_imovel, pm_cidade.meta_value AS cidade, pm_regiao.meta_value AS regiao, COUNT( p.ID ) AS total_imoveis FROM {$wpdb->posts} p
+			INNER JOIN {$wpdb->postmeta} pm_status ON p.ID = pm_status.post_id AND pm_status.meta_key = 'statusImovel' AND pm_status.meta_value = 'D'
+			INNER JOIN {$wpdb->postmeta} pm_contrato ON p.ID = pm_contrato.post_id AND pm_contrato.meta_key = 'ativarLancamento' AND pm_contrato.meta_value = '1'
+			LEFT JOIN {$wpdb->postmeta} pm_tipo ON p.ID = pm_tipo.post_id AND pm_tipo.meta_key = 'tipoImovelNome'
+			LEFT JOIN {$wpdb->postmeta} pm_cidade ON p.ID = pm_cidade.post_id AND pm_cidade.meta_key = 'cidade'
+			LEFT JOIN {$wpdb->postmeta} pm_regiao ON p.ID = pm_regiao.post_id AND pm_regiao.meta_key = 'regiao'
+			WHERE p.post_type = 'imovel' AND p.post_status = 'publish' GROUP BY pm_tipo.meta_value, pm_cidade.meta_value, pm_regiao.meta_value
 			ORDER BY total_imoveis DESC;
 		";
-
 		$combinacoes_ativas = $wpdb->get_results( $sql_matriz, ARRAY_A );
-
+		// Array resultante que armazenará todas as URLs formatadas da farm de links
 		$links = [];
-
+		// Impede a execução do loop caso não haja propriedades ativas iteráveis no banco
 		if ( !empty( $combinacoes_ativas ) ) {
-
-			$mapa_nomes_contrato = [
-				'venda'      => 'Venda',
-				'locacao'    => 'Locação',
-				'lancamento' => 'Lançamento'
-			];
-
+			// Dicionário visual estático para os tipos de contrato (finalidades) da consulta
+			$mapa_nomes_contrato = [ 'venda' => 'Venda', 'locacao' => 'Locação', 'lancamento' => 'Lançamento' ];
 			foreach ( $combinacoes_ativas as $linha ) {
-				if ( empty( $linha['cidade'] ) || empty( $linha['tipo_imovel'] ) ) {
-					continue;
-				}
-				$c_slug   = $linha['contrato'];
-				$t_slug   = sanitize_title( $linha['tipo_imovel'] );
+				// Validações de integridade estrutural: Cidade e Tipo de Imóvel são estritamente requeridos
+				if ( empty( $linha['cidade'] ) || empty( $linha['tipo_imovel'] ) ) continue;
+				// Padronização e sanitização de slugs base das propriedades retornadas
+				$c_slug = $linha['contrato'];
 				$cid_slug = sanitize_title( $linha['cidade'] );
 				$reg_slug = !empty( $linha['regiao'] ) ? sanitize_title( self::limpar_faxina_bairro( $linha['regiao'] ) ) : '';
-				$partes_url = array_filter( [$c_slug, $t_slug, $cid_slug, $reg_slug] );
-				$url = "/" . implode( "/", $partes_url ) . "/";
-
+				// Padronização de rótulos (labels) para formatação de leitura humana (Title Case)
 				$nome_contrato = $mapa_nomes_contrato[$c_slug];
-				$nome_tipo     = mb_convert_case( strtolower( trim( $linha['tipo_imovel'] ) ), MB_CASE_TITLE, 'UTF-8' );
-				$nome_cidade   = mb_convert_case( strtolower( trim( $linha['cidade'] ) ), MB_CASE_TITLE, 'UTF-8' );
-				$nome_regiao   = !empty( $linha['regiao'] ) ? mb_convert_case( strtolower( trim( $linha['regiao'] ) ), MB_CASE_TITLE, 'UTF-8' ) : '';
-
-				$label = "{$nome_contrato} de {$nome_tipo} em {$nome_cidade}";
-				if ( $nome_regiao ) {
-					$label .= " - {$nome_regiao}";
+				$nome_cidade = mb_convert_case( strtolower( trim( $linha['cidade'] ) ), MB_CASE_TITLE, 'UTF-8' );
+				$nome_regiao = !empty( $linha['regiao'] ) ? mb_convert_case( strtolower( trim( $linha['regiao'] ) ), MB_CASE_TITLE, 'UTF-8' ) : '';
+				// Busca no índice canônico O(1) o tipo primário recuperado no banco de dados
+				$t_slug_db = sanitize_title( $linha['tipo_imovel'] );
+				$canonical_cat = $mapa_slug_para_canonico[$t_slug_db] ?? null;
+				// Se o imóvel possui um tipo mapeado nos sinônimos, geramos links cruzados para a matriz de SEO
+				if ( $canonical_cat && isset( $tipos_sinonimos[$canonical_cat] ) ) {
+					foreach ( array_keys( $tipos_sinonimos[$canonical_cat] ) as $synonimo ) {
+						$t_slug_url = sanitize_title( $synonimo );
+						// Resgata o nome amigável do mapa plano mapeado no topo, com fallback dinâmico
+						$nome_tipo = $mapa_sinonimo_slug[$t_slug_url] ?? mb_convert_case( $synonimo, MB_CASE_TITLE, 'UTF-8' );
+						$partes_url = array_filter( [$c_slug, $t_slug_url, $cid_slug, $reg_slug] );
+						$url = "/" . implode( "/", $partes_url ) . "/";
+						// Montagem otimizada da string do label da listagem
+						$label = "{$nome_contrato} de {$nome_tipo} em {$nome_cidade}" . ( $nome_regiao ? " - {$nome_regiao}" : "" );
+						$links[] = [
+							'url' => $url,
+							'label' => $label,
+							'cidade_slug' => $cid_slug,
+							'cidade_nome' => $nome_cidade,
+							'total_imoveis' => (int) $linha['total_imoveis']
+						];
+					}
+				} else {
+					// Fallback de segurança: Caso o tipo do imóvel não esteja mapeado na base de NLP
+					$t_slug_url = $t_slug_db;
+					$nome_tipo = mb_convert_case( strtolower( trim( $linha['tipo_imovel'] ) ), MB_CASE_TITLE, 'UTF-8' );
+					$partes_url = array_filter( [$c_slug, $t_slug_url, $cid_slug, $reg_slug] );
+					$url = "/" . implode( "/", $partes_url ) . "/";
+					$label = "{$nome_contrato} de {$nome_tipo} em {$nome_cidade}" . ( $nome_regiao ? " - {$nome_regiao}" : "" );
+					$links[] = [
+						'url' => $url,
+						'label' => $label,
+						'cidade_slug' => $cid_slug,
+						'cidade_nome' => $nome_cidade,
+						'total_imoveis' => (int) $linha['total_imoveis']
+					];
 				}
-
-				$links[] = [
-					'url'           => $url,
-					'label'         => $label,
-					'cidade_slug'   => $cid_slug,
-					'cidade_nome'   => $nome_cidade,
-					'total_imoveis' => (int) $linha['total_imoveis']
-				];
 			}
 		}
+		// Salva os dados empacotados no cache para evitar nova varredura de query em produção
 		if ( !$em_desenvolvimento ) {
 			set_transient( $cache_key, $links, 12 * HOUR_IN_SECONDS );
 		}
 		return $links;
+	}
+ */
+    public static function gerar_links_mapa_imoveis( ) {
+		global $wpdb;
+		$tipos_sinonimos = self::get_mapa_tipo_imovel();
+		$mapa_slug_para_canonico = [];
+		$mapa_sinonimo_slug = [];
+		foreach ( $tipos_sinonimos as $canonical => $sinonimos_array ) {
+			foreach ( array_keys( $sinonimos_array ) as $sinonimo ) {
+				$slug_sinonimo = sanitize_title( $sinonimo );
+				$mapa_slug_para_canonico[$slug_sinonimo] = $canonical;
+				$mapa_sinonimo_slug[$slug_sinonimo] = mb_convert_case( strtolower( trim( $sinonimo ) ), MB_CASE_TITLE, 'UTF-8' );
+			}
+		}
+		$mapa_labels_canonicos = [
+			'apartamento' => 'Apartamentos',
+			'imovel-comercial' => 'Imóveis Comerciais',
+			'casa' => 'Casas',
+			'rural' => 'Áreas Rurais',
+			'lazer' => 'Propriedades de Lazer',
+			'terreno-ou-area' => 'Terrenos e Áreas'
+		];
+		$cache_key = 'CACHE_MAPA_IMOVEIS_TREE_V2';
+		$em_desenvolvimento = ( function_exists( 'is_development_mode' ) && is_development_mode( ) );
+		if ( !$em_desenvolvimento ) {
+			$cached = get_transient( $cache_key );
+			if ( $cached !== false ) return $cached;
+		}
+		$sql_matriz = "
+			SELECT 'venda' AS contrato, pm_tipo.meta_value AS tipo_imovel, pm_cidade.meta_value AS cidade, pm_regiao.meta_value AS regiao, COUNT( p.ID ) AS total_imoveis FROM {$wpdb->posts} p
+			INNER JOIN {$wpdb->postmeta} pm_status ON p.ID = pm_status.post_id AND pm_status.meta_key = 'statusImovel' AND pm_status.meta_value = 'D'
+			INNER JOIN {$wpdb->postmeta} pm_contrato ON p.ID = pm_contrato.post_id AND pm_contrato.meta_key = 'ativarVenda' AND pm_contrato.meta_value = '1'
+			LEFT JOIN {$wpdb->postmeta} pm_tipo ON p.ID = pm_tipo.post_id AND pm_tipo.meta_key = 'tipoImovelNome'
+			LEFT JOIN {$wpdb->postmeta} pm_cidade ON p.ID = pm_cidade.post_id AND pm_cidade.meta_key = 'cidade'
+			LEFT JOIN {$wpdb->postmeta} pm_regiao ON p.ID = pm_regiao.post_id AND pm_regiao.meta_key = 'regiao'
+			WHERE p.post_type = 'imovel' AND p.post_status = 'publish' GROUP BY pm_tipo.meta_value, pm_cidade.meta_value, pm_regiao.meta_value
+			UNION ALL
+			SELECT 'locacao' AS contrato, pm_tipo.meta_value AS tipo_imovel, pm_cidade.meta_value AS cidade, pm_regiao.meta_value AS regiao, COUNT( p.ID ) AS total_imoveis FROM {$wpdb->posts} p
+			INNER JOIN {$wpdb->postmeta} pm_status ON p.ID = pm_status.post_id AND pm_status.meta_key = 'statusImovel' AND pm_status.meta_value = 'D'
+			INNER JOIN {$wpdb->postmeta} pm_contrato ON p.ID = pm_contrato.post_id AND pm_contrato.meta_key = 'ativarLocacao' AND pm_contrato.meta_value = '1'
+			LEFT JOIN {$wpdb->postmeta} pm_tipo ON p.ID = pm_tipo.post_id AND pm_tipo.meta_key = 'tipoImovelNome'
+			LEFT JOIN {$wpdb->postmeta} pm_cidade ON p.ID = pm_cidade.post_id AND pm_cidade.meta_key = 'cidade'
+			LEFT JOIN {$wpdb->postmeta} pm_regiao ON p.ID = pm_regiao.post_id AND pm_regiao.meta_key = 'regiao'
+			WHERE p.post_type = 'imovel' AND p.post_status = 'publish' GROUP BY pm_tipo.meta_value, pm_cidade.meta_value, pm_regiao.meta_value
+			UNION ALL
+			SELECT 'lancamento' AS contrato, pm_tipo.meta_value AS tipo_imovel, pm_cidade.meta_value AS cidade, pm_regiao.meta_value AS regiao, COUNT( p.ID ) AS total_imoveis FROM {$wpdb->posts} p
+			INNER JOIN {$wpdb->postmeta} pm_status ON p.ID = pm_status.post_id AND pm_status.meta_key = 'statusImovel' AND pm_status.meta_value = 'D'
+			INNER JOIN {$wpdb->postmeta} pm_contrato ON p.ID = pm_contrato.post_id AND pm_contrato.meta_key = 'ativarLancamento' AND pm_contrato.meta_value = '1'
+			LEFT JOIN {$wpdb->postmeta} pm_tipo ON p.ID = pm_tipo.post_id AND pm_tipo.meta_key = 'tipoImovelNome'
+			LEFT JOIN {$wpdb->postmeta} pm_cidade ON p.ID = pm_cidade.post_id AND pm_cidade.meta_key = 'cidade'
+			LEFT JOIN {$wpdb->postmeta} pm_regiao ON p.ID = pm_regiao.post_id AND pm_regiao.meta_key = 'regiao'
+			WHERE p.post_type = 'imovel' AND p.post_status = 'publish' GROUP BY pm_tipo.meta_value, pm_cidade.meta_value, pm_regiao.meta_value
+			ORDER BY total_imoveis DESC;
+		";
+		$combinacoes = $wpdb->get_results( $sql_matriz, ARRAY_A );
+		$arvore = [];
+		if ( !empty( $combinacoes ) ) {
+			$mapa_nomes_contrato = [ 'venda' => 'Venda', 'locacao' => 'Locação', 'lancamento' => 'Lançamento' ];
+			foreach ( $combinacoes as $linha ) {
+				if ( empty( $linha['cidade'] ) || empty( $linha['tipo_imovel'] ) ) continue;
+				$c_slug = $linha['contrato'];
+				$cid_slug = sanitize_title( $linha['cidade'] );
+				$reg_slug = !empty( $linha['regiao'] ) ? sanitize_title( self::limpar_faxina_bairro( $linha['regiao'] ) ) : '';
+				$t_slug_db = sanitize_title( $linha['tipo_imovel'] );
+				$canonical_slug = $mapa_slug_para_canonico[$t_slug_db] ?? $t_slug_db;
+				$nome_contrato = $mapa_nomes_contrato[$c_slug];
+				$nome_cidade = mb_convert_case( strtolower( trim( $linha['cidade'] ) ), MB_CASE_TITLE, 'UTF-8' );
+				$nome_regiao = !empty( $linha['regiao'] ) ? mb_convert_case( strtolower( trim( $linha['regiao'] ) ), MB_CASE_TITLE, 'UTF-8' ) : 'Centro e Principais Bairros';
+				$nome_tipo_canonico = $mapa_labels_canonicos[$canonical_slug] ?? mb_convert_case( str_replace('-', ' ', $canonical_slug), MB_CASE_TITLE, 'UTF-8' );
+				if ( !isset( $arvore[$c_slug] ) ) $arvore[$c_slug] = [ 'nome' => $nome_contrato, 'tipos' => [] ];
+				if ( !isset( $arvore[$c_slug]['tipos'][$canonical_slug] ) ) $arvore[$c_slug]['tipos'][$canonical_slug] = [ 'nome' => $nome_tipo_canonico, 'cidades' => [] ];
+				if ( !isset( $arvore[$c_slug]['tipos'][$canonical_slug]['cidades'][$cid_slug] ) ) $arvore[$c_slug]['tipos'][$canonical_slug]['cidades'][$cid_slug] = [ 'nome' => $nome_cidade, 'regioes' => [] ];
+				if ( !isset( $arvore[$c_slug]['tipos'][$canonical_slug]['cidades'][$cid_slug]['regioes'][$reg_slug] ) ) {
+					$arvore[$c_slug]['tipos'][$canonical_slug]['cidades'][$cid_slug]['regioes'][$reg_slug] = [ 'nome' => $nome_regiao, 'total' => 0, 'sinonimos' => [] ];
+				}
+				$arvore[$c_slug]['tipos'][$canonical_slug]['cidades'][$cid_slug]['regioes'][$reg_slug]['total'] += (int) $linha['total_imoveis'];
+				if ( isset( $tipos_sinonimos[$canonical_slug] ) ) {
+					foreach ( array_keys( $tipos_sinonimos[$canonical_slug] ) as $synonimo ) {
+						$t_slug_url = sanitize_title( $synonimo );
+						$nome_tipo = $mapa_sinonimo_slug[$t_slug_url] ?? mb_convert_case( $synonimo, MB_CASE_TITLE, 'UTF-8' );
+						$partes_url = array_filter( [$c_slug, $t_slug_url, $cid_slug, $reg_slug] );
+						$url = "/" . implode( "/", $partes_url ) . "/";
+						$label = "{$nome_contrato} de {$nome_tipo} em {$nome_cidade}" . ( !empty( $linha['regiao'] ) ? " - {$nome_regiao}" : "" );
+
+						$arvore[$c_slug]['tipos'][$canonical_slug]['cidades'][$cid_slug]['regioes'][$reg_slug]['sinonimos'][$t_slug_url] = [
+							'url' => $url,
+							'label' => $label,
+							'label_simples' => $nome_tipo
+						];
+					}
+				} else {
+					$t_slug_url = $t_slug_db;
+					$nome_tipo = mb_convert_case( strtolower( trim( $linha['tipo_imovel'] ) ), MB_CASE_TITLE, 'UTF-8' );
+					$partes_url = array_filter( [$c_slug, $t_slug_url, $cid_slug, $reg_slug] );
+					$url = "/" . implode( "/", $partes_url ) . "/";
+					$label = "{$nome_contrato} de {$nome_tipo} em {$nome_cidade}" . ( !empty( $linha['regiao'] ) ? " - {$nome_regiao}" : "" );
+
+					$arvore[$c_slug]['tipos'][$canonical_slug]['cidades'][$cid_slug]['regioes'][$reg_slug]['sinonimos'][$t_slug_url] = [
+						'url' => $url,
+						'label' => $label,
+						'label_simples' => $nome_tipo // <--- AQUI: Fallback de segurança
+					];
+				}
+			}
+		}
+		if ( !$em_desenvolvimento ) {
+			set_transient( $cache_key, $arvore, 12 * HOUR_IN_SECONDS );
+		}
+		return $arvore;
 	}
 }
