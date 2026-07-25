@@ -186,6 +186,9 @@ class PineduReceiverRest extends PineduRequest {
 	public static function receber_imoveis( $request ) {
 		$json_string = $request->get_body( );
 		$data = json_decode( $json_string, true );
+        if (is_development_mode()) {
+            error_log( "PineduReceiverRest:receber_imoveis" . print_r($data, true) );
+        }
 		$importa_imoveis = new Pinedu_Imovel_Importar_Imoveis( );
 		$result = $importa_imoveis->importar_callback( $data );
 		return $result;

@@ -219,6 +219,9 @@ class Pinedu_Imovel_Importar_Imoveis extends Pinedu_Importa_Libs {
 
             $options = get_option('pinedu_imovel_options', []);
             $imoveis_importar = new Pinedu_Imovel_Importa_Imovel();
+            if (is_development_mode()) {
+                error_log( "Pinedu_Imovel_Importar_Imoveis:importar_callback" . print_r($data, true) );
+            }
 
             if ( !empty( $data['excluidos'] ) ) {
                 $imoveis_importar->trata_excluidos( $data['excluidos'] );

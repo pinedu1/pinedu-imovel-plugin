@@ -22,8 +22,13 @@ class Pinedu_Imovel_Importa_Imovel {
             wp_send_json_error( ['message' => 'Post Type Imóvel não existe!'] );
             wp_die();
         }
-
+        if (is_development_mode()) {
+            error_log( "Pinedu_Imovel_Importa_Imovel:importa_imoveis" . print_r($imoveis, true) );
+        }
         foreach ( $imoveis as $imovel ) {
+            if (is_development_mode()) {
+                error_log( "Pinedu_Imovel_Importa_Imovel:importa_imoveis:foreach" . print_r($imovel, true) );
+            }
             $this->importa_imovel( $imovel, $silent_mode );
         }
     }
