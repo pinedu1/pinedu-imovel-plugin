@@ -8,27 +8,14 @@
  * @author Eduardo Pinheiro da Silva
  */
 class PrettyUrl {
-	const CACHE_URL_AMIGAVEL = 'CACHE_PRETTY_URL_V3';
+	const CACHE_URL_AMIGAVEL = 'CACHE_PRETTY_URL_V4';
 	const CACHE_MAPA_HIERARQUICO = 'CACHE_MAPA_HIERARQUICO_V6';
 	const CACHE_MAPA_IMOVEIS = 'CACHE_MAPA_IMOVEIS_TREE_V4';
 	const INDEX_CACHE = 'index.php?post_type=imovel&tipo_pesquisa_submit=imovel';
 	private $delete_cache;
-	/**
-	 * Construtor da classe.
-	 * Define apenas o estado de controle de cache; os hooks sao registrados centralizadamente em Pinedu_Imovel_Plugin.
-	 * 
-	 * @param bool $delete_cache Flag originada na instanciacao para forcar exclusao do cache ( default: false ).
-	 * @return void
-	 */
 	public function __construct( $delete_cache = false ) {
 		$this->delete_cache = $delete_cache;
 	}
-	/**
-	 * Captura parametro de consulta priorizando WP_Query ( Pretty URLs ) com fallback para superglobal GET e Taxonomia nativa.
-	 * 
-	 * @param string $chave Nome do parametro registrado na rota ou query string.
-	 * @return string Valor sanitizado do parametro.
-	 */
 	public function obter_parametro_consulta( $chave ) {
 		$valor = get_query_var( $chave );
 		if ( empty( $valor ) && isset( $_GET[ $chave ] ) ) {
@@ -42,20 +29,9 @@ class PrettyUrl {
 		}
 		return is_string( $valor ) ? trim( $valor ) : '';
 	}
-	/**
-	 * Remove prefixos numericos de ordenacao do nome bruto de regioes ou bairros vindos do ERP.
-	 * 
-	 * @param string $nome Nome original cadastrado no termo da taxonomia.
-	 * @return string Nome limpo sem prefixo numerico.
-	 */
 	public static function limpar_prefixo_numerico( $nome ) {
 		return trim( preg_replace( '/^[0-9]+[a-z]?\s*(?:-\s*)?/i', '', trim( (string) $nome ) ) );
 	}
-	/**
-	 * Resolve os dados semanticos, faixas de valor e slugs canonicos a partir dos codigos internos das taxonomias ( ex: 0001, 00010001, cv ).
-	 * 
-	 * @return array Mapa contendo nomes de exibicao, pluralizacao e slugs amigaveis para SEO.
-	 */
 	public function resolver_contexto_seo( ) {
 		$contrato_raw = strtolower( $this->obter_parametro_consulta( 'contrato' ) );
 		$tipo_raw = strtolower( $this->obter_parametro_consulta( 'tipo-imovel' ) );
@@ -63,7 +39,7 @@ class PrettyUrl {
 		$regiao_raw = $this->obter_parametro_consulta( 'regiao' );
 		$contrato_canonico = '';
 		if ( ! empty( $contrato_raw ) ) {
-			if ( $contrato_raw === '1' || $contrato_raw === 'venda' ) {
+			if ( $contrato_raw === '1' || $contrato_raw === 'venda' || $contrato_raw === 'vendas' ) {
 				$contrato_canonico = 'venda';
 			} elseif ( $contrato_raw === '2' || $contrato_raw === 'locacao' || $contrato_raw === 'aluguel' ) {
 				$contrato_canonico = 'locacao';
@@ -217,11 +193,6 @@ class PrettyUrl {
 			, 'canonical_url' => $canonical_url
 		];
 	}
-	/**
-	 * Constroi e retorna os metadados de SEO ( Title, Description e Canonical ) aplicando o padrao Strategy para consumo pelos hooks de Pinedu_Imovel_Plugin.
-	 * 
-	 * @return array|null Retorna matriz associativa de SEO ou null quando fora do escopo de listagem imobiliaria.
-	 */
 	public function obter_dados_seo_ativos( ) {
 		if ( is_singular( ) ) {
 			return null;
@@ -241,6 +212,9 @@ class PrettyUrl {
 					'title' => "Imóvel Referência {$ref_safe} em Birigui e Região | {$site_name}"
 					, 'description' => "Veja os detalhes, fotos, valor e localização do imóvel referência {$ref_safe} na {$site_name}."
 					, 'canonical' => home_url( $req_uri )
+					, 'h1' => "Imóvel Referência {$ref_safe}"
+					, 'subtitulo' => 'Detalhes e Localização'
+					, 'descricao_busca' => "Confira todos os detalhes do imóvel referência {$ref_safe} na {$site_name}."
 				];
 			}
 			, 'imovel' => function( ) use ( $site_name ) {
@@ -261,15 +235,23 @@ class PrettyUrl {
 				if ( $ctx[ 'contrato_canonico' ] === 'venda' ) {
 					$title_seo = "{$t_plur} à Venda {$local_titulo}{$compl_preco} - Comprar {$t_sing} | {$site_name}";
 					$description_seo = "Procurando {$t_sing_lower} à venda {$local_desc}{$compl_preco}? Confira as melhores opções para compra e venda de {$t_plur_lower} {$local_desc} com segurança na {$site_name}.";
+					$h1_seo = "{$t_plur} à Venda {$local_titulo}";
+					$desc_busca_seo = "Confira as melhores opções de {$t_plur_lower} à venda {$local_desc}. Encontre o imóvel perfeito na {$site_name}.";
 				} elseif ( $ctx[ 'contrato_canonico' ] === 'locacao' ) {
 					$title_seo = "{$t_plur} para Alugar {$local_titulo}{$compl_preco} - Aluguel e Locação de {$t_sing} | {$site_name}";
 					$description_seo = "Procurando {$t_sing_lower} para aluguel ou locação {$local_desc}{$compl_preco}? Confira as melhores opções de {$t_plur_lower} para alugar {$local_desc} na {$site_name}.";
+					$h1_seo = "{$t_plur} para Alugar {$local_titulo}";
+					$desc_busca_seo = "Confira as melhores opções de {$t_plur_lower} para alugar {$local_desc}. Encontre o imóvel perfeito na {$site_name}.";
 				} elseif ( $ctx[ 'contrato_canonico' ] === 'lancamento' ) {
 					$title_seo = "Lançamentos de {$t_plur} {$local_titulo}{$compl_preco} - Comprar {$t_sing} | {$site_name}";
 					$description_seo = "Confira os melhores lançamentos de {$t_plur_lower} {$local_desc}{$compl_preco}. Oportunidades exclusivas para compra e investimento na {$site_name}.";
+					$h1_seo = "Lançamentos de {$t_plur} {$local_titulo}";
+					$desc_busca_seo = "Confira os melhores lançamentos de {$t_plur_lower} {$local_desc}. Oportunidades exclusivas na {$site_name}.";
 				} else {
 					$title_seo = "{$t_plur} à Venda e para Alugar {$local_titulo}{$compl_preco} - Compra e Locação | {$site_name}";
 					$description_seo = "Confira as melhores opções de {$t_plur_lower} à venda (compra) e para alugar (aluguel e locação) {$local_desc}{$compl_preco} na {$site_name}.";
+					$h1_seo = "{$t_plur} à Venda e para Alugar {$local_titulo}";
+					$desc_busca_seo = "Confira as melhores opções de {$t_plur_lower} à venda e para alugar {$local_desc} na {$site_name}.";
 				}
 				if ( $ctx[ 'paged' ] > 1 ) {
 					$title_seo = "Página {$ctx['paged']} - " . $title_seo;
@@ -278,20 +260,15 @@ class PrettyUrl {
 					'title' => $title_seo
 					, 'description' => $description_seo
 					, 'canonical' => $ctx[ 'canonical_url' ]
+					, 'h1' => $h1_seo
+					, 'subtitulo' => 'Encontre o imóvel ideal para você'
+					, 'descricao_busca' => $desc_busca_seo
 				];
 			}
 		];
 		$estrategia_ativa = ! empty( $referencia ) ? 'referencia' : 'imovel';
 		return $seo_strategies[ $estrategia_ativa ]( );
 	}
-	/**
-	 * Reescreve os links nativos de termos ( ex: /cidade/0001/ ou /regiao/00010001/ ) para Pretty URLs semanticas.
-	 * 
-	 * @param string $termlink URL nativo gerado pelo WordPress.
-	 * @param object $term Objeto WP_Term da taxonomia corrente.
-	 * @param string $taxonomy Slug da taxonomia consultada.
-	 * @return string URL amigavel reescrito.
-	 */
 	public function reescrever_term_link( $termlink, $term, $taxonomy ) {
 		if ( ! is_object( $term ) || is_wp_error( $term ) ) {
 			return $termlink;
@@ -319,12 +296,6 @@ class PrettyUrl {
 		}
 		return $termlink;
 	}
-	/**
-	 * Libera variaveis customizadas para interceptacao de query na URL pelo WP_Query.
-	 * 
-	 * @param array $query_vars Array nativo de variaveis publicas do WordPress.
-	 * @return array Variaveis modificadas com os eixos de busca imobiliaria.
-	 */
 	public function liberar_query_vars_consulta( $query_vars ) {
 		$query_vars[] = 'referencia';
 		$query_vars[] = 'tipo_pesquisa_submit';
@@ -334,11 +305,6 @@ class PrettyUrl {
 		$query_vars[] = 'regiao';
 		return $query_vars;
 	}
-	/**
-	 * Define dicionario canonico e sinonimos para tipos de imoveis.
-	 * 
-	 * @return array Estrutura de mapeamento invertido ( array_flip ).
-	 */
 	public static function get_mapa_tipo_imovel( ) {
 		return [
 			'apartamento' => array_flip( [
@@ -445,11 +411,6 @@ class PrettyUrl {
 			] )
 		];
 	}
-	/**
-	 * Define dicionario canonico e sinonimos para modalidade de contrato.
-	 * 
-	 * @return array Estrutura de mapeamento invertido.
-	 */
 	public static function get_mapa_contrato( ) {
 		return [
 			'venda' => array_flip( [
@@ -498,11 +459,6 @@ class PrettyUrl {
 			] )
 		];
 	}
-	/**
-	 * Define palavras-ruido ( stop words ) a serem extirpadas pela NLP.
-	 * 
-	 * @return array Colecao de preposicoes e prefixos urbanos.
-	 */
 	public static function get_ruidos( ) {
 		return [
 			'em'
@@ -543,12 +499,6 @@ class PrettyUrl {
 			, 'recanto'
 		];
 	}
-	/**
-	 * Aplica faxina de caracteres e stop words em nomes brutos de bairros e regioes.
-	 * 
-	 * @param string $nome Nome nativo proveniente do banco de dados.
-	 * @return string Nome tratado e limpo.
-	 */
 	public static function limpar_faxina_bairro( $nome ) {
 		$nome = remove_accents( strtolower( trim( (string) $nome ) ) );
 		$nome = preg_replace( '/^[0-9]+[a-z]?\s*(?:-\s*)?/i', '', $nome );
@@ -559,11 +509,6 @@ class PrettyUrl {
 		}
 		return trim( preg_replace( '/\s+/', ' ', $nome ) );
 	}
-	/**
-	 * Constroi ( ou recupera via cache ) a hierarquia de Cidades, Regioes e Bairros com base nas Taxonomias.
-	 * 
-	 * @return array Estrutura multidimensional otimizada.
-	 */
 	public static function get_mapa_hierarquico( ) {
 		global $wpdb;
 		$cache_key = self::CACHE_MAPA_HIERARQUICO;
@@ -635,18 +580,21 @@ class PrettyUrl {
 		}
 		return $dados;
 	}
-	/**
-	 * Intercepta requests iniciais redirecionando slugs numericos de taxonomias, referencias e rotas 404 via NLP.
-	 * Efetua a limpeza de query strings residuais do formulario e unifica o fallback de 301.
-	 * 
-	 * @return void Imprime redirecionamento 301 se rota numerica ou string NLP for resolvida.
-	 */
 	public function redirecionar_acentos( ) {
 		$uri = $_SERVER[ 'REQUEST_URI' ];
 		$parsed = parse_url( $uri );
 		$path = isset( $parsed[ 'path' ] ) ? ltrim( $parsed[ 'path' ], '/' ) : '';
 		$path_digitado = urldecode( $path );
 		$path_digitado_clean = trim( rtrim( $path_digitado, '/' ) );
+		if ( preg_match( '/^vendas(\/.*)?$/i', $path_digitado_clean, $vendas_matches ) ) {
+			$novo_p = 'venda' . ( $vendas_matches[ 1 ] ?? '' );
+			$redirect_url = home_url( '/' . $novo_p . '/' );
+			if ( ! empty( $parsed[ 'query' ] ) ) {
+				$redirect_url .= '?' . $parsed[ 'query' ];
+			}
+			wp_redirect( $redirect_url, 301 );
+			exit;
+		}
 		if ( preg_match( '/^(cidade|regiao|tipo-imovel|contrato)\/([^\/]+)(?:\/page\/([0-9]{1,3}))?$/i', $path_digitado_clean, $tax_matches ) ) {
 			$tax_nome = strtolower( $tax_matches[ 1 ] );
 			$term_slug = $tax_matches[ 2 ];
@@ -823,13 +771,6 @@ class PrettyUrl {
 			}
 		}
 	}
-	/**
-	 * Limpa a string base via Regex para extrair termos validos do dicionario canonico.
-	 * 
-	 * @param string &$string_busca Referencia da string manipulada.
-	 * @param array $mapa_agrupado Dicionario canonico.
-	 * @return string|null Termo extraido.
-	 */
 	private function extrair_e_limpar_termo( &$string_busca, $mapa_agrupado ) {
 		if ( empty( $mapa_agrupado ) ) return null;
 		$sinonimos_achatados = [];
@@ -848,12 +789,6 @@ class PrettyUrl {
 		}
 		return null;
 	}
-	/**
-	 * Gera Internal Linking dinamicamente para os inputs de busca convertendo slugs numericos em nomes amigaveis.
-	 * 
-	 * @param array $params Atributos HTTP da pesquisa.
-	 * @return array Estrutura multidimensional com URLs e Labels de links SEO amigaveis.
-	 */
 	public static function gerar_links_from_search( $params ) {
 		$links = [];
 		$partes_url = [];
@@ -906,12 +841,6 @@ class PrettyUrl {
 		}
 		return $links;
 	}
-	/**
-	 * Mapeia arvore de breadcrumbs para entidades Post ( Imovel individual ).
-	 * 
-	 * @param object $post Instancia WP_Post tratada customizada.
-	 * @return array Multi-nodes de URLs semanticas.
-	 */
 	public static function gerar_links_from_post( $post ) {
 		if ( ! $post || $post->post_type !== 'imovel' ) return [];
 		$cidade_slug = sanitize_title( $post->cidade );
@@ -920,7 +849,7 @@ class PrettyUrl {
 		$links = [];
 		$finalidades = [];
 		if ( ( 1 == intval( $post->ativarVenda ) ) || ( 1 == intval( $post->ativarLancamento ) ) ) $finalidades[] = 'venda';
-		if ( ( 1 == intval( $post->ativarLocacao ) ) ) $finalidades[] = 'locacao';
+		if ( ( 1 == intval( $post->ativarLocacao ) ) ) $finalidae[] = 'locacao';
 		foreach ( $finalidades as $contrato ) {
 			$lbl_base = ( $contrato == 'venda' ? 'Venda' : 'Locação' );
 			$links[] = [ 'url' => "/{$contrato}/", 'label' => $lbl_base ];
@@ -943,14 +872,6 @@ class PrettyUrl {
 		}
 		return $links;
 	}
-	/**
-	 * Motor de injecao de Rules para Endpoints hierarquicos de Cidade e Regiao traduzindo para os slugs numericos MUMPS.
-	 * 
-	 * @param array $hierarquia_rules Mapa validado de caminhos cidade/regiao para codigos 0001/00010001.
-	 * @param array $tax_contrato Mapeamento de contrato ativo.
-	 * @param array $tax_tipo_imovel Mapeamento de tipo imovel ativo.
-	 * @return array Nodes Regex formatados no padrao wp_rewrite.
-	 */
 	private function url_hierarquia_regras( $hierarquia_rules, $tax_contrato, $tax_tipo_imovel ) {
 		$rules = [];
 		foreach ( $hierarquia_rules as $path => $data ) {
@@ -978,14 +899,6 @@ class PrettyUrl {
 		}
 		return $rules;
 	}
-	/**
-	 * Regras restritas geradas para injetar endpoints SEO Otimizados isolados com hifens.
-	 * 
-	 * @param array $tax_contrato Mapeamento multidimensional de Venda/Locacao.
-	 * @param array $tax_tipo_imovel Mapeamento multidimensional de Tipos.
-	 * @param array $tax_cidade Mapeamento multidimensional de Cidade/Area.
-	 * @return array Nodes de regex com aliases isolados.
-	 */
 	private function url_seo_landing_pages( $tax_contrato, $tax_tipo_imovel, $tax_cidade ) {
 		$rule = [];
 		$chave_venda = 'venda';
@@ -1032,12 +945,6 @@ class PrettyUrl {
 		}
 		return $rule;
 	}
-	/**
-	 * Helper padronizado para concatenar taxonomias curtas de 1 nivel.
-	 * 
-	 * @param array $taxonomy_mapping Vetor referencial.
-	 * @return array Set de endpoints.
-	 */
 	private function url_one( $taxonomy_mapping ) {
 		$rule = [];
 		foreach ( $taxonomy_mapping as $slug => $data ) {
@@ -1046,13 +953,6 @@ class PrettyUrl {
 		}
 		return $rule;
 	}
-	/**
-	 * Helper duplo padronizado de mapeamento taxonomico relacional de 2 niveis.
-	 * 
-	 * @param array $taxonomy_one Taxonomia 1.
-	 * @param array $taxonomy_two Taxonomia 2.
-	 * @return array Set gerado em Regex.
-	 */
 	private function url_two( $taxonomy_one, $taxonomy_two ) {
 		$rule = [];
 		foreach ( $taxonomy_one as $slug1 => $data1 ) {
@@ -1065,24 +965,9 @@ class PrettyUrl {
 		}
 		return $rule;
 	}
-	/**
-	 * Monta chaves em formato URL Parameter.
-	 * 
-	 * @param string $parameter Parametro referencial HTTP.
-	 * @param string $value Valor validado.
-	 * @return string Padrao chave=valor.
-	 */
 	private function tupla( $parameter, $value ) {
 		return ( $parameter . '=' . $value );
 	}
-	/**
-	 * Helper cruzamento com 3 eixos taxonomicos validos diferentes.
-	 * 
-	 * @param array $taxonomy_one Param 1.
-	 * @param array $taxonomy_two Param 2.
-	 * @param array $taxonomy_tree Param 3.
-	 * @return array Endpoints unificados.
-	 */
 	private function url_tree( $taxonomy_one, $taxonomy_two, $taxonomy_tree ) {
 		$rule = [];
 		foreach ( $taxonomy_one as $slug1 => $data1 ) {
@@ -1097,15 +982,6 @@ class PrettyUrl {
 		}
 		return $rule;
 	}
-	/**
-	 * Helper cruzamento em 4 eixos ( Max depth tree endpoint router ).
-	 * 
-	 * @param array $taxonomy_one Param 1.
-	 * @param array $taxonomy_two Param 2.
-	 * @param array $taxonomy_tree Param 3.
-	 * @param array $taxonomy_four Param 4.
-	 * @return array Regras validadas WP Engine.
-	 */
 	private function url_four( $taxonomy_one, $taxonomy_two, $taxonomy_tree, $taxonomy_four ) {
 		$rule = [];
 		foreach ( $taxonomy_one as $slug1 => $data1 ) {
@@ -1122,25 +998,11 @@ class PrettyUrl {
 		}
 		return $rule;
 	}
-	/**
-	 * Acopla nativamente regras consolidadas no hook interno de add_rewrite_rule.
-	 * 
-	 * @param array $rules Lista contendo Regex e Mapeamento query string nativo.
-	 * @return void Registra rotas.
-	 */
 	private function register( $rules ) {
 		foreach ( $rules as $rule ) {
 			add_rewrite_rule( $rule[ 'regex' ], $rule[ 'rule' ], $rule[ 'hierarchical' ] );
 		}
 	}
-	/**
-	 * Metodo agregador final que une todos subniveis dinamicos validados em arvore linear de Regex.
-	 * 
-	 * @param array $tax_contrato Taxonomias de contrato.
-	 * @param array $tax_tipo_imovel Taxonomias de tipo de imovel.
-	 * @param array $tax_cidade Taxonomias de cidade.
-	 * @return array Estrutura pronta do router do plugin.
-	 */
 	private function cria( $tax_contrato, $tax_tipo_imovel, $tax_cidade ) {
 		$rules = array_merge(
 			$this->url_seo_landing_pages( $tax_contrato, $tax_tipo_imovel, $tax_cidade )
@@ -1162,15 +1024,11 @@ class PrettyUrl {
 		);
 		return $rules;
 	}
-	/**
-	 * Deleta e tranca transients do banco de dados relacional ( limpa indexadores NLP antigos ).
-	 * 
-	 * @return void Destruicao de transients via interface Options WP.
-	 */
 	public function clear( ) {
 		delete_transient( self::CACHE_URL_AMIGAVEL );
 		delete_transient( self::CACHE_MAPA_HIERARQUICO );
 		delete_transient( self::CACHE_MAPA_IMOVEIS );
+		delete_transient( 'CACHE_PRETTY_URL_V3' );
 		delete_transient( 'CACHE_PRETTY_URL_V2' );
 		delete_transient( 'CACHE_MAPA_HIERARQUICO_V5' );
 		delete_transient( 'CACHE_MAPA_IMOVEIS_TREE_V3' );
@@ -1178,11 +1036,6 @@ class PrettyUrl {
 		delete_transient( 'CACHE_MAPA_HIERARQUICO_V4' );
 		delete_transient( 'CACHE_MAPA_IMOVEIS_TREE_V2' );
 	}
-	/**
-	 * Hook publico construtor - varre e insere logicas de SEO dinamicas para Flush.
-	 * 
-	 * @return void Inicializacao principal WP.
-	 */
 	public function do( ) {
 		$forcar_reset = isset( $_GET[ 'forcar_reset' ] );
 		if ( $forcar_reset ) {
@@ -1225,11 +1078,6 @@ class PrettyUrl {
 			flush_rewrite_rules( false );
 		}
 	}
-	/**
-	 * Gera indexacao em mapa de imoveis no frontend listando todas as combinatorias viaveis.
-	 * 
-	 * @return array Dicionario aninhado hierarquicamente via MySQL Direct Query com JOINs complexos.
-	 */
 	public static function gerar_links_mapa_imoveis( ) {
 		global $wpdb;
 		$tipos_sinonimos = self::get_mapa_tipo_imovel( );
