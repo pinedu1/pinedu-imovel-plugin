@@ -95,7 +95,23 @@ function doPost( action, argumentos, callbackSuccess, callbackError, callbackPre
 }
 
 function construirUrl( urlParts, method ) {
-    const fullPath = `${urlParts.server.replace( /\/$/, '' )}${urlParts.path}${urlParts.endPoint}`.replace( /\/{2,}/g, '/' );
+    // 1. Monta a matriz com os componentes da URL
+    const partesArray = [
+        urlParts.server,
+        urlParts.path,
+        urlParts.endPoint
+    ];
+
+    // 2. Remove barras no final de cada nó e limpa barras duplas geradas
+    const caminhoLimpo = partesArray
+        .filter( Boolean ) // Garante que partes nulas ou vazias sejam ignoradas
+        .map( parte => parte.replace( /\/$/, '' ) )
+        .join( '/' )
+        .replace( /\/{2,}/g, '/' );
+
+    // 3. Corrige o protocolo (caso o replace global tenha afetado o "http://")
+    const fullPath = caminhoLimpo.replace( /:\/(?!\/)/, '://' );
+
     const url = new URL( fullPath );
     if ( method.toUpperCase( ) === 'GET' ) {
         const params = new URLSearchParams( url.search );
@@ -106,7 +122,6 @@ function construirUrl( urlParts, method ) {
     }
     return url.href;
 }
-
 function preparaObjetoAjax( ) {
     const urlServidor = document.getElementById( 'url_servidor' ).value;
     const token = document.getElementById( 'token' ).value;
@@ -251,7 +266,7 @@ function preLogin( progresso ) {
         , username: PineduAjax.tokenUsername
         , password: PineduAjax.tokenPassword
     };
-    doRemotePost( 'login', parametros, success, error, before, null );
+    doRemotePost( 'wordpress/login', parametros, success, error, before, null );    
 }
 
 function errorDoPost( data ) {
@@ -352,7 +367,7 @@ function prepararCadastrosBasicos( parametrosBasicos ) {
     };
 
     Object.assign( args, parametrosBasicos );
-    doRemotePost( 'basicos', args, success, error, before, null );
+    doRemotePost( 'wordpress/basicos', args, success, error, before, null );
 }
 
 function importarEmpresa( empresa, dadosBasicos, progresso ) {
@@ -429,7 +444,7 @@ function importarParametrosEmpresa( parametros, dadosBasicos, progresso ) {
         }
     }
         , error = errorDoPost;
-    const args = {parametros: JSON.stringify( parametros )};
+    const args = { parametroSistema: JSON.stringify( parametros ) };
     doPost( 'IMPORTA_PARAMETRO_EMPRESA', args, success, error, before, null );
 }
 
@@ -634,14 +649,19 @@ function prepararExcluirImoveis( parametrosExcluir ) {
         }
     }
     , error = errorDoPost;
+    /**
+     * Monta os argumentos de sincronização garantindo fallback ISO 8601 para datas indefinidas ou inválidas.
+     *
+     * @author Eduardo Pinheiro da Silva
+     */
     const args = {
-        forcar: ( ( document?.forcar === true ) ? true : false ),
-        ultimaAtualizacao: PineduAjax.ultimaAtualizacao,
-        empresa: PineduAjax.empresa,
-        token: PineduAjax.token,
+        forcar: ( ( document?.forcar === true ) ? true : false )
+        , ultimaAtualizacao: ( ( PineduAjax?.ultimaAtualizacao && PineduAjax.ultimaAtualizacao !== 'undefined' && !Number.isNaN( Date.parse( PineduAjax.ultimaAtualizacao ) ) ) ? PineduAjax.ultimaAtualizacao : '1980-01-01T00:00:00.000Z' )
+        , empresa: PineduAjax.empresa
+        , token: PineduAjax.token
     };
     Object.assign( args, parametrosExcluir );
-    doRemotePost( 'listaExcluidos', args, success, error, before, null );
+    doRemotePost( 'wordpress/listaExcluidos', args, success, error, before, null );
 }
 
 function chunkArray( lista, tamanho ) {
@@ -669,8 +689,9 @@ function prepararImportarImoveis( parametrosImportarImoveis ) {
             alteraInfo( info );
             alteraMessage( message );
             alteraProgresso( progresso );
-            const imoveisFatiados = chunkArray( data.imoveis, PineduAjax.max );
-            recuperarLoteImoveis( imoveisFatiados, 0, PineduAjax.max, 0, data.total, 0, 0 );
+            const maximoImoveis = PineduAjax.max? PineduAjax.max: 1;
+            const imoveisFatiados = chunkArray( data.imoveis, maximoImoveis );
+            recuperarLoteImoveis( imoveisFatiados, 0, PineduAjax.max? PineduAjax.max: 1, 0, data.total, 0, 0 );
         } else {
             prepararImportarImagemDestaque( 0 );
         }
@@ -678,10 +699,10 @@ function prepararImportarImoveis( parametrosImportarImoveis ) {
     const args = {
         forcar: ( ( document?.forcar === true ) ? true : false )
         , ignorarExcluidos: true
-        , ultimaAtualizacao: PineduAjax.ultimaAtualizacao
+        , ultimaAtualizacao: ( ( PineduAjax?.ultimaAtualizacao && PineduAjax.ultimaAtualizacao !== 'undefined' && !Number.isNaN( Date.parse( PineduAjax.ultimaAtualizacao ) ) ) ? PineduAjax.ultimaAtualizacao : '1980-01-01T00:00:00.000Z' )
     };
     Object.assign( args, parametrosImportarImoveis );
-    doRemotePost( 'preparaImportacao', args, success, error, before, null );
+    doRemotePost( 'wordpress/preparaImportacao', args, success, error, before, null );
 }
 
 function recuperarLoteImoveis( listaReferencias, slice, max, offset, total, progresso, retornados ) {
@@ -716,7 +737,7 @@ function recuperarLoteImoveis( listaReferencias, slice, max, offset, total, prog
         imoveis: JSON.stringify( listaReferencias[ slice ] )
     };
     if ( PineduAjax?.environment === 'development' ) console.log( args );
-    doRemotePost( 'imoveisByRefs', args, success, error, before, null );
+    doRemotePost( 'wordpress/imoveisByRefs', args, success, error, before, null );
 }
 
 function importarImoveisFrontEnd( listaReferencias, slice, imoveis, max, offset, total, progresso, retornados ) {
@@ -980,7 +1001,7 @@ function preLoginApagarImoveis( progresso ) {
         , username: PineduAjax.tokenUsername
         , password: PineduAjax.tokenPassword
     };
-    doRemotePost( 'login', parametros, success, error, before, null );
+    doRemotePost( 'wordpress/login', parametros, success, error, before, null );
 }
 
 function posLoginApagarImoveis( dadosLogin, progresso ) {

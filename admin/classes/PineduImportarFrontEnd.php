@@ -250,7 +250,7 @@ class PineduImportarFrontEnd {
         if ( is_development_mode( ) ) {
             error_log( 'PineduImportarFrontEnd:importar_parametros_empresa' );
         }
-        $parametros_json = $_POST['parametros'] ?? null;
+        $parametros_json = $_REQUEST['parametroSistema'] ?? null;
         $parametros_json = stripslashes( $parametros_json );
         if ( $parametros_json ) {
             $parametros = json_decode( $parametros_json, true ); // agora é array associativo
@@ -258,7 +258,7 @@ class PineduImportarFrontEnd {
             $parametros = null;
         }
         if ( $parametros === null ) {
-            wp_send_json_error( ['success' => false, 'message' => 'Nó Empresa não encontrado ou vazio no JSON'] );
+            wp_send_json_error( ['success' => false, 'message' => 'Nó parametroSistema não encontrado ou vazio no JSON'] );
             wp_die( );
         }
         if ( is_development_mode( ) ) {
@@ -696,8 +696,7 @@ class PineduImportarFrontEnd {
         $importacao_andamento = false;
         if ( isset( $options['importacao_andamento'] ) && 'on' === $options['importacao_andamento'] ) {
             $importacao_andamento = true;
-        }
-        if ( true === $importacao_andamento ) {
+        } else if ( true === $importacao_andamento ) {
             wp_send_json( ['success'=> false, 'message' => 'Importação em andamento por outro processo. Tente novamente mais tarde!'] );;
             wp_die( );
         }
