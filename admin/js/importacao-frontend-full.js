@@ -266,7 +266,7 @@ function preLogin( progresso ) {
         , username: PineduAjax.tokenUsername
         , password: PineduAjax.tokenPassword
     };
-    doRemotePost( 'wordpress/login', parametros, success, error, before, null );    
+    doRemotePost( 'login', parametros, success, error, before, null );    
 }
 
 function errorDoPost( data ) {
@@ -367,7 +367,7 @@ function prepararCadastrosBasicos( parametrosBasicos ) {
     };
 
     Object.assign( args, parametrosBasicos );
-    doRemotePost( 'wordpress/basicos', args, success, error, before, null );
+    doRemotePost( 'basicos', args, success, error, before, null );
 }
 
 function importarEmpresa( empresa, dadosBasicos, progresso ) {
@@ -661,7 +661,7 @@ function prepararExcluirImoveis( parametrosExcluir ) {
         , token: PineduAjax.token
     };
     Object.assign( args, parametrosExcluir );
-    doRemotePost( 'wordpress/listaExcluidos', args, success, error, before, null );
+    doRemotePost( 'listaExcluidos', args, success, error, before, null );
 }
 
 function chunkArray( lista, tamanho ) {
@@ -702,7 +702,7 @@ function prepararImportarImoveis( parametrosImportarImoveis ) {
         , ultimaAtualizacao: ( ( PineduAjax?.ultimaAtualizacao && PineduAjax.ultimaAtualizacao !== 'undefined' && !Number.isNaN( Date.parse( PineduAjax.ultimaAtualizacao ) ) ) ? PineduAjax.ultimaAtualizacao : '1980-01-01T00:00:00.000Z' )
     };
     Object.assign( args, parametrosImportarImoveis );
-    doRemotePost( 'wordpress/preparaImportacao', args, success, error, before, null );
+    doRemotePost( 'preparaImportacao', args, success, error, before, null );
 }
 
 function recuperarLoteImoveis( listaReferencias, slice, max, offset, total, progresso, retornados ) {
@@ -737,7 +737,7 @@ function recuperarLoteImoveis( listaReferencias, slice, max, offset, total, prog
         imoveis: JSON.stringify( listaReferencias[ slice ] )
     };
     if ( PineduAjax?.environment === 'development' ) console.log( args );
-    doRemotePost( 'wordpress/imoveisByRefs', args, success, error, before, null );
+    doRemotePost( 'imoveisByRefs', args, success, error, before, null );
 }
 
 function importarImoveisFrontEnd( listaReferencias, slice, imoveis, max, offset, total, progresso, retornados ) {
@@ -1001,7 +1001,7 @@ function preLoginApagarImoveis( progresso ) {
         , username: PineduAjax.tokenUsername
         , password: PineduAjax.tokenPassword
     };
-    doRemotePost( 'wordpress/login', parametros, success, error, before, null );
+    doRemotePost( 'login', parametros, success, error, before, null );
 }
 
 function posLoginApagarImoveis( dadosLogin, progresso ) {
